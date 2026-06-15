@@ -1,0 +1,21 @@
+{
+  "name": "ivanmrva",
+  "owner": {
+    "name": "Ivan Mrva",
+    "url": "https://github.com/ivanmrva"
+  },
+  "plugins": [
+    {
+      "name": "grillspec",
+      "source": "./plugin",
+      "version": "1.1.0",
+      "description": "Spec-driven engineering system: a conductor plus 43 grilling/derivation skills and deterministic spec linters. Turns an idea or existing docs into a complete DDD spec, derives architecture and tasks, and runs the build loop.",
+      "keywords": [
+        "spec-driven",
+        "domain-driven-design",
+        "requirements",
+        "architecture"
+      ]
+    }
+  ]
+}
