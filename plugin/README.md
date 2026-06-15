@@ -1,0 +1,133 @@
+# Grill Spec System (`grillspec`)
+
+A Claude Code plugin for **spec-driven engineering**. It interviews an idea - or
+grills existing docs - into a complete Domain-Driven Design spec, derives the
+architecture, solution and task breakdown from that spec, and runs the build
+loop. One **conductor** orchestrates 38 grilling and derivation skills (39 components in total); bundled
+**deterministic linters** gate spec consistency and guard derived artifacts.
+
+## Install
+
+```
+/plugin marketplace add ivanmrva/grillspec        # GitHub owner/repo (or a git URL, or a local path)
+/plugin install grillspec@ivanmrva                # add --scope project to share via the repo
+/reload-plugins                                   # then restart Claude Code once so the bundled hooks load
+```
+
+See exactly what it adds and its per-session token cost before committing:
+
+```
+/plugin details grillspec
+```
+
+## Use it
+
+You normally talk only to the conductor; it routes everything else:
+
+```
+/grillspec:grill-spec-conductor
+```
+
+Or invoke any single skill directly when you want one focused step - they are all
+installed and namespaced, e.g.:
+
+```
+/grillspec:grill-ddd                 # idea/docs -> domain model
+/grillspec:derive-architecture       # spec -> solution architecture
+/grillspec:derive-tasks              # spec -> task breakdown
+```
+
+Every skill loads a shared engine (`grill-engine`, `derive-engine`, or
+`exec-engine`) that carries the interview/derivation discipline; the per-skill
+file is only the thin profile of what varies. No skill depends on a sibling
+skill, so a subset works on its own.
+
+## Individual skills (standalone)
+
+You **don't need a plugin per skill.** Any skill can be shipped on its own as a
+self-contained, copy-able skill - the project emits these by inlining the shared
+engine into the skill:
+
+```
+python3 tools/emit-standalone.py grill-ddd grill-quality derive-architecture   # a chosen subset
+python3 tools/emit-standalone.py --all-grill                                   # every grill-* skill
+```
+
+Each lands in `dist/standalone/<name>/` as a `SKILL.md` plus its own `README.md`
+guide. To distribute one, the recipient just drops the folder into a skills
+directory - no plugin, no marketplace:
+
+```
+unzip <skill>.zip -d ~/.claude/skills/     # personal: all their projects
+# or commit it to .claude/skills/ in a repo -> teammates get it on clone
+```
+
+Standalone skills compose through documents at a shared working root, so a copied
+subset (e.g. ddd -> quality -> architecture) still works together.
+
+**When to wrap a single skill as a plugin instead:** only if you want the managed
+`/plugin install` experience for it on its own - one-command install, versioning,
+auto-update, Discover-tab visibility. Add a `.claude-plugin/plugin.json` to the
+skill folder and it loads as a single-skill plugin, or list it as another plugin
+entry in the marketplace. Trade-off: each such plugin carries its **own copy of the
+engine** (the bundle plugin shares one engine across all 39), so prefer the bundle
+unless someone genuinely wants just that one skill via managed install.
+
+## What the plugin ships vs. what lives in your project
+
+**Ships in the plugin** (resolved from the install cache via `${CLAUDE_PLUGIN_ROOT}`):
+the 44 skills, the shared engines and layout map (`grill-shared/`), the spec
+linters (`tools/`), the subagents (`agents/`), and the safety/automation hooks
+(`hooks/`).
+
+**Created in your project at runtime** by the skills: the `spec/` tree. The
+system enforces its own `spec/` layout and **creates it regardless of how your
+repo is otherwise organised** - that is expected and part of usage. Nothing is
+copied into your project's `.claude/`.
+
+## Recommended project add-ons (optional, not installable by a plugin)
+
+Two things a plugin cannot install for you; add them to the project repo if you
+want them:
+
+- **Permission allowlist** for smoother autonomous/AFK runs. Plugin `settings.json`
+  only supports `agent`/`subagentStatusLine`, so the bash/edit allowlist belongs
+  in your project `.claude/settings.json`. (The hard safety guards - parent-escape
+  and destructive-command blocking - ship in the plugin's hooks and apply
+  regardless.)
+- **CI governance.** Run the same linters on every push by adding a workflow that
+  calls `lint_spec.py` and `guard_derived.py`. Reference them in CI via a checked-in
+  copy or a `pip`-free `python3` step; see `docs/`.
+
+## Hooks (automatic, bundled)
+
+- **PreToolUse** - keeps autonomous runs inside the project root and off
+  destructive/privileged commands.
+- **PostToolUse** - on any `spec/` edit, lints the spec and surfaces the
+  downstream impact set, so consistency and propagation are automatic.
+- **Stop** - backstops the derived-artifact guard (derived files are
+  regenerate-only).
+
+## Editing and releasing
+
+This plugin's source *is* the system - edit the `SKILL.md` files, engines, and
+tools directly. After any edit:
+
+```
+python3 tools/selfcheck.py        # validates structure, frontmatter, paths, manifests, hooks, tools
+```
+
+To ship changes to installed projects, **bump `version` in
+`.claude-plugin/plugin.json`** and push; reinstall or let marketplace auto-update
+pick it up. (If you leave `version` unset, every commit is treated as a new
+version instead.)
+
+## Docs
+
+- **[`docs/skills/`](docs/skills/README.md) — per-skill user guides + catalog.** One guide
+  per skill (purpose, input, output, and *how to tell it did its job*), generated from the
+  skill itself so it never drifts. Start here to see what each skill does.
+- `docs/HOW-IT-WORKS.md` - the pipeline, stages, tools, and the build loop.
+- `docs/LIVE-TEST.md` - 20-minute protocol to verify a live agent follows the
+  system, and that the plugin resolves correctly post-install.
+- `docs/WORKING.md` - working notes.
