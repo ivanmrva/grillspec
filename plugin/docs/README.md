@@ -6,6 +6,7 @@ Documentation for the **`grillspec`** Claude Code plugin. New here? Start with t
 
 - **[`skills/`](skills/README.md)** — a user guide for every skill (purpose, input, output, and how to verify it), plus the full catalog. The fastest way to see what each skill does and how to invoke it.
 - **[`HOW-IT-WORKS.md`](HOW-IT-WORKS.md)** — the pipeline end to end: the stages, the three shared engines, the `spec/` tree, the deterministic tools, and the build loop.
+- **[`DEPENDENCY-GRAPH.md`](DEPENDENCY-GRAPH.md)** — what every area consumes and produces (a stage table + a Mermaid DAG). Generated from `grill-shared/dependencies.json`, which the conductor reads to know what to hand each skill.
 - **[`WORKING.md`](WORKING.md)** — working efficiently: how change-propagation works, the autonomous build loop, per-stage throughput, and model routing.
 - **[`LIVE-TEST.md`](LIVE-TEST.md)** — a 20-minute protocol to confirm a live agent actually follows the system, and that the plugin resolves correctly after install.
 

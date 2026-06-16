@@ -29,6 +29,7 @@ Written under `system-context/`:
 | `context-diagram.md` | the C4 Level-1 System Context diagram (Mermaid): the system + its actors + neighbor systems + the boundary line | Mermaid |
 
 ADRs → `adr/ADR-CTX-NNN.md`
+Consumes: the **personas / system-users** (from customer discovery — the human actors at the boundary) and the **constraints** (the environment + neighbor systems the boundary must respect).
 
 ## Excludes
 internal decomposition — containers/components (C4 L2/L3) and the chosen architecture (→ the architecture) · the *qualities* of each interface — volume/latency/SLA/delivery-guarantee/failure behaviour (→ the integration requirements) · the formal API/event **contracts**, schemas, versioning (→ the API contracts) · the product's *feature* scope and phasing (→ the product vision) · the **internal** bounded contexts & their relationships (→ the domain model, which consumes this boundary)

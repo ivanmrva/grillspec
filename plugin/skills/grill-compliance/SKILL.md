@@ -32,6 +32,7 @@ Written under `requirements/compliance/`:
 | `glossary.md` | regulatory lexicon (controller · processor · data-subject · …) | term · definition |
 
 ADRs → `adr/ADR-COMP-NNN.md`
+Consumes: the **constraints** — the regulatory/legal/jurisdictional mandates that fix which regimes apply (turned here into concrete `OBL-` obligations).
 
 ## Excludes
 the *implementation* of controls (→ the architecture) · legal advice (flag: needs counsel) · retention *values* (→ the data requirements; here only as the obligation)

@@ -1,0 +1,545 @@
+{
+  "_comment": "Machine-readable dependency graph for the grillspec system. The CONDUCTOR reads this to know, before it runs an area's skill, which upstream artifacts/IDs to gather and hand over as input (workers stay input-agnostic; sequencing is the conductor's job). Single source of truth: plugin/docs/DEPENDENCY-GRAPH.md is GENERATED from this by tools/gen_depgraph.py (regenerate-only) and selfcheck verifies they match. Edges: an area's 'consumes' lists the upstream AREAS whose output it builds from. 'produces_ids' = the stable-ID prefixes it mints (cross-checked against lint_spec.py TYPES + each skill's declared stable IDs).",
+  "stages": [
+    "0-discovery",
+    "0-foundation",
+    "1-domain",
+    "2-requirements",
+    "2.5-commercial",
+    "parallel-gtm-growth",
+    "3-solution",
+    "4-delivery-prep",
+    "5-execution",
+    "6-operate",
+    "any"
+  ],
+  "areas": {
+    "problem-validation": {
+      "stage": "0-discovery",
+      "skill": "grill-problem-validation",
+      "folder": "01-discovery",
+      "kind": "elicit",
+      "consumes": [],
+      "produces_ids": []
+    },
+    "product-vision": {
+      "stage": "0-foundation",
+      "skill": "grill-product-vision",
+      "folder": "02-product/vision",
+      "kind": "elicit",
+      "consumes": [
+        "problem-validation"
+      ],
+      "produces_ids": []
+    },
+    "customer-discovery": {
+      "stage": "0-foundation",
+      "skill": "grill-customer-discovery",
+      "folder": "02-product/customers",
+      "kind": "elicit",
+      "consumes": [
+        "product-vision"
+      ],
+      "produces_ids": []
+    },
+    "market": {
+      "stage": "0-foundation",
+      "skill": "grill-market",
+      "folder": "02-product/market",
+      "kind": "elicit",
+      "consumes": [
+        "product-vision"
+      ],
+      "produces_ids": []
+    },
+    "goals": {
+      "stage": "0-foundation",
+      "skill": "grill-goals",
+      "folder": "02-product/goals",
+      "kind": "elicit",
+      "consumes": [
+        "product-vision"
+      ],
+      "produces_ids": []
+    },
+    "constraints": {
+      "stage": "0-foundation",
+      "skill": "grill-constraints",
+      "folder": "03-constraints",
+      "kind": "elicit",
+      "consumes": [],
+      "produces_ids": []
+    },
+    "system-context": {
+      "stage": "0-foundation",
+      "skill": "grill-system-context",
+      "folder": "03-system-context",
+      "kind": "elicit",
+      "consumes": [
+        "customer-discovery",
+        "constraints"
+      ],
+      "produces_ids": []
+    },
+    "ddd": {
+      "stage": "1-domain",
+      "skill": "grill-ddd",
+      "folder": "04-domain/ddd",
+      "kind": "model",
+      "consumes": [
+        "product-vision",
+        "constraints",
+        "system-context"
+      ],
+      "produces_ids": [
+        "CMD",
+        "EVT",
+        "AGG",
+        "VO",
+        "ENT",
+        "POL",
+        "RM",
+        "HOT"
+      ]
+    },
+    "derive-functional": {
+      "stage": "2-requirements",
+      "skill": "derive-functional",
+      "folder": "05-requirements/functional",
+      "kind": "derive",
+      "consumes": [
+        "ddd"
+      ],
+      "produces_ids": [
+        "UC",
+        "AC"
+      ]
+    },
+    "quality": {
+      "stage": "2-requirements",
+      "skill": "grill-quality",
+      "folder": "05-requirements/quality",
+      "kind": "derive",
+      "consumes": [
+        "ddd",
+        "derive-functional"
+      ],
+      "produces_ids": [
+        "NFR",
+        "ASR"
+      ]
+    },
+    "data-reqs": {
+      "stage": "2-requirements",
+      "skill": "grill-data-reqs",
+      "folder": "05-requirements/data",
+      "kind": "derive",
+      "consumes": [
+        "ddd"
+      ],
+      "produces_ids": [
+        "DATA"
+      ]
+    },
+    "integration-reqs": {
+      "stage": "2-requirements",
+      "skill": "grill-integration-reqs",
+      "folder": "05-requirements/integration",
+      "kind": "elicit",
+      "consumes": [
+        "system-context",
+        "ddd"
+      ],
+      "produces_ids": []
+    },
+    "security-reqs": {
+      "stage": "2-requirements",
+      "skill": "grill-security-reqs",
+      "folder": "05-requirements/security",
+      "kind": "derive",
+      "consumes": [
+        "data-reqs",
+        "ddd",
+        "go-to-market"
+      ],
+      "produces_ids": [
+        "SEC",
+        "THR"
+      ]
+    },
+    "ux-reqs": {
+      "stage": "2-requirements",
+      "skill": "grill-ux-reqs",
+      "folder": "05-requirements/ux",
+      "kind": "derive",
+      "consumes": [
+        "derive-functional",
+        "ddd",
+        "design-system",
+        "quality",
+        "go-to-market"
+      ],
+      "produces_ids": []
+    },
+    "design-system": {
+      "stage": "2-requirements",
+      "skill": "grill-design-system",
+      "folder": "05-requirements/design-system",
+      "kind": "elicit",
+      "consumes": [
+        "quality"
+      ],
+      "produces_ids": [
+        "DS"
+      ]
+    },
+    "compliance": {
+      "stage": "2-requirements",
+      "skill": "grill-compliance",
+      "folder": "05-requirements/compliance",
+      "kind": "elicit",
+      "consumes": [
+        "constraints"
+      ],
+      "produces_ids": [
+        "OBL"
+      ]
+    },
+    "ml-reqs": {
+      "stage": "2-requirements",
+      "skill": "grill-ml-reqs",
+      "folder": "05-requirements/ml",
+      "kind": "elicit",
+      "consumes": [
+        "derive-functional",
+        "data-reqs"
+      ],
+      "produces_ids": [
+        "ML"
+      ]
+    },
+    "monetization": {
+      "stage": "2.5-commercial",
+      "skill": "grill-monetization",
+      "folder": "06-commercial",
+      "kind": "elicit",
+      "consumes": [
+        "derive-functional",
+        "go-to-market",
+        "goals"
+      ],
+      "produces_ids": []
+    },
+    "go-to-market": {
+      "stage": "parallel-gtm-growth",
+      "skill": "grill-go-to-market",
+      "folder": "07-gtm",
+      "kind": "elicit",
+      "consumes": [
+        "product-vision"
+      ],
+      "produces_ids": []
+    },
+    "growth": {
+      "stage": "parallel-gtm-growth",
+      "skill": "grill-growth",
+      "folder": "08-growth",
+      "kind": "elicit",
+      "consumes": [
+        "goals",
+        "compliance",
+        "data-reqs"
+      ],
+      "produces_ids": [
+        "EXP"
+      ]
+    },
+    "derive-architecture": {
+      "stage": "3-solution",
+      "skill": "derive-architecture",
+      "folder": "09-solution/arch",
+      "kind": "derive",
+      "consumes": [
+        "derive-functional",
+        "quality",
+        "data-reqs",
+        "integration-reqs",
+        "security-reqs",
+        "ux-reqs",
+        "compliance",
+        "ml-reqs",
+        "system-context",
+        "constraints",
+        "monetization"
+      ],
+      "produces_ids": []
+    },
+    "derive-data-architecture": {
+      "stage": "3-solution",
+      "skill": "derive-data-architecture",
+      "folder": "09-solution/data",
+      "kind": "derive",
+      "consumes": [
+        "data-reqs",
+        "ddd",
+        "derive-functional",
+        "derive-architecture"
+      ],
+      "produces_ids": []
+    },
+    "derive-api-contracts": {
+      "stage": "3-solution",
+      "skill": "derive-api-contracts",
+      "folder": "09-solution/api",
+      "kind": "derive",
+      "consumes": [
+        "ddd",
+        "integration-reqs",
+        "security-reqs",
+        "derive-architecture"
+      ],
+      "produces_ids": [
+        "API"
+      ]
+    },
+    "derive-security-architecture": {
+      "stage": "3-solution",
+      "skill": "derive-security-architecture",
+      "folder": "09-solution/security",
+      "kind": "derive",
+      "consumes": [
+        "security-reqs",
+        "derive-architecture",
+        "derive-data-architecture"
+      ],
+      "produces_ids": []
+    },
+    "derive-infra-ops": {
+      "stage": "3-solution",
+      "skill": "derive-infra-ops",
+      "folder": "09-solution/infra-ops",
+      "kind": "derive",
+      "consumes": [
+        "quality",
+        "constraints",
+        "derive-architecture"
+      ],
+      "produces_ids": []
+    },
+    "derive-observability": {
+      "stage": "3-solution",
+      "skill": "derive-observability",
+      "folder": "09-solution/observability",
+      "kind": "derive",
+      "consumes": [
+        "quality",
+        "security-reqs",
+        "derive-architecture"
+      ],
+      "produces_ids": [
+        "SLO"
+      ]
+    },
+    "derive-test-strategy": {
+      "stage": "3-solution",
+      "skill": "derive-test-strategy",
+      "folder": "09-solution/test",
+      "kind": "derive",
+      "consumes": [
+        "derive-functional",
+        "ux-reqs",
+        "derive-architecture",
+        "quality",
+        "derive-api-contracts",
+        "derive-observability",
+        "security-reqs"
+      ],
+      "produces_ids": []
+    },
+    "derive-impl-design": {
+      "stage": "3-solution",
+      "skill": "derive-impl-design",
+      "folder": "09-solution/impl",
+      "kind": "derive",
+      "consumes": [
+        "derive-architecture",
+        "derive-tasks"
+      ],
+      "produces_ids": []
+    },
+    "derive-ml-architecture": {
+      "stage": "3-solution",
+      "skill": "derive-ml-architecture",
+      "folder": "09-solution/ml",
+      "kind": "derive",
+      "consumes": [
+        "ml-reqs",
+        "derive-architecture",
+        "derive-data-architecture"
+      ],
+      "produces_ids": []
+    },
+    "derive-conventions": {
+      "stage": "4-delivery-prep",
+      "skill": "derive-conventions",
+      "folder": "10-delivery/conventions",
+      "kind": "derive",
+      "consumes": [
+        "derive-architecture",
+        "derive-test-strategy"
+      ],
+      "produces_ids": []
+    },
+    "derive-tasks": {
+      "stage": "4-delivery-prep",
+      "skill": "derive-tasks",
+      "folder": "10-delivery/tasks",
+      "kind": "derive",
+      "consumes": [
+        "derive-functional",
+        "ddd",
+        "derive-architecture",
+        "derive-conventions",
+        "product-vision",
+        "ux-reqs"
+      ],
+      "produces_ids": [
+        "T"
+      ]
+    },
+    "implement-task": {
+      "stage": "5-execution",
+      "skill": "implement-task",
+      "folder": "src/+tests/",
+      "kind": "exec",
+      "consumes": [
+        "derive-tasks",
+        "derive-architecture",
+        "derive-conventions",
+        "derive-impl-design"
+      ],
+      "produces_ids": []
+    },
+    "run-tests": {
+      "stage": "5-execution",
+      "skill": "run-tests",
+      "folder": "(test run)",
+      "kind": "exec",
+      "consumes": [
+        "derive-tasks",
+        "implement-task"
+      ],
+      "produces_ids": []
+    },
+    "conformance-review": {
+      "stage": "5-execution",
+      "skill": "conformance-review",
+      "folder": "10-delivery/verification",
+      "kind": "exec",
+      "consumes": [
+        "derive-tasks",
+        "implement-task",
+        "derive-architecture",
+        "derive-api-contracts",
+        "derive-data-architecture",
+        "security-reqs",
+        "compliance",
+        "quality",
+        "derive-conventions",
+        "ddd"
+      ],
+      "produces_ids": []
+    },
+    "autorun": {
+      "stage": "5-execution",
+      "skill": "autorun",
+      "folder": "(driver)",
+      "kind": "exec",
+      "consumes": [
+        "derive-tasks"
+      ],
+      "produces_ids": []
+    },
+    "deploy-release": {
+      "stage": "6-operate",
+      "skill": "deploy-release",
+      "folder": "10-delivery/operations",
+      "kind": "exec",
+      "consumes": [
+        "derive-infra-ops",
+        "derive-observability"
+      ],
+      "produces_ids": []
+    },
+    "migrate-data": {
+      "stage": "6-operate",
+      "skill": "migrate-data",
+      "folder": "10-delivery/operations",
+      "kind": "exec",
+      "consumes": [
+        "data-reqs",
+        "derive-data-architecture"
+      ],
+      "produces_ids": []
+    },
+    "operate-incident": {
+      "stage": "6-operate",
+      "skill": "operate-incident",
+      "folder": "10-delivery/operations",
+      "kind": "exec",
+      "consumes": [
+        "derive-observability",
+        "derive-infra-ops"
+      ],
+      "produces_ids": []
+    },
+    "diagnose": {
+      "stage": "6-operate",
+      "skill": "diagnose",
+      "folder": "10-delivery/operations",
+      "kind": "exec",
+      "consumes": [],
+      "produces_ids": []
+    },
+    "prototype": {
+      "stage": "any",
+      "skill": "prototype",
+      "folder": "prototypes/",
+      "kind": "validate",
+      "consumes": [],
+      "produces_ids": []
+    },
+    "generate-docs": {
+      "stage": "any",
+      "skill": "generate-docs",
+      "folder": "docs-site/",
+      "kind": "publish",
+      "consumes": [
+        "conformance-review"
+      ],
+      "produces_ids": []
+    },
+    "generate-api-reference": {
+      "stage": "any",
+      "skill": "generate-api-reference",
+      "folder": "docs-site/",
+      "kind": "publish",
+      "consumes": [
+        "derive-api-contracts"
+      ],
+      "produces_ids": []
+    },
+    "generate-ui-prototype": {
+      "stage": "any",
+      "skill": "generate-ui-prototype",
+      "folder": "prototypes/ui/",
+      "kind": "publish",
+      "consumes": [
+        "ux-reqs",
+        "design-system",
+        "derive-functional"
+      ],
+      "produces_ids": []
+    }
+  }
+}

@@ -46,6 +46,7 @@ Not every file is always produced; create one only when the product has that con
 | `actors.md` | actor roster | — |
 
 ADRs → `adr/ADR-DDD-NNN.md`
+Consumes: the product vision's **coarse scope** (which bounded contexts exist), the **constraints** (bounds the model), and the **system context** (the external boundary + neighbor systems the model sits inside).
 
 ## Excludes
 implementation/tech · NFRs · pricing · GTM · UX visuals

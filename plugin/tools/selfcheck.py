@@ -140,6 +140,17 @@ if lint.exists():
                  f"lint_spec.py (add it to TYPES + ID_LAYER + PREFIX_OWNER, or stop emitting it) - "
                  "the linter cannot register or check it")
 
+# --- 4c. dependency graph: valid + the rendered doc is in sync -------------
+# Runs gen_depgraph.py --check: validates dependencies.json (prefixes known to the linter and owned by
+# the right folder, edges resolve, acyclic) AND that docs/DEPENDENCY-GRAPH.md matches a fresh render.
+import subprocess
+dg = ROOT / "tools" / "gen_depgraph.py"
+if dg.exists():
+    r = subprocess.run([sys.executable, str(dg), "--check"], capture_output=True, text=True)
+    if r.returncode != 0:
+        for line in (r.stdout + r.stderr).strip().splitlines():
+            err(f"dependency-graph: {line.strip()}")
+
 # --- 5. tools compile ------------------------------------------------------
 tools_dir = ROOT / "tools"
 if tools_dir.is_dir():

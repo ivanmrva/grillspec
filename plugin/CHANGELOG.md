@@ -4,6 +4,19 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.3.0
+
+A machine-readable dependency graph the system reads when dispatching, plus a linter ref-marker fix.
+
+### Added — dependency graph
+- `grill-shared/dependencies.json`: the **machine-readable** dependency graph (per area: stage · skill · kind · `consumes` upstream areas · `produces_ids`). The **conductor reads it before running a skill** to know which upstream artifacts/IDs to gather and hand over — the system now knows its own dependencies, not just the docs.
+- `tools/gen_depgraph.py`: generates `docs/DEPENDENCY-GRAPH.md` (a stage table + a Mermaid DAG) from the JSON, and **validates** it — every `produces_id` is known to the linter and owned by the right folder, every `consumes` edge resolves, the graph is acyclic.
+- `selfcheck.py` runs `gen_depgraph.py --check`, so the JSON is validated and the rendered doc can't drift from it.
+- Backfilled the missing `Consumes:` declarations on `grill-ddd`, `grill-system-context`, `grill-compliance`.
+
+### Fixed
+- **Linter ref-marker false positives**: the reference-marker regex matched markers as substrings, so `invalidates`→`validates`, `discovers`→`covers`, etc. captured the following ID and raised spurious undefined / illegal-downward-reference ERRORs. Word markers are now `\b`-anchored (the whole class, not just `validates`).
+
 ## 1.2.1
 
 No global hooks — the plugin is now fully passive. Spec governance moved to a project-local enforcer.

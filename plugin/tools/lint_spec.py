@@ -187,7 +187,10 @@ for p in allfiles:
     b = os.path.basename(rel(p))
     m = re.match(r"(ADR-[A-Za-z][A-Za-z0-9]*-\d+)", b)
     if (rel(p).startswith("adr/") or "/adr/" in rel(p)) and m: defined.add(m.group(1).upper())
-REFMARK = re.compile(r"(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|->|\u2192)\s*:?\s*([^\n]*)", re.I)
+# Word markers are \b-anchored so they match only as whole words: 'invalidates' must not match
+# 'validates', 'discovers' must not match 'covers', etc. The symbol markers (->, \u2192) are not word
+# characters, so they sit outside the \b group.
+REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes)\b|->|\u2192)\s*:?\s*([^\n]*)", re.I)
 IDTOK = re.compile(ID)
 refset = set()                                               # every ID referenced anywhere
 for p, r in cmd_files():
