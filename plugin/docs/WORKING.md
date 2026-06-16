@@ -29,16 +29,11 @@ repo is wired so this is near-zero effort - see below. You can always run it by 
 
 ## What's automatic (in the plugin) vs. what you add
 
-**Ships in the plugin (automatic):** the hooks and subagents below load on install - nothing to wire.
+**Ships in the plugin (passive):** the skills, engines, linters, the project-local spec-governance hook, and the subagents below. **The plugin installs no global hooks** - it acts only when you invoke a skill, so it never fires on your other projects or your `~/.claude` config.
 
-**You add to your project** (a plugin cannot ship a permission allowlist): a `.claude/settings.json` for smooth auto/AFK runs - a broad in-project `allow`, a `deny` for destructive/out-of-scope commands, and **no `additionalDirectories`** so writes cannot leave the project. Prune the allow-list to your stack and add your test command (see `test-runner`). The hard scope guarantee ships in the plugin's hooks regardless.
-- **Hooks** (in the plugin):
-  - `guard_scope.sh` (PreToolUse) -> **denies any write outside the project root and any destructive/
-    privileged command** (sudo, `rm -rf /|~`, force-push, ...). The real scope guarantee for AFK runs.
-  - `post_write.sh` (PostToolUse, Edit|Write) -> on a `spec/` change: run `lint_spec.py` + print the
-    `impact.py` downstream set. Turns "remember to lint / remember to propagate" into automatic feedback.
-  - `stop_guard.sh` (Stop) -> runs `guard_derived.py`; flags any derived artifact hand-edited without going
-    through its derive skill (the skill is what records the new hash with `--record`).
+**You add to your project** (a plugin cannot ship a permission allowlist): a `.claude/settings.json` for smooth auto/AFK runs - a broad in-project `allow`, a `deny` for destructive/out-of-scope commands, and **no `additionalDirectories`** so writes cannot leave the project. Prune the allow-list to your stack and add your test command (see `test-runner`). **Scope and destructive-command guarding is this permission layer's job** (Claude Code already prompts) - the plugin does not impose a global command guard.
+- **Spec governance (project-local, in the plugin → installed into your repo):**
+  - `spec_governance_hook.sh` -> the walking-skeleton installs it as the project's spec **git pre-commit hook**. On commit it runs `lint_spec.py` + `guard_derived.py` over `spec/` and blocks a commit that breaks consistency or hand-edits a derived artifact. Runs **only in that repo, on commit** - nothing global. (Override: `git commit --no-verify`.) The conductor also runs `lint_spec.py` + `impact.py` each run, so consistency/propagation feedback isn't deferred to commit time.
 - **Subagents** (in the plugin):
   - `test-runner` (Sonnet) - run the suites in parallel while you implement; failures come back as
     `file:line - reason`, logs stay out of the main context.

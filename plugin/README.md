@@ -11,7 +11,7 @@ loop. One **conductor** orchestrates 38 grilling and derivation skills (39 compo
 ```
 /plugin marketplace add ivanmrva/grillspec        # GitHub owner/repo (or a git URL, or a local path)
 /plugin install grillspec@ivanmrva                # add --scope project to share via the repo
-/reload-plugins                                   # then restart Claude Code once so the bundled hooks load
+/reload-plugins                                   # then start: /grillspec:grill-spec-conductor
 ```
 
 See exactly what it adds and its per-session token cost before committing:
@@ -77,8 +77,9 @@ unless someone genuinely wants just that one skill via managed install.
 
 **Ships in the plugin** (resolved from the install cache via `${CLAUDE_PLUGIN_ROOT}`):
 the 44 skills, the shared engines and layout map (`grill-shared/`), the spec
-linters (`tools/`), the subagents (`agents/`), and the safety/automation hooks
-(`hooks/`).
+linters and the project-local spec-governance hook (`tools/`), and the subagents
+(`agents/`). **The plugin installs no global hooks** - it acts only when you
+invoke a skill, and never touches other projects or your Claude config.
 
 **Created in your project at runtime** by the skills: the `spec/` tree. The
 system enforces its own `spec/` layout and **creates it regardless of how your
@@ -92,21 +93,21 @@ want them:
 
 - **Permission allowlist** for smoother autonomous/AFK runs. Plugin `settings.json`
   only supports `agent`/`subagentStatusLine`, so the bash/edit allowlist belongs
-  in your project `.claude/settings.json`. (The hard safety guards - parent-escape
-  and destructive-command blocking - ship in the plugin's hooks and apply
-  regardless.)
-- **CI governance.** Run the same linters on every push by adding a workflow that
-  calls `lint_spec.py` and `guard_derived.py`. Reference them in CI via a checked-in
-  copy or a `pip`-free `python3` step; see `docs/`.
+  in your project `.claude/settings.json`. Destructive-command and out-of-scope
+  guarding is the **session permission layer's** job (Claude Code already prompts);
+  the plugin does not impose its own global command guard.
+- **Spec governance (project-local).** The walking-skeleton installs
+  `spec_governance_hook.sh` as the project's spec **pre-commit hook** - it runs
+  `lint_spec.py` + `guard_derived.py` over `spec/`, scoped to that repo. Run the
+  same linters in CI on every push; see `docs/`.
 
-## Hooks (automatic, bundled)
+## Governance is project-local, never global
 
-- **PreToolUse** - keeps autonomous runs inside the project root and off
-  destructive/privileged commands.
-- **PostToolUse** - on any `spec/` edit, lints the spec and surfaces the
-  downstream impact set, so consistency and propagation are automatic.
-- **Stop** - backstops the derived-artifact guard (derived files are
-  regenerate-only).
+The plugin installs **no Claude Code hooks**, so it never fires on your other
+projects or your `~/.claude` config. Spec consistency and the derived-artifact
+guard run where they belong: the conductor invokes them each run, and the
+project's own git **pre-commit hook** (`spec_governance_hook.sh`) + CI enforce
+them at commit/PR time - inside that repo only.
 
 ## Editing and releasing
 

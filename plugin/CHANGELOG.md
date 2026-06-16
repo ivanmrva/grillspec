@@ -4,6 +4,17 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.2.1
+
+No global hooks — the plugin is now fully passive. Spec governance moved to a project-local enforcer.
+
+### Removed
+- **Deleted the three bundled Claude Code hooks** (`hooks/hooks.json` + `guard_scope.sh`, `post_write.sh`, `stop_guard.sh`). They fired install-wide on *every* session with no grillspec-project gate, and interfered with unrelated work: blocking edits to files outside the project (including the user's own `~/.claude` config), blocking destructive/`git push --force` Bash in any repo (by substring), spraying spec-lint output into non-grillspec `spec/` dirs (e.g. RSpec), and falsely flagging any project's own `CLAUDE.md` as a "derived artifact" on every turn. The plugin now installs **no hooks** — it acts only when you invoke a skill, and never touches other projects or your Claude config.
+
+### Added (project-local replacement)
+- `tools/spec_governance_hook.sh`: the ready-to-run spec enforcer as a **project-local git pre-commit hook** the walking-skeleton installs into the project. It runs `lint_spec.py` + `guard_derived.py` over `spec/` and blocks a bad commit — scoped to that repo, on commit only, nothing global; no-ops safely when there's no `spec/` or vendored tools. Destructive-command guarding is left to the session permission layer (which already prompts), not re-imposed by the plugin.
+- Docs (README, WORKING, LIVE-TEST, derive-tasks) updated to describe governance as project-local.
+
 ## 1.2.0
 
 Linter correctness, complete ID coverage, and a self-feedback channel — hardening surfaced by real runs.

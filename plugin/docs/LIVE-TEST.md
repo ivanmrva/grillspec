@@ -45,10 +45,11 @@ plugin rather than files in `.claude/`:
    `python3 ${CLAUDE_PLUGIN_ROOT}/tools/lint_spec.py` against the project's
    `spec/` and return `N error(s), M warning(s)`. A "file not found" means the
    tool path or the working directory is wrong.
-3. **Hooks fire.** Edit any file under `spec/`. The PostToolUse hook should lint
-   automatically and, in a git repo, print the downstream impact set without
-   being asked. If nothing fires, hooks did not register (`/reload-plugins`,
-   confirm scripts are `chmod +x`, check the Errors tab).
+3. **Spec governance is project-local.** The plugin installs no global hooks. The
+   walking-skeleton (`derive-tasks`, `T-001`) installs `spec_governance_hook.sh`
+   as the project's spec **git pre-commit hook**: `git commit` a broken `spec/`
+   file and the commit is blocked by `lint_spec.py`/`guard_derived.py` (override
+   with `--no-verify`). It runs only in that repo, never on other projects.
 
 ## The five deviation signals (the actual behavioural test)
 

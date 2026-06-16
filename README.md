@@ -13,10 +13,9 @@ grillspec/
 │   ├── .claude-plugin/plugin.json
 │   ├── skills/             # 44 skills: 1 conductor + 43 workers (SKILL.md each)
 │   ├── grill-shared/       # the 3 method engines (grill/derive/exec) + shared docs  <-- reused everywhere
-│   ├── tools/              # 8 deterministic tools (lint_spec, impact, guard_derived, …)
+│   ├── tools/              # deterministic tools (lint_spec, impact, guard_derived, plugin_feedback, spec_governance_hook, …)
 │   ├── agents/             # 2 subagents (explorer, test-runner)
-│   ├── hooks/              # hooks.json + scripts (scope guard, spec-lint, derived guard)
-│   └── docs/               # how-it-works + per-skill guides
+│   └── docs/               # how-it-works + per-skill guides   (no global hooks — governance is project-local)
 ├── build/
 │   ├── build.py            # the single pipeline (run this)
 │   └── licenses/MIT.txt    # license for the public skill / cluster artifacts
@@ -39,7 +38,7 @@ Or build one target: `python build/build.py skills | full | plugins`.
 | `dist/` output      | What it is                                                                 | License     | Goes to                                   |
 | :------------------ | :------------------------------------------------------------------------- | :---------- | :---------------------------------------- |
 | `dist/skills/`      | **The skill database** — every worker skill as a self-contained, individually-usable plain skill (`SKILL.md` + the one engine it loads, bundled as a sibling, `${CLAUDE_PLUGIN_ROOT}` rewritten away). 43 folders. | MIT         | the public **skills repo** (overwrite its skill dir) |
-| `dist/full-system/` | **The whole system as one plugin** — `plugin/` verbatim under a marketplace wrapper (conductor + 43 workers + engines + tools + agents + hooks). | Apache-2.0  | the **marketplace/plugin repo**           |
+| `dist/full-system/` | **The whole system as one plugin** — `plugin/` verbatim under a marketplace wrapper (conductor + 43 workers + engines + tools + agents). | Apache-2.0  | the **marketplace/plugin repo**           |
 | `dist/plugins/<c>/` | **Optional per-cluster plugins** — same skills as the database, packaged as installable plugins for the managed `/plugin install` experience. Set in `CLUSTERS` in `build.py`. | MIT         | per-post repos / a shared marketplace     |
 
 The engines are **reused, not copied in source**: each skill-database folder and each cluster
