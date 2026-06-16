@@ -1,0 +1,28 @@
+name: plugin-source-check
+
+# Guards the PLUGIN SOURCE (this repo) on every push/PR — not any project that uses the plugin.
+# Runs the same checks RELEASING.md mandates before a release, so plugin-source drift fails here
+# instead of relying on someone remembering to run selfcheck.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: selfcheck — source integrity + ID-prefix drift + dependency-graph
+        run: python3 plugin/tools/selfcheck.py plugin
+
+      - name: dependency graph — valid + docs/DEPENDENCY-GRAPH.md in sync
+        run: python3 plugin/tools/gen_depgraph.py --check
+
+      - name: build — all distribution artifacts compile
+        run: python3 build/build.py
