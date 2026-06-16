@@ -172,23 +172,35 @@ TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EX
 #      longer token: 'HOT-005' no longer yields 'T-005', 'SUR-AGG-250' no longer yields 'AGG-250'.
 IDCORE = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
 ID = r"(?<![A-Za-z0-9-])" + IDCORE
-# Reference markers — used to find ID *references*, AND to exclude reference lines from definition
-# detection (DEF3 below). Word markers are \b-anchored so they match only as whole words: 'invalidates'
-# must not match 'validates', 'discovers' must not match 'covers'. The symbols (->, →) sit outside \b.
+# Reference markers — used to find ID *references* in the resolution pass below. Word markers are
+# \b-anchored so they match only as whole words: 'invalidates' must not match 'validates', etc. The
+# symbols (->, →) sit outside \b.
 REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes)\b|->|→)\s*:?\s*([^\n]*)", re.I)
 defined = set()
-defsites = {}                                                # id -> set of files that define it
+defsites = {}                                                # id -> files that AUTHORITATIVELY define it (row-key / heading / id:) — drives define-once + owning-area checks
+def3sites = {}                                               # id -> files where it appears inline as '<ID> <Name>' in its OWN area (supplementary; not subject to define-once)
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + IDCORE + r")\b")      # ID as first token of a line/cell (after any leading -, *, #, |, or bold marker)
 DEF2 = re.compile(r"\bid:\s*(" + IDCORE + r")\b", re.I)      # id: <ID>
-DEF3 = re.compile(r"(?:^|[·;:,])\s*(" + IDCORE + r")\s+[A-Z]")       # '<ID> <Name>' pair in a list (ddd's 'commands: CMD-201 ExtractAtoms · CMD-204 ReExtract') — an ID introducing a named element
+# '<ID> <Name>' pair in a list / event-flow / table cell: after line-start or a separator (· ; : , | → ⟵),
+# skipping bold/backtick markup, an ID followed by its PascalCase name. The SAME surface form is used both
+# to DEFINE (ddd's nested 'commands: CMD-201 ExtractAtoms · CMD-204 ReExtract') and to REFERENCE (a
+# use-case listing the commands it projects). Disambiguate STRUCTURALLY by owning area, NOT by refmark
+# presence: it is a definition only inside the id-type's PREFIX_OWNER folder; anywhere else it's a
+# reference (left to the resolution pass). It registers as supplementary (def3sites) so the same id in
+# two files of its own area — an aggregate block and the event-flow — is not a 'defined twice' error.
+DEF3 = re.compile(r"(?:^|[·;:,|←→⟵⟶])\s*[*`_]*\s*(" + IDCORE + r")\s+[A-Z]")
+def in_owner_area(tok, r):
+    owner = PREFIX_OWNER.get(tok.split("-")[0].upper())
+    return bool(owner) and (r == owner or r.startswith(owner + "/"))
 for p, r in cmd_files():
     if os.path.basename(r) == "traceability.md": continue   # the traceability matrix references IDs (ID->task->code); it never defines them
     for l in read(p).splitlines():
         m = DEF1.match(l)
         if m: defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
         for m in DEF2.finditer(l): defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
-        if not REFMARK.search(l):                            # a reference line never defines; a non-reference '<ID> <Name>' list does (ddd nested commands/events/VOs/policies/read-models)
-            for m in DEF3.finditer(l): defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
+        for m in DEF3.finditer(l):                           # inline '<ID> <Name>' is a definition ONLY in the id's owning area; elsewhere it's a reference
+            if in_owner_area(m.group(1), r):
+                defined.add(m.group(1)); def3sites.setdefault(m.group(1), set()).add(r)
 # ADR ids also defined by their file in adr/ (prefixed ADR-<PREFIX>-NNN)
 for p in allfiles:
     b = os.path.basename(rel(p))
@@ -196,18 +208,25 @@ for p in allfiles:
     if (rel(p).startswith("adr/") or "/adr/" in rel(p)) and m: defined.add(m.group(1).upper())
 IDTOK = re.compile(ID)
 refset = set()                                               # every ID referenced anywhere
+def note_ref(tok, r, i, selfid):
+    if tok == selfid: return
+    refset.add(tok)
+    if tok not in defined:
+        add("ERROR", r, "reference to undefined ID '" + tok + "'", i)
+    if tok.split("-")[0].upper() != "ADR" and id_layer(tok) > file_layer(r):
+        add("ERROR", r, "illegal downward reference: L%d file -> %s (L%d); references must be upstream-only" % (file_layer(r), tok, id_layer(tok)), i)
 for p, r in cmd_files():
     for i, l in enumerate(read(p).splitlines(), 1):
         m = DEF1.match(l)
         selfid = m.group(1) if m else None      # the ID this row defines - don't count it as a self-reference
         for mk in REFMARK.finditer(l):
             for tok in IDTOK.findall(mk.group(1)):
-                if tok == selfid: continue
-                refset.add(tok)
-                if tok not in defined:
-                    add("ERROR", r, "reference to undefined ID '" + tok + "'", i)
-                if tok.split("-")[0].upper() != "ADR" and id_layer(tok) > file_layer(r):
-                    add("ERROR", r, "illegal downward reference: L%d file -> %s (L%d); references must be upstream-only" % (file_layer(r), tok, id_layer(tok)), i)
+                note_ref(tok, r, i, selfid)
+        # an inline '<ID> <Name>' OUTSIDE its owning area is a REFERENCE (a use-case listing the commands
+        # it projects, a security rule naming a command). In its own area it's a definition (handled above).
+        for m in DEF3.finditer(l):
+            if not in_owner_area(m.group(1), r):
+                note_ref(m.group(1), r, i, selfid)
 
 # 12 no duplicate ID definition (an ID is defined in exactly one place)
 for tok, files in defsites.items():
@@ -285,7 +304,7 @@ for tok in sorted(defined):
     dts = DOWN_TYPE.get(pre)
     if dts and not any(t in present_types for t in dts): continue   # downstream layer empty - premature to warn
     if tok in refset or tok in trace_ids or tok in keyed_parents: continue
-    add("WARN", sorted(defsites.get(tok, ["(?)"]))[0],
+    add("WARN", sorted(defsites.get(tok) or def3sites.get(tok) or ["(?)"])[0],
         "coverage: '" + tok + "' has no downstream reference - " + COV_HINT[pre] + " (structural gap to resolve or mark N/A)")
 
 

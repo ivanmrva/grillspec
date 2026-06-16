@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.3.2
+
+### Fixed
+- **DEF3 (1.3.1) over-registered downstream `<ID> <Name>` reference-listings as definitions** — it told definitions from references by "no refmark on the line," but the skills use the same `<ID> <Name>` form for both (use-case command lists, authz lists, etc.). On a clean 1.2.0-era spec the upgrade produced ~131 false ERRORs (duplicate-definition + defined-outside-owning-area) plus false coverage WARNs. Now disambiguated **structurally**: an inline `<ID> <Name>` is a definition **only inside the ID-type's owning area** (`PREFIX_OWNER`); anywhere else it's a reference (resolved + coverage-counted, so dangling ones still error). Inline registrations are **supplementary** (don't feed the define-once / owning-area checks), so the same command in both an aggregate block and the event-flow file isn't a false duplicate. The match anchor now also skips `**`/backtick markup and accepts flow arrows + table pipes, so ddd's `- **commands:** CMD-201 …` first-id, the `EVT-210 … ⟵ CMD-201 …` event-flow form, and named policy-table cells register.
+
 ## 1.3.1
 
 ### Fixed
