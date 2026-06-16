@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.1
+
+### Fixed
+- **ADR prose no longer false-errors as an "illegal downward reference."** ADR files map to no stage layer (`file_layer` 0, since `adr/` matches none of the stage prefixes), so the upstream-only reference check errored whenever an ADR cited an upstream requirement id (`NFR-`/`ASR-`/`DATA-`/`SEC-`, all `id_layer` 2) that happened to fall after a REFMARK word (`realize`/`see`/`covers`/`satisfies`/…) or a `->`/`→` arrow on the same line — `L0 file -> NFR-012 (L2)`. The error was incidental to prose punctuation, not reference validity: the same driver citation passed or failed depending on a nearby dash or word (e.g. `ADR-DATA-002` erroring on `same content → same row`). But a derivation ADR legitimately records its drivers by design. ADR **source** files are now exempt from the downward-reference check via `is_adr_file()`, mirroring the existing ADR-**target** exemption. Genuine downward references from real stage files still error.
+
 ## 1.4.0
 
 ### Added — browsable doc-site generator

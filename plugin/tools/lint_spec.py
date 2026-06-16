@@ -207,13 +207,18 @@ for p in allfiles:
     m = re.match(r"(ADR-[A-Za-z][A-Za-z0-9]*-\d+)", b)
     if (rel(p).startswith("adr/") or "/adr/" in rel(p)) and m: defined.add(m.group(1).upper())
 IDTOK = re.compile(ID)
+def is_adr_file(r): return r.startswith("adr/") or "/adr/" in r
 refset = set()                                               # every ID referenced anywhere
 def note_ref(tok, r, i, selfid):
     if tok == selfid: return
     refset.add(tok)
     if tok not in defined:
         add("ERROR", r, "reference to undefined ID '" + tok + "'", i)
-    if tok.split("-")[0].upper() != "ADR" and id_layer(tok) > file_layer(r):
+    # ADRs are cross-cutting decision records that cite their drivers (NFR/ASR/DATA/SEC/…) by design;
+    # they map to no stage layer (file_layer 0), so the upstream-only check would false-error on a
+    # legitimate driver citation that merely sits after a refmark word or arrow. Exempt ADR source
+    # files, mirroring the ADR-target exemption below.
+    if not is_adr_file(r) and tok.split("-")[0].upper() != "ADR" and id_layer(tok) > file_layer(r):
         add("ERROR", r, "illegal downward reference: L%d file -> %s (L%d); references must be upstream-only" % (file_layer(r), tok, id_layer(tok)), i)
 for p, r in cmd_files():
     for i, l in enumerate(read(p).splitlines(), 1):
