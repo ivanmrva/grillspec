@@ -119,6 +119,27 @@ if hj.exists():
     except json.JSONDecodeError as e:
         err(f"hooks/hooks.json: invalid JSON - {e}")
 
+# --- 4b. ID-prefix drift: every type-prefix a skill declares must be known to the linter ---------
+# Catches the silent failure where a skill gains a new ID type (`VO-`, `ML-`, …) but lint_spec.py's
+# prefix tables aren't updated, so the linter can't register/check it. The linter's TYPES= line is the
+# single source of truth; a declared-but-unknown prefix is flagged here so it never ships unchecked.
+lint = ROOT / "tools" / "lint_spec.py"
+if lint.exists():
+    mt = re.search(r'^TYPES\s*=\s*"([^"]+)"', lint.read_text(), re.M)
+    if not mt:
+        warn("lint_spec.py: no single-line TYPES= constant found - cannot verify ID-prefix coverage")
+    else:
+        known = set(mt.group(1).split("|")) | {"ADR"}
+        DECL = re.compile(r"`([A-Z][A-Z0-9]{1,4})-`")          # a declared bare type prefix, e.g. `AGG-`
+        declared = {}
+        for sk in skills:
+            for pre in set(DECL.findall(sk.read_text())):
+                declared.setdefault(pre, set()).add(sk.parent.name)
+        for pre in sorted(set(declared) - known):
+            warn(f"ID-prefix '{pre}-' is declared by {sorted(declared[pre])} but is UNKNOWN to "
+                 f"lint_spec.py (add it to TYPES + ID_LAYER + PREFIX_OWNER, or stop emitting it) - "
+                 "the linter cannot register or check it")
+
 # --- 5. tools compile ------------------------------------------------------
 tools_dir = ROOT / "tools"
 if tools_dir.is_dir():

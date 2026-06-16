@@ -24,7 +24,7 @@ argument-hint: an idea, existing docs, or a repo to model
 - **Every cross-aggregate invariant names the reactive policy** that restores eventual consistency — stated as **"whenever EVT-… then CMD-…"** (the event that breaks it → the command that repairs it); a cross-aggregate rule with no such policy is incomplete
 - **Every command produces an event; every event has a consumer or an explicit none**
 - **Typed context relationships, drawn from the full set** — upstream/downstream: **Open-Host-Service** (the published API/contract the upstream exposes) · **Published-Language** (the shared schema the exchange speaks — distinct from OHS) · **Anti-Corruption-Layer** · **Conformist** · **Customer-Supplier**; symmetric: **Shared-Kernel** · **Partnership**; and the non-integration cases: **Separate Ways** (deliberate no integration — duplicate rather than couple) · a **wall-off** relationship around a legacy/big-ball-of-mud system (contained behind a boundary, not integrated into). Each relationship carries its up/down-stream direction.
-- stable IDs: aggregate `AGG-`, command `CMD-`, event `EVT-`, value object `VO-`, hotspot `HOT-`
+- stable IDs (bare type prefix, ID is the table row key): aggregate `AGG-`, command `CMD-`, event `EVT-`, value object `VO-`, entity `ENT-`, policy/saga `POL-`, read-model `RM-`, hotspot `HOT-` — namespace contexts by **disjoint numeric bands** (e.g. orders `AGG-2xx`, billing `AGG-3xx`), never with a `<CTX>-` prefix
 
 ## Output
 Written under `domain/ddd/`:

@@ -24,6 +24,7 @@ argument-hint: a recorded spec or design docs
 - only a **genuinely model-absent** edge (no invariant/policy in the model speaks to it yet) → record a **Deferred** gap (`at-task`), not a blocker now — but an edge the model *already* entails is projected now, not deferred
 
 ## Output
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `UC-` use-case · `AC-` acceptance criterion, keyed to its use-case as `AC-<ucnum><letter>` (UC-014 → AC-014a).
 Written under `requirements/functional/`:
 
 | File | Captures | Format |

@@ -21,6 +21,7 @@ argument-hint: an idea, existing docs, or a repo
 - integrity stated (immutable/append-only · no-loss/durability); **pick the value-bearing subset of the data-quality dimensions** (accuracy · validity · completeness · integrity · uniqueness · timeliness · consistency · currency) — only those a use depends on
 
 ## Output
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `DATA-` data class.
 Written under `requirements/data/`:
 
 | File | Captures | Format |

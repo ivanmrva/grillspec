@@ -27,6 +27,7 @@ argument-hint: an idea, existing docs, or a repo
 - **surface NFR conflicts** (e.g. security↔usability, consistency↔availability)
 
 ## Output
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `NFR-` quality requirement · `ASR-` architecturally-significant requirement, keyed to its NFR by the same number (NFR-014 → ASR-014).
 Written under `requirements/quality/`:
 
 | File | Captures | Format |

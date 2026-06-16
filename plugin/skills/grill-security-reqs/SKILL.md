@@ -24,6 +24,7 @@ argument-hint: an idea, existing docs, or a repo
 - target a level of a **leveled application-security-verification standard** (OWASP ASVS — pick L1/L2/L3 to the asset sensitivity) and anchor to the **current OWASP Top-10 edition**
 
 ## Output
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `SEC-` authorization rule · `THR-` threat (security or privacy).
 Written under `requirements/security/`:
 
 | File | Captures | Format |

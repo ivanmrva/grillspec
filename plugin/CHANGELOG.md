@@ -4,6 +4,27 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.2.0
+
+Linter correctness, complete ID coverage, and a self-feedback channel — hardening surfaced by real runs.
+
+### Linter (`tools/lint_spec.py`)
+- **Closed world** now accepts spec-root orchestration files (`_readiness.md`, `_human-input.md`); they were read by the linter yet rejected as "outside the structure."
+- **Token boundary**: a known prefix is no longer mined out of a longer token — `HOT-005` no longer raises a phantom `T-005`, and `SUR-AGG-250` no longer leaks `AGG-250`.
+- **Complete ID type set**: `VO HOT POL RM ENT ML THR` are now registered and checked alongside the rest (added across the regex, layer, and owner tables); a single `TYPES` constant is the source of truth.
+- **Context-namespaced IDs** (`SUR-AGG-250`) now get an honest error instead of going silently unregistered.
+- **Row-key convention**: WARN when a stable ID sits in a non-leading table cell (it wouldn't register as defined).
+- **Coverage noise**: downstream-coverage WARNs are suppressed while the downstream type doesn't exist yet (no more 100%-expected "CMD has no UC" in early stages).
+
+### Self-feedback (`tools/plugin_feedback.py`)
+- New tool + `GRILLSPEC-FEEDBACK.md` at the project root: a run that hits a defect or gap in **this system itself** records it for the plugin author — capture-and-route, never self-patch, and never inside `spec/`. Wired into the conductor and all three engines.
+- `tools/selfcheck.py` gains an **ID-prefix drift guard**: fails if a skill declares a prefix the linter doesn't know (caught `THR-`).
+
+### Skills & conventions
+- Every owning skill now declares the **complete stable-ID set** for its outputs; `grill-ddd` blesses `VO`/`ENT`/`POL`/`RM`/`HOT`.
+- The engines, conductor, and playbook document two non-obvious spine rules: **bare type prefix** (never `<CTX>-TYPE-NNN`) and **ID = leading table column**, plus a parallel-drafting checklist and a "prefer a Markdown table for tabular content" house rule.
+- Conductor wording corrected: area skills are reference docs you **load and run**, not dispatchable agents (43 of 44 are `disable-model-invocation: true`).
+
 ## 1.1.0
 
 Separation of concerns: workers are now standalone, the conductor owns all orchestration, and the project can emit copy-able standalone skills.

@@ -28,6 +28,7 @@ argument-hint: a spec, design docs, or a feature to break into tasks
 - **module internals are JIT, not up front** — the architecture fixed the seams; a slice flags `design: design-first` only when genuinely complex (hard algorithm · real concurrency · cross-context saga), then its modules are designed & reviewed before coding; a simple/CRUD slice designs-as-it-TDDs
 
 ## Output
+**Stable IDs** (bare type prefix): `T-` task / vertical slice (`T-001` = the walking skeleton, always first); one file `T-NNN.md` per task.
 Written under `delivery/tasks/`:
 
 | File | Captures | Format |

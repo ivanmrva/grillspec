@@ -21,10 +21,16 @@ Per-area ingestion points one area at a file; migration **scatters** one mixed p
    each area's fragments through its scope fence. If a source enters downstream and upstream stages
    are empty, **back-fill upstream** (see Doc-first start) — don't leave the foundation blank. 3. **Seed the domain glossary + actors first** (in the ddd area;
    raise assumptions). 4. **Tag provenance + confidence** (`source:`, `confidence: stated|inferred`,
-   `status: unconfirmed`). 5. **Reconcile across sources → Open** (contradictions, dangling
+   `status: unconfirmed`) — these are **transient migration scaffolding**, not permanent prose: the grilling pass (step 7) resolves them away. What survives in the artifact is at most a light `inferred` marker on an unconfirmed fact; durable provenance lives in the readiness view and hotspots, not as inline "produced by …" narration (which the house style bans). 5. **Reconcile across sources → Open** (contradictions, dangling
    refs, assumption gaps). 6. **Scope fence applies** — drop impl/GTM/roadmap mixed in. 7. **Grill the
    deltas** (flips `status: unconfirmed` to Resolved/Open) — running each area's full coverage lens over the migrated content, same depth as a fresh interview, sorted into settled / needs-clarification / contradiction, not a file-move plus a provenance tag. Expect it to look worse before better:
    it makes hidden debt legible. Garbage in is garbage migrated — now visible.
+
+**Parallel-drafting checklist (when several subagents draft sibling files at once — multi-context ddd, a scatter migration).** Hand each unit these four rules up front; they are the exact failure modes that turn one clean pass into a multi-pass ID reconciliation:
+- **Disjoint numeric bands per unit** — context A mints `AGG-2xx`, context B `AGG-3xx`; no two drafters reuse a number.
+- **Bare type prefix only** — `AGG-250`, never `<CTX>-AGG-250` (a namespaced ID silently fails to register).
+- **ID is the leading table column** (the row key) — a name-first row leaves the ID undefined and its references dangling.
+- **Lint each unit before integrating** — run `lint_spec.py` on each draft on its own; resolve its ERRORs before merging siblings, so cross-file "undefined ID" noise doesn't pile up.
 
 ## Lite path (small products)
 Don't force the apparatus. Offer: `discovery` (name the bet) + `product-vision` (1-pager, incl. coarse

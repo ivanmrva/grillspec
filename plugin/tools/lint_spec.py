@@ -31,10 +31,13 @@ AREA_DIR = {"problem-validation":"01-discovery","product-vision":"02-product/vis
     "derive-conventions":"10-delivery/conventions","derive-tasks":"10-delivery/tasks",
     "conformance-review":"10-delivery/verification"}
 # Which ID-prefixes are DEFINED in which directory (enforces stage purity / no-unrelated-content).
+# The type-prefix set here is the SINGLE source of truth; selfcheck.py diffs it against the prefixes
+# the skills declare, so adding a prefix to a skill without registering it here is caught.
 PREFIX_OWNER = {"UC":"05-requirements/functional","AC":"05-requirements/functional",
     "CMD":"04-domain/ddd","EVT":"04-domain/ddd","AGG":"04-domain/ddd",
+    "VO":"04-domain/ddd","HOT":"04-domain/ddd","POL":"04-domain/ddd","RM":"04-domain/ddd","ENT":"04-domain/ddd",
     "NFR":"05-requirements/quality","ASR":"05-requirements/quality","DATA":"05-requirements/data",
-    "SEC":"05-requirements/security","OBL":"05-requirements/compliance","API":"09-solution/api",
+    "SEC":"05-requirements/security","THR":"05-requirements/security","OBL":"05-requirements/compliance","API":"09-solution/api","ML":"05-requirements/ml",
     "SLO":"09-solution/observability","EXP":"08-growth","T":"10-delivery/tasks","DS":"05-requirements/design-system"}
 def file_layer(r):
     if r.startswith("04-domain/ddd"): return 1
@@ -44,7 +47,7 @@ def file_layer(r):
     if r.startswith("09-solution/"): return 3
     if r.startswith("10-delivery/"): return 4
     return 0  # constraints, 02-product/*, discovery, singletons
-ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"DATA":2,"OBL":2,"EXP":2,"DS":2,"API":3,"SLO":3,"T":4,"ADR":0}
+ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"VO":1,"HOT":1,"POL":1,"RM":1,"ENT":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"THR":2,"DATA":2,"OBL":2,"EXP":2,"DS":2,"ML":2,"API":3,"SLO":3,"T":4,"ADR":0}
 def id_layer(tok): return ID_LAYER.get(tok.split("-")[0].upper(), 0)
 PROSE_WORDS = 40
 
@@ -65,6 +68,7 @@ def under_leaf(r): return any(r == d or r.startswith(d + "/") for d in LEAF_DIRS
 def allowed(r):
     if os.path.basename(r) == ".gitkeep": return True
     if os.path.basename(r) in AREA_FILES: return True            # per-area glossary/actors, any folder
+    if "/" not in r and r.startswith("_") and r.endswith(".md"): return True  # spec-root orchestration files (_readiness, _human-input, …) — the conductor writes these
     if r.endswith(".md") and (r.startswith("adr/") or "/adr/" in r): return True  # the shared ADR folder
     return under_leaf(r)
 for p in allfiles:
@@ -160,11 +164,18 @@ for p, r in cmd_files():
             add("WARN", r, "dense prose block (consecutive >%d-word lines) - lead with structure; a lone clarifying sentence is fine" % PROSE_WORDS, k+1)
 
 # 11 stable-ID references resolve (the traceability spine)
-ID = r"(?:UC|AC|CMD|EVT|AGG|NFR|ASR|API|SEC|DATA|OBL|SLO|EXP|DS|T|ADR)-[A-Za-z0-9._-]*[A-Za-z0-9]"
+# TYPES = the SINGLE source of truth for type-prefixes (selfcheck.py reads this line to detect drift
+#         against the prefixes the skills declare). Keep it one flat alternation on one line.
+TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|ADR|T"
+# IDCORE = the type-prefixed token, no boundary (used in ANCHORED definition matches).
+# ID = IDCORE behind a left boundary that also excludes '-' so a known prefix is NOT mined out of a
+#      longer token: 'HOT-005' no longer yields 'T-005', 'SUR-AGG-250' no longer yields 'AGG-250'.
+IDCORE = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
+ID = r"(?<![A-Za-z0-9-])" + IDCORE
 defined = set()
 defsites = {}                                                # id -> set of files that define it
-DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + ID + r")\b")          # ID as first token of a line/cell (after any leading -, *, #, |, or bold marker)
-DEF2 = re.compile(r"\bid:\s*(" + ID + r")\b", re.I)          # id: <ID>
+DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + IDCORE + r")\b")      # ID as first token of a line/cell (after any leading -, *, #, |, or bold marker)
+DEF2 = re.compile(r"\bid:\s*(" + IDCORE + r")\b", re.I)      # id: <ID>
 for p, r in cmd_files():
     if os.path.basename(r) == "traceability.md": continue   # the traceability matrix references IDs (ID->task->code); it never defines them
     for l in read(p).splitlines():
@@ -207,6 +218,34 @@ for tok, files in defsites.items():
         if not (r == owner or r.startswith(owner + "/")):
             add("ERROR", r, "%s defined outside its owning area '%s/' (found in %s) - wrong directory for this content" % (tok, owner, r))
 
+# 13b context-namespaced IDs are banned: an ID must lead with a BARE type prefix (AGG-NNN), never
+#     <CTX>-AGG-NNN. A namespaced token doesn't register as a definition but its bare suffix may be
+#     referenced elsewhere -> phantom 'undefined'. Flag it honestly instead of letting it go silent.
+NS = re.compile(r"(?<![A-Za-z0-9-])([A-Za-z][A-Za-z0-9]*)-(" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]")
+TYPESET = set(TYPES.split("|"))
+for p, r in cmd_files():
+    if os.path.basename(r) == "traceability.md": continue
+    for i, l in enumerate(read(p).splitlines(), 1):
+        for m in NS.finditer(l):
+            if m.group(1).upper() in TYPESET: continue   # e.g. AC-014a's own 'AC' lead — already a real ID
+            add("ERROR", r, "context-namespaced ID '" + m.group(0) + "' - IDs must lead with a bare type prefix (" + m.group(2) + "-NNN, never " + m.group(1) + "-" + m.group(2) + "-NNN); namespace inside the suffix or use disjoint numeric bands for parallel work", i)
+
+# 13c an ID that sits only in a NON-LEADING table cell never registers as a definition (DEF1 keys on the
+#     leading cell) -> downstream refs to it read as 'undefined'. Nudge toward the convention: ID = row key.
+CELLID = re.compile(r"^(?:[*`]*)(" + IDCORE + r")(?:[*`]*)$")
+for p, r in cmd_files():
+    if os.path.basename(r) == "traceability.md": continue
+    for i, l in enumerate(read(p).splitlines(), 1):
+        s = l.strip()
+        if not (s.startswith("|") and s.count("|") >= 2): continue          # a table row
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if not cells or not cells[0] or CELLID.match(cells[0]): continue    # leading cell empty or already an ID -> fine
+        for c in cells[1:]:
+            m = CELLID.match(c)
+            if m and m.group(1) not in defined:
+                add("WARN", r, "ID '" + m.group(1) + "' sits in a non-leading table cell and is defined nowhere as a row key - define an ID in the LEADING column (the row key) so it registers", i)
+                break
+
 # 14 structural coverage = the GAP-DETECTION surface (WARN: every X should have its downstream Y)
 COV_HINT = {"CMD":"expected a use-case (UC-) projecting it","EVT":"no downstream consumer",
     "AGG":"expected persistence (DATA-) / a use-case","UC":"expected acceptance criteria (AC-) or a task",
@@ -218,6 +257,12 @@ _tp = SPEC / "10-delivery" / "verification" / "traceability.md"
 if _tp.exists():
     for l in read(_tp).splitlines():
         trace_ids |= set(IDTOK.findall(l))
+# downstream type a coverage WARN expects; if NONE of that type exists yet, the downstream layer is
+# simply empty (early stage) and the WARN is noise, not a gap — suppress it. (#7: a CMD has no UC only
+# once use-cases exist; before then "CMD has no UC" is 100% expected and drowns real within-layer gaps.)
+DOWN_TYPE = {"CMD":("UC",),"EVT":("UC",),"AGG":("DATA",),"UC":("AC",),"AC":("T",),
+    "OBL":("SEC","DATA"),"NFR":("ASR","SLO"),"ASR":("T",),"API":("T",),"EXP":("T",)}
+present_types = {d.split("-")[0].upper() for d in defined}
 # a parent with a keyed child is covered by it (UC-014 by AC-014a; NFR-014 by ASR-014) even with no explicit ref
 keyed_parents = set()
 for d in defined:
@@ -231,6 +276,8 @@ for d in defined:
 for tok in sorted(defined):
     pre = tok.split("-")[0].upper()
     if pre not in COV_HINT: continue
+    dts = DOWN_TYPE.get(pre)
+    if dts and not any(t in present_types for t in dts): continue   # downstream layer empty - premature to warn
     if tok in refset or tok in trace_ids or tok in keyed_parents: continue
     add("WARN", sorted(defsites.get(tok, ["(?)"]))[0],
         "coverage: '" + tok + "' has no downstream reference - " + COV_HINT[pre] + " (structural gap to resolve or mark N/A)")

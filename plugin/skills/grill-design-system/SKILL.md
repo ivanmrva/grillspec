@@ -25,6 +25,7 @@ argument-hint: a brand seed, an existing token set / design handoff, or a repo
 - **brand, assets & voice are part of the system** — logo · identity · favicon/app-icon/OG · illustration & imagery · iconography; and voice/tone + error/empty/confirmation microcopy + date/number/currency/capitalisation formatting
 
 ## Output
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `DS-` design-system element (token · component · voice term).
 Written under `requirements/design-system/`:
 
 | File | Captures | Format |
