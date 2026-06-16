@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.3.1
+
+### Fixed
+- **`CMD-`/`EVT-` (and `VO-`/`ENT-`/`POL-`/`RM-`) defined in the domain model's nested-bullet format now register.** grill-ddd prescribes commands/events as `commands: CMD-201 ExtractAtoms · CMD-204 ReExtract` bullets, but the linter only registered an ID as a row-key/heading — so the two highest-traffic ID types went unregistered, breaking command/event traceability (downstream `maps-to: CMD-…` read as undefined) and silencing their coverage checks. The linter now registers `<ID> <Name>` definition pairs in non-reference lists (general — any skill's `ID Name` lists benefit); references are excluded, so no IDs are mis-registered. grill-ddd's stable-ID guidance states the `<ID> <Name>` shape explicitly.
+
 ## 1.3.0
 
 A machine-readable dependency graph the system reads when dispatching, plus a linter ref-marker fix.

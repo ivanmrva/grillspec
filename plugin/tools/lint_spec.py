@@ -172,25 +172,28 @@ TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EX
 #      longer token: 'HOT-005' no longer yields 'T-005', 'SUR-AGG-250' no longer yields 'AGG-250'.
 IDCORE = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
 ID = r"(?<![A-Za-z0-9-])" + IDCORE
+# Reference markers — used to find ID *references*, AND to exclude reference lines from definition
+# detection (DEF3 below). Word markers are \b-anchored so they match only as whole words: 'invalidates'
+# must not match 'validates', 'discovers' must not match 'covers'. The symbols (->, →) sit outside \b.
+REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes)\b|->|→)\s*:?\s*([^\n]*)", re.I)
 defined = set()
 defsites = {}                                                # id -> set of files that define it
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + IDCORE + r")\b")      # ID as first token of a line/cell (after any leading -, *, #, |, or bold marker)
 DEF2 = re.compile(r"\bid:\s*(" + IDCORE + r")\b", re.I)      # id: <ID>
+DEF3 = re.compile(r"(?:^|[·;:,])\s*(" + IDCORE + r")\s+[A-Z]")       # '<ID> <Name>' pair in a list (ddd's 'commands: CMD-201 ExtractAtoms · CMD-204 ReExtract') — an ID introducing a named element
 for p, r in cmd_files():
     if os.path.basename(r) == "traceability.md": continue   # the traceability matrix references IDs (ID->task->code); it never defines them
     for l in read(p).splitlines():
         m = DEF1.match(l)
         if m: defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
         for m in DEF2.finditer(l): defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
+        if not REFMARK.search(l):                            # a reference line never defines; a non-reference '<ID> <Name>' list does (ddd nested commands/events/VOs/policies/read-models)
+            for m in DEF3.finditer(l): defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
 # ADR ids also defined by their file in adr/ (prefixed ADR-<PREFIX>-NNN)
 for p in allfiles:
     b = os.path.basename(rel(p))
     m = re.match(r"(ADR-[A-Za-z][A-Za-z0-9]*-\d+)", b)
     if (rel(p).startswith("adr/") or "/adr/" in rel(p)) and m: defined.add(m.group(1).upper())
-# Word markers are \b-anchored so they match only as whole words: 'invalidates' must not match
-# 'validates', 'discovers' must not match 'covers', etc. The symbol markers (->, \u2192) are not word
-# characters, so they sit outside the \b group.
-REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes)\b|->|\u2192)\s*:?\s*([^\n]*)", re.I)
 IDTOK = re.compile(ID)
 refset = set()                                               # every ID referenced anywhere
 for p, r in cmd_files():
