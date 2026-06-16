@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.0
+
+### Added — browsable doc-site generator
+- `tools/gen_docsite.py`: a **deterministic, model-free** projection of `spec/` into a self-contained, browsable static HTML site under `docs-site/`. Stdlib-only and **byte-stable across runs** (sorted ordering, no timestamps), so it slots into CI and produces reviewable diffs rather than churn. Like `gen_depgraph.py`, it reads `lint_spec.py`'s `TYPES` + `PREFIX_OWNER` and reuses its definition surfaces (`DEF1/DEF2/DEF3`) at runtime, so **ID detection can't drift from the linter**. It renders the spec's markdown — GFM tables (with alignment + zebra), nested lists, Mermaid diagrams, scope-header badges — **anchors every stable ID at its definition and cross-links every reference** across files, and builds a navigable sidebar plus a home page with a full ID index. Output mirrors the spec tree, so the spec's own relative `.md` links resolve as `.html`; styling is self-contained local CSS (offline-capable) with only Mermaid from a pinned CDN. This is the deterministic *reference-projection* half of documentation — a tool, not a skill — and ships standalone (`python3 tools/gen_docsite.py [spec_dir] [out_dir]`); it is not yet wired into the `generate-docs` skill.
+
 ## 1.3.2
 
 ### Fixed
