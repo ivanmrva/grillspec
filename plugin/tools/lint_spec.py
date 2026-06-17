@@ -323,6 +323,32 @@ for tok in sorted(defined):
 
 add("INFO", "(semantic)", "ID references are now checked; event->consumer logic and entitlement->feature *meaning* remain semantic - the conductor judges those")
 
+# 14b development-trace / changelog language (INFO - advisory; the conductor's semantic sweep judges/strips).
+# The spec is a TIMELESS source of truth: it states the system as it is NOW, carrying no record of how the
+# document evolved (by what tool, method, or in how many passes). Flag only the UNAMBIGUOUS development-trace
+# forms - conversational meta and changelog annotations. The genuinely ambiguous cases (a bare "New tables"
+# heading vs. a domain "new booking") are left to the conductor's semantic pass: a deterministic check can't
+# tell them apart without false hits. A forward-looking "(deferred until <trigger>)" is legitimate - not flagged.
+DEVTRACE = [re.compile(p, re.I) for p in [
+    r"\bthis (?:round|revision|rewrite|rework|edit) (?:add|remov|introduc|defer|renam|split|merg|mov|chang)\w*",
+    r"\bas we (?:discussed|agreed|decided|noted)\b",
+    r"\bper our (?:conversation|chat|call|discussion)\b",
+    r"\bnewly (?:added|created|introduced|split|renamed|merged|defined)\b",
+    r"\((?:formerly\b[^)]*|previously\b[^)]*|was:\s*[^)]*|renamed\b[^)]*|moved\s+from\b[^)]*)\)",
+    r"\brenamed from\b", r"\bformerly known as\b", r"\bused to be\b",
+]]
+for p, r in cmd_files():
+    fence = False
+    for i, l in enumerate(read(p).splitlines(), 1):
+        s = l.lstrip()
+        if s.startswith("```"): fence = not fence; continue
+        if fence or s.startswith("<!--"): continue          # skip fenced code and the scope header
+        for rx in DEVTRACE:
+            m = rx.search(l)
+            if m:
+                add("INFO", r, "development-trace language '" + m.group(0).strip() + "' - state the system as it is now, not how the document evolved; rephrase timelessly (or, for scope, an exclusion ADR / 'deferred until <trigger>')", i)
+                break
+
 # 15 no task ships with an unresolved gap (the last-responsible-moment forcing checkpoint, enforced)
 for p, r in cmd_files():
     if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue

@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.4
+
+### Added
+- **INFO-level lint for development-trace language** — a deterministic backstop for the timeless-source-of-truth rule (1.4.3) that also covers *already-generated* content, since `lint_spec.py` runs over all of `spec/` every invocation. It flags the **unambiguous** development-trace forms — conversational meta (`as we discussed`, `per our conversation`), `newly added/created/…`, `this round adds/removes/…`, and bracketed changelog annotations (`(formerly X)`, `(previously X)`, `(was: X)`, `(renamed …)`, `(moved from …)`), plus `renamed from` / `formerly known as` / `used to be`. **INFO severity** (advisory; never fails CI), because a deterministic check *cannot* distinguish a bare `New tables` heading from a domain `new booking` — that disambiguation stays with the conductor's semantic sweep. Skips fenced code and the scope header; a forward-looking `(deferred until <trigger>)` is legitimate and not flagged; the matched phrase is shown for fast judgement.
+
 ## 1.4.3
 
 ### Fixed
