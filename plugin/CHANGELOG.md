@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.3
+
+### Fixed
+- **The spec no longer narrates its own development history.** On follow-up edits to an already-generated spec, areas were leaking development-trace / changelog language into the artifact — content tagged `new` / `newly added` / `now` / `previously` / `expand→contract`, and notes of what *this* edit added, cut, or deferred (e.g. *"New tables — expand→contract entries (research workspace + deferred Creator-Ops)"*). The generated spec is a **timeless source of truth**: it must read as standalone project documentation describing the system *as it is now*, to someone with no idea how, when, by what tool, or in how many passes it was produced. The existing house-style rule only banned naming a skill/tool or "produced by …"; it's now extended in all three shared engines (`grill-engine`, `derive-engine`, `exec-engine`) to ban edit-history tags and "what changed this round" annotations outright — while keeping the same word legitimate as **domain language** (a `new booking`), and keeping forward-looking scope as a timeless property (an exclusion ADR, or `deferred until <trigger>`). The conductor's cross-area consistency pass now runs a **timeless-source-of-truth sweep** to strip any such language that still slips through, routing the fix to the owning area.
+
 ## 1.4.2
 
 ### Fixed
