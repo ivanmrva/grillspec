@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.8
+
+### Fixed
+- **Made explicit that an addition's place is wherever it belongs — not the end by default.** 1.4.6 already said "integrate each change where it belongs" and "never bolt additions onto the end," but the *not-always-at-the-end* point was only implied. Now stated outright in `grill-engine` and `derive-engine`: an addition's place is wherever it belongs in the structure (frequently mid-document — beside its related content, in the right table, under the right heading), and the order in which things were added never determines position.
+
 ## 1.4.7
 
 ### Fixed
