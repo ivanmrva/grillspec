@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.6
+
+### Fixed
+- **Changes are now woven into an artifact's structure, not appended.** A re-run that incorporated a change was producing append-only documents — bolting new headings/sections onto the end (e.g. two new sections on a value-object artifact) instead of integrating the change where it belongs and re-organising the rest, leaving a part-sectioned/part-flat result a reader could date. Root cause: the derive-engine re-run rule (*"touch only what the change affects … never regenerate from scratch"*) was written to protect IDs/decisions but was being executed as "append and don't touch existing structure." Reframed across the shared engines: **`minimal delta` governs *semantics* (preserve every stable ID, accepted ADR, decision, and still-true fact — never churn or drop them), not *structure*.** The artifact must read as if the whole document were written from scratch, today, in one pass: integrate each change where it belongs, re-author the affected sections, never bolt additions onto the end, never spawn a parallel section for content that belongs in an existing one, never leave a document half-restructured. This is the structural counterpart to the timeless-wording rule (1.4.3) — same principle (the spec carries no trace of its own history), applied to layout. The conductor's consistency sweep now also flags append-only / incoherent structure an edit left behind, routing it to the owning area. Engine-instruction change; no deterministic lint (structural coherence isn't regex-detectable — it's enforced by the engines and the conductor's semantic pass).
+
 ## 1.4.5
 
 ### Fixed
