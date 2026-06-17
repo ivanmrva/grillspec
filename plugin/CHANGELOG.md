@@ -4,6 +4,12 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 2.0.1
+
+### Fixed
+- **The linter is now robust to an intentionally-partial spec** (derived/downstream areas deleted to review the grilled core). A reference whose **owning area is entirely absent** (no files present) is an artifact of that missing area, not a real dangling/illegal reference — so `undefined ID` and `illegal downward reference` are now **suppressed** for those tokens, mirroring the existing coverage-WARN "downstream layer empty" suppression. The set of absent areas is computed from the present file set (`ABSENT_TYPES`), and the suppression is surfaced once as an INFO (`N reference(s) to areas not present … were not error-checked`) so it's never silent. A typo *inside a present area* still errors (its directory has files); a **full** spec has no absent areas, so its behaviour is unchanged.
+- Note on the report: diffing the linter across the cited versions shows **no change to the structure / area / owning-area / layer error logic** in that range (only the range-shorthand strip and the advisory INFO checks were added), and a clean grilled-core reproduces to **0 errors** here — so the reported "file outside structure" / "defined outside owning area" floods could not be reproduced and don't originate in that logic. The fix targets the one reproducible gap: cross-area references into absent areas. If those structural errors persist on a real spec, they're most likely a path-layout mismatch (e.g. an old-layout spec linted by a 2.0.0 build) — share the error sample and the spec tree and it can be pinned exactly.
+
 ## 2.0.0
 
 ### Changed — BREAKING: requirements split into two stage-5 folders

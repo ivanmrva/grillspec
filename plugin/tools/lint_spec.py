@@ -224,9 +224,19 @@ for p in allfiles:
 IDTOK = re.compile(ID)
 def is_adr_file(r): return r.startswith("adr/") or "/adr/" in r
 refset = set()                                               # every ID referenced anywhere
+# Robust to a legitimately-PARTIAL spec (derived/downstream areas deleted to review the grilled core): a
+# reference whose owning AREA is entirely absent (no files present) is an artifact of that missing area, not a
+# real dangling/illegal ref. ABSENT_TYPES = the id-types whose owning directory holds no content right now;
+# refs to them are suppressed (undefined + downward-ref), mirroring the coverage-WARN 'downstream layer empty'
+# suppression. A typo inside a PRESENT area still errors (its dir has files); a FULL spec has no absent areas,
+# so behaviour there is unchanged. Reported once as an INFO so the suppression is never silent.
+ABSENT_TYPES = {pre for pre, owner in PREFIX_OWNER.items() if ccount(owner) == 0}
+absent_refs = set()
 def note_ref(tok, r, i, selfid):
     if tok == selfid: return
     refset.add(tok)
+    if tok.split("-")[0].upper() in ABSENT_TYPES:            # owning area not present in this (partial) spec
+        absent_refs.add(tok); return
     if tok not in defined:
         add("ERROR", r, "reference to undefined ID '" + tok + "'", i)
     # ADRs are cross-cutting decision records that cite their drivers (NFR/ASR/DATA/SEC/…) by design;
@@ -248,6 +258,9 @@ for p, r in cmd_files():
         for m in DEF3.finditer(l):
             if not in_owner_area(m.group(1), r):
                 note_ref(m.group(1), r, i, selfid)
+if absent_refs:
+    shown = ", ".join(sorted(absent_refs)[:10]) + (" …" if len(absent_refs) > 10 else "")
+    add("INFO", "(partial)", "%d reference(s) to areas not present in this spec were not error-checked (partial spec — derived/downstream areas absent): %s" % (len(absent_refs), shown))
 
 # 12 no duplicate ID definition (an ID is defined in exactly one place)
 for tok, files in defsites.items():
