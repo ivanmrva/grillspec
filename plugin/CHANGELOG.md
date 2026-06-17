@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.7
+
+### Fixed
+- **Emphasis no longer marks "this is an addition."** Re-runs were sometimes bolding new content simply *because* it was new, so additions stood out from original content by their formatting — another way the artifact betrayed its own edit history. Extended the engines' emphasis discipline: **bold/italic follow the document's convention for their meaning** (a defined term, a field label, an ID) and are never used to flag that something is new or changed; a reader can't tell an addition from original content by its formatting. The conductor's consistency sweep now also flags emphasis used to mark an addition. Completes the structural-history work in 1.4.6 (additions integrated, not appended) — together they mean an edited artifact reads, in wording, structure, and formatting alike, as if written from scratch in one pass.
+
 ## 1.4.6
 
 ### Fixed
