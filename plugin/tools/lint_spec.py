@@ -10,8 +10,8 @@ if not SPEC.exists():
 
 # Mirrors repo-layout.md (machine copy): folders that may directly hold content, at any depth.
 LEAF_DIRS = ["01-discovery","02-product/vision","02-product/customers","02-product/market","02-product/goals","03-constraints","03-system-context",
-    "04-domain/ddd","05-requirements/functional","05-requirements/quality","05-requirements/data",
-    "05-requirements/integration","05-requirements/security","05-requirements/ux","05-requirements/design-system","05-requirements/compliance","05-requirements/ml",
+    "04-domain/ddd","05-req-functional","05-req-nonfunctional/quality","05-req-nonfunctional/data",
+    "05-req-nonfunctional/integration","05-req-nonfunctional/security","05-req-nonfunctional/ux","05-req-nonfunctional/design-system","05-req-nonfunctional/compliance","05-req-nonfunctional/ml",
     "06-commercial","07-gtm","08-growth",
     "09-solution/arch","09-solution/data","09-solution/api","09-solution/security","09-solution/infra-ops",
     "09-solution/observability","09-solution/test","09-solution/impl","09-solution/ml",
@@ -20,9 +20,9 @@ LEAF_DIRS = ["01-discovery","02-product/vision","02-product/customers","02-produ
 AREA_FILES = ["glossary.md", "actors.md"]
 AREA_DIR = {"problem-validation":"01-discovery","product-vision":"02-product/vision",
     "customer-discovery":"02-product/customers","market":"02-product/market","goals":"02-product/goals","constraints":"03-constraints","system-context":"03-system-context",
-    "ddd":"04-domain/ddd","derive-functional":"05-requirements/functional","quality":"05-requirements/quality",
-    "data-reqs":"05-requirements/data","integration-reqs":"05-requirements/integration",
-    "security-reqs":"05-requirements/security","ux-reqs":"05-requirements/ux","design-system":"05-requirements/design-system","compliance":"05-requirements/compliance","ml-reqs":"05-requirements/ml",
+    "ddd":"04-domain/ddd","derive-functional":"05-req-functional","quality":"05-req-nonfunctional/quality",
+    "data-reqs":"05-req-nonfunctional/data","integration-reqs":"05-req-nonfunctional/integration",
+    "security-reqs":"05-req-nonfunctional/security","ux-reqs":"05-req-nonfunctional/ux","design-system":"05-req-nonfunctional/design-system","compliance":"05-req-nonfunctional/compliance","ml-reqs":"05-req-nonfunctional/ml",
     "monetization":"06-commercial","go-to-market":"07-gtm","growth":"08-growth",
     "derive-architecture":"09-solution/arch","derive-data-architecture":"09-solution/data",
     "derive-api-contracts":"09-solution/api","derive-security-architecture":"09-solution/security",
@@ -33,15 +33,15 @@ AREA_DIR = {"problem-validation":"01-discovery","product-vision":"02-product/vis
 # Which ID-prefixes are DEFINED in which directory (enforces stage purity / no-unrelated-content).
 # The type-prefix set here is the SINGLE source of truth; selfcheck.py diffs it against the prefixes
 # the skills declare, so adding a prefix to a skill without registering it here is caught.
-PREFIX_OWNER = {"UC":"05-requirements/functional","AC":"05-requirements/functional",
+PREFIX_OWNER = {"UC":"05-req-functional","AC":"05-req-functional",
     "CMD":"04-domain/ddd","EVT":"04-domain/ddd","AGG":"04-domain/ddd",
     "VO":"04-domain/ddd","HOT":"04-domain/ddd","POL":"04-domain/ddd","RM":"04-domain/ddd","ENT":"04-domain/ddd",
-    "NFR":"05-requirements/quality","ASR":"05-requirements/quality","DATA":"05-requirements/data",
-    "SEC":"05-requirements/security","THR":"05-requirements/security","OBL":"05-requirements/compliance","API":"09-solution/api","ML":"05-requirements/ml",
-    "SLO":"09-solution/observability","EXP":"08-growth","T":"10-delivery/tasks","DS":"05-requirements/design-system"}
+    "NFR":"05-req-nonfunctional/quality","ASR":"05-req-nonfunctional/quality","DATA":"05-req-nonfunctional/data",
+    "SEC":"05-req-nonfunctional/security","THR":"05-req-nonfunctional/security","OBL":"05-req-nonfunctional/compliance","API":"09-solution/api","ML":"05-req-nonfunctional/ml",
+    "SLO":"09-solution/observability","EXP":"08-growth","T":"10-delivery/tasks","DS":"05-req-nonfunctional/design-system"}
 def file_layer(r):
     if r.startswith("04-domain/ddd"): return 1
-    if r.startswith("05-requirements/"): return 2
+    if r.startswith("05-req-functional") or r.startswith("05-req-nonfunctional/"): return 2
     if r.startswith("06-commercial"): return 2
     if r.startswith("08-growth"): return 2
     if r.startswith("09-solution/"): return 3
@@ -146,7 +146,7 @@ if rd.exists():
 
 # 9 gate order
 if any(ccount(d) > 0 for d in LEAF_DIRS if d.startswith("09-solution/")):
-    empty = [d for d in LEAF_DIRS if d.startswith("05-requirements/") and ccount(d) == 0]
+    empty = [d for d in LEAF_DIRS if (d.startswith("05-req-functional") or d.startswith("05-req-nonfunctional/")) and ccount(d) == 0]
     if empty:
         add("WARN", "(gate)", "09-solution/* has content but requirements incomplete (" + ", ".join(empty) + ") - architecture-readiness gate not met")
 
@@ -383,7 +383,7 @@ ADJ = re.compile(r"\b(fast|slow|scalable|secure|robust|reliable|performant|effic
 BAR = re.compile(r"[<>≤≥]\s*\d|\b\d[\d.,]*\s*(?:ms|s|sec|m|min|h|hr|%|rps|qps|tps|MB|GB|KB|TB|bytes|users|"
     r"requests|req|connections|nodes|replicas|days|x|×)\b", re.I)
 for p, r in cmd_files():
-    if not r.startswith("05-requirements/"): continue
+    if not (r.startswith("05-req-functional") or r.startswith("05-req-nonfunctional/")): continue
     fence = False
     for i, l in enumerate(read(p).splitlines(), 1):
         s = l.lstrip()

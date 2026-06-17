@@ -10,7 +10,7 @@ import sys, os, hashlib, json, glob
 
 # Directories owned by derive-* skills (regenerate-only) + the generated CLAUDE.md.
 DERIVED_PREFIXES = [
-    "spec/05-requirements/functional/",
+    "spec/05-req-functional/",
     "spec/09-solution/",                 # arch, data, api, security, infra-ops, observability, test, impl
     "spec/10-delivery/conventions/",
     "spec/10-delivery/tasks/",

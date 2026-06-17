@@ -8,7 +8,7 @@
 ├── src/                  implementation CODE        (mirrors the architecture's components)
 └── tests/                implementation TESTS
 ```
-**Zones are exclusive:** spec files only under `spec/`; code only under `src/` + `tests/`; throwaway prototypes under `prototypes/` (never `src/`); the generated doc site only under `docs-site/`; a provided/generated **design system** (raw assets + the DTCG design-tokens file) only under `design-system/`; CI workflows under `.github/workflows/` (GitHub Actions — `spec-governance.yml`, `code-ci.yml`, `docs-site.yml`). **DERIVED zones are regenerate-only** — `09-solution/*`, `05-requirements/functional/`, `10-delivery/conventions/`, `10-delivery/tasks/`, and root `CLAUDE.md` are written *only* by their derive-* skill and are **never hand-edited** (the `guard_derived.py` pre-commit hook blocks it); to change one, edit its upstream and re-run the skill. Everything else under `spec/` (foundation, `04-domain/ddd/`, the authored `05-requirements/*` except `functional/`, commercial, growth, and each area's glossary/actors/decisions) is authored/interview-sourced and freely editable. The
+**Zones are exclusive:** spec files only under `spec/`; code only under `src/` + `tests/`; throwaway prototypes under `prototypes/` (never `src/`); the generated doc site only under `docs-site/`; a provided/generated **design system** (raw assets + the DTCG design-tokens file) only under `design-system/`; CI workflows under `.github/workflows/` (GitHub Actions — `spec-governance.yml`, `code-ci.yml`, `docs-site.yml`). **DERIVED zones are regenerate-only** — `09-solution/*`, `05-req-functional/`, `10-delivery/conventions/`, `10-delivery/tasks/`, and root `CLAUDE.md` are written *only* by their derive-* skill and are **never hand-edited** (the `guard_derived.py` pre-commit hook blocks it); to change one, edit its upstream and re-run the skill. Everything else under `spec/` (foundation, `04-domain/ddd/`, the authored `05-req-nonfunctional/*`, commercial, growth, and each area's glossary/actors/decisions) is authored/interview-sourced and freely editable. The
 traceability matrix (`spec/10-delivery/verification/traceability.md`) links spec IDs ↔ code/test paths,
 so the dependency tree spans into code. **Change propagation** (`${CLAUDE_PLUGIN_ROOT}/tools/impact.py`) follows the
 reference graph across all zones, down to code. **Reference direction is upstream-only** (L0 foundation
@@ -47,8 +47,8 @@ spec/
 ├── 03-constraints/         grill-constraints            mandates·regulatory·environment                     elicit
 ├── 03-system-context/      grill-system-context         scope·actors·neighbor-systems·interfaces·C4-L1      elicit
 ├── 04-domain/ddd/          grill-ddd                    strategic/* + tactical/<context>/*  (the hub)       model
-├── 05-requirements/
-│   ├── functional/      derive-functional            use-cases + acceptance (projected from ddd)  derive+ask
+├── 05-req-functional/     derive-functional            use-cases + acceptance (projected from ddd)  derive+ask
+├── 05-req-nonfunctional/
 │   ├── quality/         grill-quality                NFR numbers + ASRs          derive
 │   ├── data/            grill-data-reqs              class/retention/residency   inventory-derive·oblig↑
 │   ├── integration/     grill-integration-reqs       per-boundary SLAs           topology-derive·terms-elicit

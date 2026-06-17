@@ -27,7 +27,7 @@ The prototype code lands in `prototypes/<question>/` (never `src/`, never `spec/
 | Answer | Goes to |
 |---|---|
 | a recorded verdict and/or bet-status update | discovery / the owning area |
-| a UX-direction verdict | `05-requirements/ux/` |
+| a UX-direction verdict | `05-req-nonfunctional/ux/` |
 | a load-bearing technical verdict | an ADR (`adr/ADR-PROTO-NNN.md`) |
 | a decision-encoding snippet (state machine/reducer/schema) | inlined into the `T-NNN` manifest |
 

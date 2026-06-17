@@ -4,6 +4,12 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 2.0.0
+
+### Changed — BREAKING: requirements split into two stage-5 folders
+- **`05-requirements/` is replaced by `05-req-functional/` + `05-req-nonfunctional/`** so the grill/derive boundary is visible in the tree itself: `05-req-functional/` is the one **derived** requirements area (use-cases + acceptance, projected from the domain model), and `05-req-nonfunctional/` holds the **elicited** areas (quality, data, integration, security, ux, design-system, compliance, ml). Both keep the `05-` stage number — nothing downstream renumbers. This makes "how far does my input go" legible at a glance: everything authored is grilled *except* `05-req-functional/`. Updated across `lint_spec.py` (`LEAF_DIRS`, `AREA_DIR`, `PREFIX_OWNER`, `file_layer`, the readiness-gate check, the adjective-scope check), `guard_derived.py`, `impact.py`, `gen_docsite.py`, `dependencies.json`, `repo-layout.md`, the conductor stage map, and the prototype/operator references. Skills are unchanged (no renames).
+- **Migration for an existing spec:** move `spec/05-requirements/functional/*` → `spec/05-req-functional/` and each `spec/05-requirements/<area>/` → `spec/05-req-nonfunctional/<area>/` (quality · data · integration · security · ux · design-system · compliance · ml). IDs, content, and references are unaffected — only the paths move. The linter now **rejects** the old `05-requirements/` paths as outside the structure, so this relocation is required when upgrading.
+
 ## 1.4.9
 
 ### Fixed

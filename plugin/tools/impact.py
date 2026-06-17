@@ -74,7 +74,7 @@ if tp.exists():
             for m in re.findall(r"[\w./-]+\.(?:py|ts|tsx|js|jsx|go|java|rb|rs|cs|kt|sql)", l): code.add(m)
 def layer(r):
     if r.startswith("04-domain/ddd"): return 1
-    if r.startswith("05-requirements/"): return 2
+    if r.startswith("05-req-functional") or r.startswith("05-req-nonfunctional/"): return 2
     if r.startswith(("06-commercial", "07-gtm", "08-growth")): return 2
     if r.startswith("09-solution/"): return 3
     if r.startswith("10-delivery/"): return 4

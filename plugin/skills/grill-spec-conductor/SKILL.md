@@ -64,7 +64,8 @@ STAGE 0 · FOUNDATION (elicited)
 STAGE 1 · DOMAIN
         ddd                  the hub; seeds glossary + actors                                → 04-domain/ddd/
 STAGE 2 · REQUIREMENTS (derive[domain] + reference[product,constraints] + elicit deltas)
-        derive-functional (projected from ddd) · quality · data-reqs · integration-reqs · security-reqs · ux-reqs · design-system (DS-) · compliance (OBL-) · ml-reqs (AI features · ML-)  → 05-requirements/*
+        derive-functional (projected from ddd)                                                          → 05-req-functional/   (DERIVED — no input)
+        quality · data-reqs · integration-reqs · security-reqs · ux-reqs · design-system (DS-) · compliance (OBL-) · ml-reqs (AI · ML-)  → 05-req-nonfunctional/*   (elicited)
 STAGE 2½ · COMMERCIAL (GATED on functional)
         monetization         business model · pricing · plans · entitlements · unit economics → 06-commercial/
 PARALLEL · GTM + GROWTH (commercial execution + post-launch loop, not core spec)
@@ -206,7 +207,7 @@ dependency graph.
 4. **Re-process only the impact set, incrementally** (diff, don't regenerate): re-grill deltas →
    re-derive (reading existing ADRs, applying a delta) → re-finalize affected tasks → re-run execution
    for affected code. Nothing outside the set is touched. **When a re-derivation rewrites a derived
-   artifact** (anything under `09-solution/`, `05-requirements/functional/`, `10-delivery/conventions|tasks/`, or
+   artifact** (anything under `09-solution/`, `05-req-functional/`, `10-delivery/conventions|tasks/`, or
    `CLAUDE.md`), **run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <those paths>`** so the
    derived-guard sees a legitimate regeneration and doesn't false-block the commit.
 5. **Re-verify:** `lint_spec.py` + `guard_derived.py` + `conformance-review`.

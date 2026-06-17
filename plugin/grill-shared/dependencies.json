@@ -105,7 +105,7 @@
     "derive-functional": {
       "stage": "2-requirements",
       "skill": "derive-functional",
-      "folder": "05-requirements/functional",
+      "folder": "05-req-functional",
       "kind": "derive",
       "consumes": [
         "ddd"
@@ -118,7 +118,7 @@
     "quality": {
       "stage": "2-requirements",
       "skill": "grill-quality",
-      "folder": "05-requirements/quality",
+      "folder": "05-req-nonfunctional/quality",
       "kind": "derive",
       "consumes": [
         "ddd",
@@ -132,7 +132,7 @@
     "data-reqs": {
       "stage": "2-requirements",
       "skill": "grill-data-reqs",
-      "folder": "05-requirements/data",
+      "folder": "05-req-nonfunctional/data",
       "kind": "derive",
       "consumes": [
         "ddd"
@@ -144,7 +144,7 @@
     "integration-reqs": {
       "stage": "2-requirements",
       "skill": "grill-integration-reqs",
-      "folder": "05-requirements/integration",
+      "folder": "05-req-nonfunctional/integration",
       "kind": "elicit",
       "consumes": [
         "system-context",
@@ -155,7 +155,7 @@
     "security-reqs": {
       "stage": "2-requirements",
       "skill": "grill-security-reqs",
-      "folder": "05-requirements/security",
+      "folder": "05-req-nonfunctional/security",
       "kind": "derive",
       "consumes": [
         "data-reqs",
@@ -170,7 +170,7 @@
     "ux-reqs": {
       "stage": "2-requirements",
       "skill": "grill-ux-reqs",
-      "folder": "05-requirements/ux",
+      "folder": "05-req-nonfunctional/ux",
       "kind": "derive",
       "consumes": [
         "derive-functional",
@@ -184,7 +184,7 @@
     "design-system": {
       "stage": "2-requirements",
       "skill": "grill-design-system",
-      "folder": "05-requirements/design-system",
+      "folder": "05-req-nonfunctional/design-system",
       "kind": "elicit",
       "consumes": [
         "quality"
@@ -196,7 +196,7 @@
     "compliance": {
       "stage": "2-requirements",
       "skill": "grill-compliance",
-      "folder": "05-requirements/compliance",
+      "folder": "05-req-nonfunctional/compliance",
       "kind": "elicit",
       "consumes": [
         "constraints"
@@ -208,7 +208,7 @@
     "ml-reqs": {
       "stage": "2-requirements",
       "skill": "grill-ml-reqs",
-      "folder": "05-requirements/ml",
+      "folder": "05-req-nonfunctional/ml",
       "kind": "elicit",
       "consumes": [
         "derive-functional",

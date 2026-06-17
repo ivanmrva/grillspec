@@ -66,7 +66,7 @@ The repo holds two different things; govern them separately (scope hooks by path
 **B. Specification / documentation** (`spec/`, the doc-site) — framework-level, ships with the system
 - *Instructions:* the skills/engines.
 - *Spec governance (GitHub Actions, ships ready-to-run):* `.github/workflows/spec-governance.yml` runs **`lint_spec.py`** + **`guard_derived.py`** on every PR touching the spec. (Also a pre-commit hook locally.)
-- *Derived artifacts are regenerate-only:* everything under `09-solution/`, `05-requirements/functional/`, `10-delivery/conventions/`, `10-delivery/tasks/`, and root `CLAUDE.md` changes **only** by re-running its derive-* skill (which records its hash). The guard fails any derived file edited by hand; change the **upstream** and re-derive instead.
+- *Derived artifacts are regenerate-only:* everything under `09-solution/`, `05-req-functional/`, `10-delivery/conventions/`, `10-delivery/tasks/`, and root `CLAUDE.md` changes **only** by re-running its derive-* skill (which records its hash). The guard fails any derived file edited by hand; change the **upstream** and re-derive instead.
 - *Publish:* **`generate-docs`** + **`generate-api-reference`** build the doc-site; `.github/workflows/docs-site.yml` deploys it to Pages on push to main.
 - *Propagation-miss backup (see below).*
 
