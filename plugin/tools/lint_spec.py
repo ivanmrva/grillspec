@@ -172,6 +172,13 @@ TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EX
 #      longer token: 'HOT-005' no longer yields 'T-005', 'SUR-AGG-250' no longer yields 'AGG-250'.
 IDCORE = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
 ID = r"(?<![A-Za-z0-9-])" + IDCORE
+TYPESET = set(TYPES.split("|"))
+# Numeric RANGE / LIST shorthand in prose - 'ML-102..109', 'VO-416..421', 'API-002/003' - is a house-style
+# abbreviation, NOT an ID. Left intact it tokenizes as a bogus bare ID ('ML-102..109') and false-errors as
+# undefined / defined-twice. Stripped from each line before the definition + reference passes. Distinct from
+# a real dotted field id ('DATA-Customer.id', single dot, name-suffixed) and a slash-list of FULL ids
+# ('T-014/T-015', each prefixed) - both keep their per-id resolution because the middle here is pure digits.
+RANGE = re.compile(r"(?<![A-Za-z0-9-])(?:" + TYPES + r")-\d+(?:(?:\.\.|/)\d+)+")
 # Reference markers — used to find ID *references* in the resolution pass below. Word markers are
 # \b-anchored so they match only as whole words: 'invalidates' must not match 'validates', etc. The
 # symbols (->, →) sit outside \b.
@@ -202,6 +209,7 @@ for p, r in cmd_files():
     for i, l in enumerate(lines):
         if "|" in l and i+1 < len(lines) and SEP.match(lines[i+1]):
             continue                                         # table HEADER row — first cell is a column label, not an ID definition
+        l = RANGE.sub(" ", l)                                # drop numeric range/list shorthand before tokenizing
         m = DEF1.match(l)
         if m: defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
         for m in DEF2.finditer(l): defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
@@ -229,6 +237,7 @@ def note_ref(tok, r, i, selfid):
         add("ERROR", r, "illegal downward reference: L%d file -> %s (L%d); references must be upstream-only" % (file_layer(r), tok, id_layer(tok)), i)
 for p, r in cmd_files():
     for i, l in enumerate(read(p).splitlines(), 1):
+        l = RANGE.sub(" ", l)                                # drop numeric range/list shorthand before tokenizing
         m = DEF1.match(l)
         selfid = m.group(1) if m else None      # the ID this row defines - don't count it as a self-reference
         for mk in REFMARK.finditer(l):
@@ -323,12 +332,12 @@ for tok in sorted(defined):
 
 add("INFO", "(semantic)", "ID references are now checked; event->consumer logic and entitlement->feature *meaning* remain semantic - the conductor judges those")
 
-# 14b development-trace / changelog language (INFO - advisory; the conductor's semantic sweep judges/strips).
-# The spec is a TIMELESS source of truth: it states the system as it is NOW, carrying no record of how the
-# document evolved (by what tool, method, or in how many passes). Flag only the UNAMBIGUOUS development-trace
-# forms - conversational meta and changelog annotations. The genuinely ambiguous cases (a bare "New tables"
-# heading vs. a domain "new booking") are left to the conductor's semantic pass: a deterministic check can't
-# tell them apart without false hits. A forward-looking "(deferred until <trigger>)" is legitimate - not flagged.
+# 14b advisory content checks (INFO - the conductor's semantic sweep judges/strips; INFO never fails CI).
+# Each flags a CANDIDATE the linter can't decide deterministically without false hits, so it stays advisory.
+# (i) DEVTRACE - development-trace / changelog language. The spec is a TIMELESS source of truth: it states the
+#     system as it is NOW, with no record of how the document evolved. Only the UNAMBIGUOUS forms are flagged;
+#     a bare "New tables" vs. a domain "new booking" is left to the conductor (a regex can't tell them apart).
+#     A forward-looking "(deferred until <trigger>)" is legitimate scope - not flagged.
 DEVTRACE = [re.compile(p, re.I) for p in [
     r"\bthis (?:round|revision|rewrite|rework|edit) (?:add|remov|introduc|defer|renam|split|merg|mov|chang)\w*",
     r"\bas we (?:discussed|agreed|decided|noted)\b",
@@ -337,6 +346,16 @@ DEVTRACE = [re.compile(p, re.I) for p in [
     r"\((?:formerly\b[^)]*|previously\b[^)]*|was:\s*[^)]*|renamed\b[^)]*|moved\s+from\b[^)]*)\)",
     r"\brenamed from\b", r"\bformerly known as\b", r"\bused to be\b",
 ]]
+# (ii) SELFREF - the spec has no awareness of this system: it must read as standalone project documentation,
+#      never naming a skill, engine, tool, or generation step.
+SELFREF = re.compile(r"\b(?:grill-[a-z]\w*|(?:derive|exec)-engine|derive-(?:functional|architecture|data-architecture|"
+    r"api-contracts|security-architecture|infra-ops|observability|test-strategy|impl-design|ml-architecture|"
+    r"conventions|tasks)|lint_spec|guard_derived|selfcheck|plugin_feedback|gen_depgraph|gen_docsite|skill_guide|"
+    r"spec_status|impact\.py|re-deriv(?:e|ed|es|ing)|seeded by)\b", re.I)
+# (iii) CTXID - a context-namespaced id '<CTX>-TYPE-NNN' silently fails to register while bare references to it
+#       resolve. Real ids use a bare type prefix; ADR-<AREA>-NNN is the one legitimate two-segment form (the
+#       lead segment is the ADR type), so a lead segment that IS a known type is skipped.
+CTXID = re.compile(r"(?<![A-Za-z0-9-])([A-Z][A-Za-z0-9]*)-(?:" + TYPES + r")-\d[\w.]*")
 for p, r in cmd_files():
     fence = False
     for i, l in enumerate(read(p).splitlines(), 1):
@@ -348,6 +367,31 @@ for p, r in cmd_files():
             if m:
                 add("INFO", r, "development-trace language '" + m.group(0).strip() + "' - state the system as it is now, not how the document evolved; rephrase timelessly (or, for scope, an exclusion ADR / 'deferred until <trigger>')", i)
                 break
+        ms = SELFREF.search(l)
+        if ms:
+            add("INFO", r, "self-reference '" + ms.group(0).strip() + "' - the spec reads as standalone project documentation; never name a skill, engine, tool, or generation step", i)
+        for mc in CTXID.finditer(l):
+            if mc.group(1).upper() not in TYPESET:
+                add("INFO", r, "context-namespaced id '" + mc.group(0).strip() + "' - use a bare type prefix ('" + mc.group(0).split("-", 1)[1].strip() + "'); a '<CTX>-TYPE-NNN' id silently fails to register while bare references to it resolve", i)
+
+# 14c unquantified quality adjective in a requirement (INFO; requirements area only). Every requirement is a
+# measurable bar + how it's enforced, never an adjective. Flag a quality adjective on a line carrying NO
+# measurable bar (a comparator+number or number+unit); the conductor/author pins or rephrases it.
+ADJ = re.compile(r"\b(fast|slow|scalable|secure|robust|reliable|performant|efficient|responsive|user-friendly|"
+    r"intuitive|seamless|flexible|maintainable|lightweight|snappy|quick|smooth|highly available|"
+    r"high-performance|low-latency|high-throughput)\b", re.I)
+BAR = re.compile(r"[<>≤≥]\s*\d|\b\d[\d.,]*\s*(?:ms|s|sec|m|min|h|hr|%|rps|qps|tps|MB|GB|KB|TB|bytes|users|"
+    r"requests|req|connections|nodes|replicas|days|x|×)\b", re.I)
+for p, r in cmd_files():
+    if not r.startswith("05-requirements/"): continue
+    fence = False
+    for i, l in enumerate(read(p).splitlines(), 1):
+        s = l.lstrip()
+        if s.startswith("```"): fence = not fence; continue
+        if fence or s.startswith("<!--") or BAR.search(l): continue
+        m = ADJ.search(l)
+        if m:
+            add("INFO", r, "unquantified quality adjective '" + m.group(0) + "' with no measurable bar - a requirement is a number + how it's enforced, never an adjective", i)
 
 # 15 no task ships with an unresolved gap (the last-responsible-moment forcing checkpoint, enforced)
 for p, r in cmd_files():

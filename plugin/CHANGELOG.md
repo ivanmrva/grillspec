@@ -4,6 +4,17 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.5
+
+### Fixed
+- **Numeric range / list shorthand in prose no longer false-errors.** Derivation agents write ID ranges like `ML-102..109` or `VO-416..421` (and slash-lists like `API-002/003`) as a house-style abbreviation, but the linter tokenized the whole range as one bogus bare id (`ML-102..109`) and raised spurious *undefined ID* / *defined in multiple files* ERRORs — forcing authors to spell the ids out or hide them behind a marker. A `RANGE` matcher (`<PREFIX>-<digits>(`..`|`/`<digits>)+`) now strips these shorthands from each line before the definition and reference passes. A real dotted field id (`DATA-Customer.id`, single dot) and a slash-list of *full* ids (`T-014/T-015`, each prefixed) are untouched — they keep per-id resolution, because the range form's middle is pure digits.
+
+### Added
+- **Two more INFO-level advisory lints** (joining development-trace from 1.4.4; all advisory, never fail CI, the conductor's semantic sweep judges them):
+  - **Self-reference** — the spec must read as standalone project documentation with no awareness of this system; flags a skill / engine / tool name (`grill-*`, `derive-engine`, `derive-tasks`, `lint_spec`, `guard_derived`, …) or a generation step (`re-derived`, `seeded by`) that leaked into an artifact.
+  - **Context-namespaced id** — a `<CTX>-TYPE-NNN` id (e.g. `SUR-AGG-250`) silently fails to register while bare references to it resolve; flags it and suggests the bare prefix (`AGG-250`). The one legitimate two-segment form, `ADR-<AREA>-NNN`, is skipped (its lead segment is the `ADR` type).
+  - **Unquantified quality adjective** (requirements area only) — every requirement is a measurable bar, never an adjective; flags `fast` / `scalable` / `secure` / … on a requirement line that carries **no** measurable bar (a comparator+number or number+unit), so a quantified line like `p95 < 200 ms` is left alone.
+
 ## 1.4.4
 
 ### Added
