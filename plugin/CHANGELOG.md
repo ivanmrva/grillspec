@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.2
+
+### Fixed
+- **Table-header column labels no longer register as fake ID definitions** (false coverage WARNs). `DEF1` treats the first cell of a line as an ID definition, and `IDCORE` accepts non-numeric suffixes (real ids are often `AGG-Job`/`DS-Button`/`SLO-checkout-availability`, so a digit can't be required). A column header like `| OBL-id | Rule |` therefore registered a phantom obligation `OBL-id` that then tripped a coverage WARN (no downstream reference) — hit on `OBL-id`, `DS-id`, and `NFR-evidence`, which authors had been dodging by writing `THR- id` with a space. Fixed structurally: the definition pass now **skips a markdown table header row** (a `|`-bearing line immediately followed by a `|---|:--:|` separator), whose first cell is a column label, not an id. Real ids — defined in body rows — still register, resolve, and feed the coverage/define-once/owning-area checks unchanged.
+
 ## 1.4.1
 
 ### Fixed

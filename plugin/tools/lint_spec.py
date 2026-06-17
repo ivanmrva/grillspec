@@ -189,12 +189,19 @@ DEF2 = re.compile(r"\bid:\s*(" + IDCORE + r")\b", re.I)      # id: <ID>
 # reference (left to the resolution pass). It registers as supplementary (def3sites) so the same id in
 # two files of its own area — an aggregate block and the event-flow — is not a 'defined twice' error.
 DEF3 = re.compile(r"(?:^|[·;:,|←→⟵⟶])\s*[*`_]*\s*(" + IDCORE + r")\s+[A-Z]")
+# A markdown table SEPARATOR row (the |---|:--:|---| under a header). Cells are dashes-only (≥2, optional
+# alignment colons); used to detect — and skip — the HEADER row above it, whose first cell is a column
+# LABEL ('OBL-id', 'DS-id', 'NFR-evidence'), not an ID definition. Real ids are defined in body rows.
+SEP = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
 def in_owner_area(tok, r):
     owner = PREFIX_OWNER.get(tok.split("-")[0].upper())
     return bool(owner) and (r == owner or r.startswith(owner + "/"))
 for p, r in cmd_files():
     if os.path.basename(r) == "traceability.md": continue   # the traceability matrix references IDs (ID->task->code); it never defines them
-    for l in read(p).splitlines():
+    lines = read(p).splitlines()
+    for i, l in enumerate(lines):
+        if "|" in l and i+1 < len(lines) and SEP.match(lines[i+1]):
+            continue                                         # table HEADER row — first cell is a column label, not an ID definition
         m = DEF1.match(l)
         if m: defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
         for m in DEF2.finditer(l): defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
