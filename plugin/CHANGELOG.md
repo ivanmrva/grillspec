@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 1.4.9
+
+### Fixed
+- **A modification updates existing text in place, instead of dropping a separate paragraph beside it.** Even when an addition was placed in the right area (not the end), a change that *modified* an already-stated fact was sometimes added as an extra adjacent paragraph/note — leaving the original plus an addendum where there should be one updated statement. The structural rule (1.4.6) only covered parallel *sections*; it's now pushed down to every granularity in `grill-engine` and `derive-engine`: when a change modifies an existing statement, **rewrite that sentence, field, or row in place** so it reads as the single current truth — never leave the original and append a qualifier beside it (an `"X. (Update: now Y)"` or a second paragraph restating X). Only genuinely new information becomes new content; a modification edits what's there. The conductor's consistency sweep now also flags a separate paragraph/note/row left beside content a change should have updated in place.
+
 ## 1.4.8
 
 ### Fixed
