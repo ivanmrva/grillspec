@@ -25,12 +25,12 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `entitlements` | grill-entitlements | derive | derive-functional | ENTL- |
 | `integration-reqs` | grill-integration-reqs | elicit | system-context, ddd | — |
 | `ml-reqs` | grill-ml-reqs | elicit | derive-functional, data-reqs | ML- |
-| `quality` | grill-quality | derive | ddd, derive-functional | NFR-, ASR- |
+| `quality` | grill-quality | derive | ddd | NFR-, ASR- |
 | `security-reqs` | grill-security-reqs | derive | data-reqs, ddd, product-vision | SEC-, THR- |
 | `ux-reqs` | grill-ux-reqs | derive | derive-functional, ddd, design-system, quality, product-vision | — |
 | **3 · Solution** | | | | |
 | `derive-api-contracts` | derive-api-contracts | derive | ddd, integration-reqs, security-reqs, derive-architecture | API- |
-| `derive-architecture` | derive-architecture | derive | derive-functional, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, entitlements | — |
+| `derive-architecture` | derive-architecture | derive | derive-functional, ddd, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, entitlements | — |
 | `derive-data-architecture` | derive-data-architecture | derive | data-reqs, ddd, derive-functional, derive-architecture | — |
 | `derive-impl-design` | derive-impl-design | derive | derive-architecture, derive-tasks | — |
 | `derive-infra-ops` | derive-infra-ops | derive | quality, constraints, derive-architecture | — |
@@ -40,7 +40,7 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `derive-test-strategy` | derive-test-strategy | derive | derive-functional, ux-reqs, derive-architecture, quality, derive-api-contracts, derive-observability, security-reqs | — |
 | **4 · Delivery prep** | | | | |
 | `derive-conventions` | derive-conventions | derive | derive-architecture, derive-test-strategy | — |
-| `derive-tasks` | derive-tasks | derive | derive-functional, ddd, derive-architecture, derive-conventions, product-vision, ux-reqs | T- |
+| `derive-tasks` | derive-tasks | derive | derive-functional, ddd, derive-architecture, derive-conventions, product-vision, ux-reqs, derive-api-contracts | T- |
 | **5 · Execution** | | | | |
 | `autorun` | autorun | exec | derive-tasks | — |
 | `conformance-review` | conformance-review | exec | derive-tasks, implement-task, derive-architecture, derive-api-contracts, derive-data-architecture, security-reqs, compliance, quality, derive-conventions, ddd | — |
@@ -148,7 +148,6 @@ flowchart TD
   derive_functional --> ml_reqs
   data_reqs --> ml_reqs
   ddd --> quality
-  derive_functional --> quality
   data_reqs --> security_reqs
   ddd --> security_reqs
   product_vision --> security_reqs
@@ -162,6 +161,7 @@ flowchart TD
   security_reqs --> derive_api_contracts
   derive_architecture --> derive_api_contracts
   derive_functional --> derive_architecture
+  ddd --> derive_architecture
   quality --> derive_architecture
   data_reqs --> derive_architecture
   integration_reqs --> derive_architecture
@@ -205,6 +205,7 @@ flowchart TD
   derive_conventions --> derive_tasks
   product_vision --> derive_tasks
   ux_reqs --> derive_tasks
+  derive_api_contracts --> derive_tasks
   derive_tasks --> autorun
   derive_tasks --> conformance_review
   implement_task --> conformance_review

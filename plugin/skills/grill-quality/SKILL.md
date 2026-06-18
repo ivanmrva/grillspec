@@ -36,7 +36,7 @@ Written under `requirements/quality/`:
 | `asrs.md` | architecturally-significant requirements: ASR-NNN keyed to its NFR (same number) — the full 6-part quality-attribute scenario | — |
 
 ADRs → `adr/ADR-QUAL-NNN.md`
-Consumes: the domain model's surfaces, objects and actors — the seed grid the quality tree is walked against — and the **functional spec's use-cases**, which each architecturally-significant requirement's quality-attribute scenario is **keyed to** (a `UC-` flow is the artifact/stimulus of the ASR scenario).
+Consumes: the domain model's surfaces, objects and actors — the seed grid the quality tree is walked against. **Functionality and quality attributes are orthogonal** (Bass/Clements/Kazman): an ASR's 6-part scenario takes the **system / an architectural element** as its artifact and an event/load/fault as its stimulus — *not* a use-case. You may bind a measurable *instance* to a domain operation (or a derived `UC-`) for test traceability, but quality does **not** depend on the use-cases. (All upstream layers are available if a specific scenario needs them.)
 
 ## Excludes
 mechanisms — caching/replicas/queues (→ the solution)

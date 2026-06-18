@@ -4,6 +4,22 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 3.1.0
+
+### Changed — dependencies are ORDER + availability, not a fixed edge-list
+A research pass (DDD, software-architecture, requirements-engineering, design-systems, ML-systems literature) showed the per-area `consumes` edges are individually contested and error-prone — so the system stops relying on getting them "right":
+
+- **Every skill now considers all upstream layers, not just its named inputs.** Added to all three shared engines (`grill`/`derive`/`exec`): everything in earlier layers (+ any same-stage output whose derive-order is fixed before it) is **available context**; the listed inputs are the **advisory "start-here" primary** sources, not an exhaustive or gating set. Skills are told to **cite the IDs they actually use**, because change-propagation comes from the real reference graph, not a declared list.
+- **The conductor now hands a skill all upstream artifacts** (with `consumes` flagged as "start here"), instead of "exactly" the declared edges.
+- **`dependencies.json` `consumes` is reframed as advisory** (a `_comment` documents it); the authoritative "what depends on what" is `tools/impact.py` walking the actual stable-ID references. `repo-layout.md` documents the model: **order is authoritative, the edge-list isn't.**
+
+### Fixed — three research-backed dependency corrections
+- **Removed `quality → functional`** — Bass/Clements/Kazman: *functionality and quality attributes are orthogonal*; a quality-attribute scenario's artifact is the **system / an architectural element, never a use-case**. (Reverts an over-eager edit; a measurable instance may still bind to a domain operation for test traceability — that's a view, not a dependency.)
+- **Added `derive-architecture → ddd`** — the bounded contexts drive the service/module decomposition; the domain is a primary architecture input (Evans/Vernon/Newman/Richardson), not transitive-via-functional. Plus a skill note to **co-design irreversible cross-cutting concerns (security trust boundaries, data topology, ML data-dependencies) in the core architecture pass** — they're one-way doors, not safe to defer to the specialised `*-architecture` skills (OWASP A04, Sculley "CACE").
+- **Added `derive-tasks → api-contracts`** (the cross-boundary contract a slice builds against — walking-skeleton / API-first); the detailed data **schema** is explicitly *not* a task input (emergent during implementation, not BDUF).
+
+Deliberately **not** added as hard edges (the new all-upstream model + the reference graph cover them, and the sources favour routing regulation through a single obligations hub rather than per-area constraint edges): `ml-reqs → ddd/constraints`, `data-reqs/security-reqs → constraints`. `ux → design-system` kept (a soft pattern-reference, now advisory).
+
 ## 3.0.0
 
 ### Changed — BREAKING: stage numbers now track the dependency chain; requirements vs. derived spec separated; commercial split to post-launch

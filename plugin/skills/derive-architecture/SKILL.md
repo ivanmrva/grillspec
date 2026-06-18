@@ -45,7 +45,7 @@ Written under `solution/arch/`:
 
 ADRs → `adr/ADR-ARCH-NNN.md`
 *(DERIVED & regenerate-only — never hand-edited)*
-Consumes: the settled requirements + the quality NFRs/ASRs + the system context's System Context (L1).
+Consumes: the **domain model** (its bounded contexts → the service/module decomposition; the dependency sink) + the settled requirements + the quality NFRs/ASRs + the system context's System Context (L1) + the entitlement tiers. **Co-design the irreducible cross-cutting concerns — security trust boundaries, data topology, ML data-dependencies — in this core pass**, not deferred: those are one-way doors that reshape the structure, so the skeleton must be designed *with* them (the specialised `*-architecture` skills then elaborate detail within the committed structure). All upstream layers are available.
 
 ## Excludes
 source code · detailed schema (→ the data architecture) · API artifacts (→ the API & event contracts)

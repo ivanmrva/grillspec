@@ -40,7 +40,7 @@ Written under `delivery/tasks/`:
 
 ADRs → `adr/ADR-TASK-NNN.md`
 *(DERIVED & regenerate-only)*
-Consumes: the use-cases / acceptance criteria, domain model, architecture (incl. the module map & seam contracts), conventions, product phasing, and the UX requirements (incl. the information architecture). The per-slice clickable prototype screen is generated **at execution time**, not up front — the task's `ux` dimension references it then.
+Consumes: the use-cases / acceptance criteria, domain model, architecture (incl. the module map & seam contracts), the **API contracts** a slice builds against (the cross-boundary published language — walking-skeleton / API-first), conventions, product phasing, and the UX requirements (incl. the information architecture). The detailed data schema is **not** a task input — it's emergent during implementation, not specified up front. The per-slice clickable prototype screen is generated **at execution time**, not up front — the task's `ux` dimension references it then.
 
 ## Excludes
 writing the code (execution) · release dates/sprints (the product *phasing* MVP/near/deferred orders the work, not calendar dates) · the global UX (only slice-specific UX is produced here)

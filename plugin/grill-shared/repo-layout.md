@@ -29,6 +29,8 @@ as sub-numbers — linear numbering would invent sequence between genuinely-para
 upstream, regenerate-only · `exec` writes code/records, not spec. (Distinct from the per-field MODE — `elicit` · `derive` ·
 `reference` — which `dependencies.json` carries.)
 
+**Dependencies are ORDER + availability, not a fixed edge-list.** Each area is handed **every upstream layer** (plus any same-stage output whose derive-order is fixed before it) and may reference anything strictly upstream — the layer rule (upstream-only) is the real invariant. The `consumes` edges in `dependencies.json` are **advisory "start-here" primary inputs**, deliberately sparse and explicitly non-exhaustive; the authoritative "what actually depends on what" is the real `ID-` **reference graph** walked by `tools/impact.py`. So getting individual edges "perfect" doesn't matter — getting the **order** right (the stage chain + the tier precedences below) does.
+
 ```
 spec/
 │  ── per-area deliverables (NO shared singletons) ──

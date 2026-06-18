@@ -8,6 +8,7 @@ The shared method behind every exec profile. The profile's `SKILL.md` is the ent
 Load only the task, the exact spec IDs it references, and the code it touches — nothing more. A bloated context is slower and less accurate; precision is the discipline.
 
 ## Honor the spec — don't reinvent it
+**Every upstream layer is available context, not just your task's named references** — the domain model, contracts, data model, security/NFR decisions and anything earlier are all there to consult; the task's listed IDs are the **primary, "start-here" set**, not the limit of what you may read.
 Implement to the referenced spec IDs exactly (domain model, contracts, data model, security rules, NFR/ASR decisions). If the spec is wrong, contradictory, or missing for this slice, **STOP and raise it** — record the blocking gap on the task and escalate to re-open the source spec; never silently diverge.
 
 ## Edge cases discovered while coding (the deepest last-responsible-moment)

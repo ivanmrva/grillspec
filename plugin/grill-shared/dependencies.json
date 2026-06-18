@@ -1,5 +1,5 @@
 {
-  "_comment": "Machine-readable dependency graph for the grillspec system. The CONDUCTOR reads this to know, before it runs an area's skill, which upstream artifacts/IDs to gather and hand over as input (workers stay input-agnostic; sequencing is the conductor's job). Single source of truth: plugin/docs/DEPENDENCY-GRAPH.md is GENERATED from this by tools/gen_depgraph.py (regenerate-only) and selfcheck verifies they match. Edges: an area's 'consumes' lists the upstream AREAS whose output it builds from. 'produces_ids' = the stable-ID prefixes it mints (cross-checked against lint_spec.py TYPES + each skill's declared stable IDs).",
+  "_comment": "ADVISORY dependency map. `consumes` = each area's PRIMARY/start-here inputs, NOT an exhaustive or gating list: the layer rule lets an area reference anything strictly upstream, and the conductor hands it ALL upstream layers. Authoritative change-propagation is the actual ID reference graph (tools/impact.py), not this file. `method` = skill family (grill|derive|exec); `kind` = data-flow posture (elicit|derive|model).",
   "stages": [
     "0-discovery",
     "0-foundation",
@@ -129,8 +129,7 @@
       "folder": "06-requirements/quality",
       "kind": "derive",
       "consumes": [
-        "ddd",
-        "derive-functional"
+        "ddd"
       ],
       "produces_ids": [
         "NFR",
@@ -293,6 +292,7 @@
       "kind": "derive",
       "consumes": [
         "derive-functional",
+        "ddd",
         "quality",
         "data-reqs",
         "integration-reqs",
@@ -443,7 +443,8 @@
         "derive-architecture",
         "derive-conventions",
         "product-vision",
-        "ux-reqs"
+        "ux-reqs",
+        "derive-api-contracts"
       ],
       "produces_ids": [
         "T"
