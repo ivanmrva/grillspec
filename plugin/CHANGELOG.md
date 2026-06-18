@@ -4,6 +4,30 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 3.0.0
+
+### Changed — BREAKING: stage numbers now track the dependency chain; requirements vs. derived spec separated; commercial split to post-launch
+The spec tree is renumbered so **stage numbers follow the dependency order**, and the grilled/derived boundary and the build-vs-business boundary are made structural:
+
+- **`05-req-functional/` → `05-functional-spec/`** — it's a *derived spec* (UC/AC projected from the domain), not a "requirement." "Requirement" now means **grilled, human-input** areas only.
+- **`05-req-nonfunctional/<area>/` → `06-requirements/<area>/`** — "non-functional" retired. Functional-spec (`05`) sits *before* requirements (`06`) because `quality`, `ux`, `ml`, and `entitlements` consume it (a quality ASR is keyed to a `UC-` flow) — the order is forced, not cosmetic.
+- **New area `06-requirements/entitlements/`** (`grill-entitlements`, prefix `ENTL-`) — the **access-tier / feature-gating** model, split out of monetization. It's the architecturally-relevant slice (architecture now consumes `entitlements`, not `monetization`); tiers are defined by capability, referencing `UC-` features upstream.
+- **`monetization` re-scoped to pricing only** — it now *prices* the `ENTL-` tiers (model · pricing · plans · unit-economics); the entitlement model moved to its own area.
+- **The go-to-market *motion*** (PLG vs sales-led) is owned by `product-vision` (`motion.md`); `go-to-market` is now launch/channels/partnerships only. `security`/`ux`/`monetization` consume the motion from vision.
+- **Commercial cluster moved to post-launch**: `06-commercial`/`07-gtm`/`08-growth` → **`09-commercial/{monetization, go-to-market, growth}`** — three pure sinks (nothing upstream depends on them; verified against the dependency graph). The pre-arch "stage 2½ / parallel gtm-growth" is gone.
+- **Solution/delivery renumbered**: `09-solution/` → **`07-solution/`**, `10-delivery/` → **`08-delivery/`**, and `10-delivery/operations/` → **`10-operate/`** (its own stage).
+- **Within-stage order stays a graph, not numbers**: `repo-layout.md` now renders the requirements **tier diagram** (parallel siblings) rather than fabricating sequence via sub-numbers; the conductor reads `dependencies.json` for the true partial order.
+- **New `method` field on every area in `dependencies.json`** (`grill`/`derive`/`exec` = the skill family) so the manifest stops conflating it with `kind` (the data-flow posture) — the grilled requirement areas no longer read as "derive."
+
+Updated across `lint_spec.py` (`LEAF_DIRS`, `AREA_DIR`, `PREFIX_OWNER`, `TYPES`+`ENTL`, `ID_LAYER`, `file_layer`, gate/adjective scopes), `guard_derived.py`, `impact.py`, `gen_docsite.py`, `gen_depgraph.py`, `dependencies.json`, `repo-layout.md`, the conductor stage map, and the re-scoped skills (`grill-monetization`, `grill-quality`; new `grill-entitlements`). `product-vision`/`go-to-market` already scoped the motion correctly.
+
+- **Migration for an existing spec** (paths only — IDs, content, and references are unaffected; the linter now **rejects** the old paths):
+  - `spec/05-req-functional/*` → `spec/05-functional-spec/`
+  - `spec/05-req-nonfunctional/<area>/` → `spec/06-requirements/<area>/`
+  - `spec/06-commercial/*` → `spec/09-commercial/monetization/` · `spec/07-gtm/*` → `spec/09-commercial/go-to-market/` · `spec/08-growth/*` → `spec/09-commercial/growth/`
+  - `spec/09-solution/` → `spec/07-solution/` · `spec/10-delivery/` → `spec/08-delivery/` · `spec/10-delivery/operations/` → `spec/10-operate/`
+  - new: split any plan→feature *entitlement* content out of monetization into `spec/06-requirements/entitlements/` (`ENTL-` ids); the GTM *motion* belongs in `02-product/vision/motion.md`.
+
 ## 2.0.1
 
 ### Fixed

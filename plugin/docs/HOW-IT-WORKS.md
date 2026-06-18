@@ -97,7 +97,7 @@ The tools enforce **structure**. They cannot tell you whether a requirement is *
 
 ## Where things live
 
-- `spec/` — the specification, stage-numbered `01-discovery` … `10-delivery`. The single source of truth.
+- `spec/` — the specification, stage-numbered `01-discovery` … `10-operate`. The single source of truth.
 - `adr/` — every Architecture Decision Record, **one file per ADR**, named `ADR-<AREA>-NNN.md` (the area prefix stops two skills colliding); the conductor derives a global ADR index from it.
 - **No side-ledger files** — there is no `open-questions.md`, `assumptions.md`, or `resolutions.md`. An open point is resolved into its artifact, **deferred in the artifact** with the trigger that reopens it, or — if it's a deliberate choice — captured as an ADR. `glossary.md` and `actors.md` are **per-area deliverables**; the conductor reconciles a system-wide view at the spec root.
 - `_human-input.md` (spec root) — the **one operational queue**: the batched human-in-the-loop asks `autorun` parks for you to clear in a sitting. Maintained by the orchestration loop; it's a handoff queue, not a decision ledger.

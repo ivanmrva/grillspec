@@ -34,10 +34,10 @@ Per-area ingestion points one area at a file; migration **scatters** one mixed p
 
 ## Lite path (small products)
 Don't force the apparatus. Offer: `discovery` (name the bet) + `product-vision` (1-pager, incl. coarse
-scope) + `ddd` + a merged `quality`+`context` note → minimal `09-solution/arch`. Everything else stays
+scope) + `ddd` + a merged `quality`+`context` note → minimal `07-solution/arch`. Everything else stays
 Deferred/N-A until warranted. A whole area may be **N/A** — record it.
 **What still applies vs what you skip:** spec-governance stays on automatically (the `lint_spec.py` +
-`guard_derived.py` GitHub Action — free, no setup) and `09-solution/arch` is still a **guarded derived
+`guard_derived.py` GitHub Action — free, no setup) and `07-solution/arch` is still a **guarded derived
 artifact** (regenerate-only); but you can **skip the two-tier test rig, the fitness-function suite, and
 the full `code-ci.yml` pipeline** (keep one plain test job) until the project grows into them. Lite means
 fewer areas and lighter ceremony — not a different system.

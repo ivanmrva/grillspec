@@ -22,19 +22,15 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `data-reqs` | grill-data-reqs | derive | ddd | DATA- |
 | `derive-functional` | derive-functional | derive | ddd | UC-, AC- |
 | `design-system` | grill-design-system | elicit | quality | DS- |
+| `entitlements` | grill-entitlements | derive | derive-functional | ENTL- |
 | `integration-reqs` | grill-integration-reqs | elicit | system-context, ddd | — |
 | `ml-reqs` | grill-ml-reqs | elicit | derive-functional, data-reqs | ML- |
 | `quality` | grill-quality | derive | ddd, derive-functional | NFR-, ASR- |
-| `security-reqs` | grill-security-reqs | derive | data-reqs, ddd, go-to-market | SEC-, THR- |
-| `ux-reqs` | grill-ux-reqs | derive | derive-functional, ddd, design-system, quality, go-to-market | — |
-| **2½ · Commercial** | | | | |
-| `monetization` | grill-monetization | elicit | derive-functional, go-to-market, goals | — |
-| **∥ · GTM + Growth** | | | | |
-| `go-to-market` | grill-go-to-market | elicit | product-vision | — |
-| `growth` | grill-growth | elicit | goals, compliance, data-reqs | EXP- |
+| `security-reqs` | grill-security-reqs | derive | data-reqs, ddd, product-vision | SEC-, THR- |
+| `ux-reqs` | grill-ux-reqs | derive | derive-functional, ddd, design-system, quality, product-vision | — |
 | **3 · Solution** | | | | |
 | `derive-api-contracts` | derive-api-contracts | derive | ddd, integration-reqs, security-reqs, derive-architecture | API- |
-| `derive-architecture` | derive-architecture | derive | derive-functional, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, monetization | — |
+| `derive-architecture` | derive-architecture | derive | derive-functional, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, entitlements | — |
 | `derive-data-architecture` | derive-data-architecture | derive | data-reqs, ddd, derive-functional, derive-architecture | — |
 | `derive-impl-design` | derive-impl-design | derive | derive-architecture, derive-tasks | — |
 | `derive-infra-ops` | derive-infra-ops | derive | quality, constraints, derive-architecture | — |
@@ -55,6 +51,10 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `diagnose` | diagnose | exec | — | — |
 | `migrate-data` | migrate-data | exec | data-reqs, derive-data-architecture | — |
 | `operate-incident` | operate-incident | exec | derive-observability, derive-infra-ops | — |
+| **post-launch · Commercial** | | | | |
+| `go-to-market` | grill-go-to-market | elicit | product-vision | — |
+| `growth` | grill-growth | elicit | goals, compliance, data-reqs | EXP- |
+| `monetization` | grill-monetization | elicit | entitlements, product-vision, goals | — |
 | **Any stage** | | | | |
 | `generate-api-reference` | generate-api-reference | publish | derive-api-contracts | — |
 | `generate-docs` | generate-docs | publish | conformance-review | — |
@@ -84,18 +84,12 @@ flowchart TD
     data_reqs["data-reqs<br/>DATA-"]
     derive_functional["derive-functional<br/>UC- AC-"]
     design_system["design-system<br/>DS-"]
+    entitlements["entitlements<br/>ENTL-"]
     integration_reqs["integration-reqs"]
     ml_reqs["ml-reqs<br/>ML-"]
     quality["quality<br/>NFR- ASR-"]
     security_reqs["security-reqs<br/>SEC- THR-"]
     ux_reqs["ux-reqs"]
-  end
-  subgraph stage_2_5_commercial["2½ · Commercial"]
-    monetization["monetization"]
-  end
-  subgraph stage_parallel_gtm_growth["∥ · GTM + Growth"]
-    go_to_market["go-to-market"]
-    growth["growth<br/>EXP-"]
   end
   subgraph stage_3_solution["3 · Solution"]
     derive_api_contracts["derive-api-contracts<br/>API-"]
@@ -124,6 +118,11 @@ flowchart TD
     migrate_data["migrate-data"]
     operate_incident["operate-incident"]
   end
+  subgraph stage_7_commercial["post-launch · Commercial"]
+    go_to_market["go-to-market"]
+    growth["growth<br/>EXP-"]
+    monetization["monetization"]
+  end
   subgraph stage_any["Any stage"]
     generate_api_reference["generate-api-reference"]
     generate_docs["generate-docs"]
@@ -143,6 +142,7 @@ flowchart TD
   ddd --> data_reqs
   ddd --> derive_functional
   quality --> design_system
+  derive_functional --> entitlements
   system_context --> integration_reqs
   ddd --> integration_reqs
   derive_functional --> ml_reqs
@@ -151,19 +151,12 @@ flowchart TD
   derive_functional --> quality
   data_reqs --> security_reqs
   ddd --> security_reqs
-  go_to_market --> security_reqs
+  product_vision --> security_reqs
   derive_functional --> ux_reqs
   ddd --> ux_reqs
   design_system --> ux_reqs
   quality --> ux_reqs
-  go_to_market --> ux_reqs
-  derive_functional --> monetization
-  go_to_market --> monetization
-  goals --> monetization
-  product_vision --> go_to_market
-  goals --> growth
-  compliance --> growth
-  data_reqs --> growth
+  product_vision --> ux_reqs
   ddd --> derive_api_contracts
   integration_reqs --> derive_api_contracts
   security_reqs --> derive_api_contracts
@@ -178,7 +171,7 @@ flowchart TD
   ml_reqs --> derive_architecture
   system_context --> derive_architecture
   constraints --> derive_architecture
-  monetization --> derive_architecture
+  entitlements --> derive_architecture
   data_reqs --> derive_data_architecture
   ddd --> derive_data_architecture
   derive_functional --> derive_data_architecture
@@ -235,6 +228,13 @@ flowchart TD
   derive_data_architecture --> migrate_data
   derive_observability --> operate_incident
   derive_infra_ops --> operate_incident
+  product_vision --> go_to_market
+  goals --> growth
+  compliance --> growth
+  data_reqs --> growth
+  entitlements --> monetization
+  product_vision --> monetization
+  goals --> monetization
   derive_api_contracts --> generate_api_reference
   conformance_review --> generate_docs
   ux_reqs --> generate_ui_prototype

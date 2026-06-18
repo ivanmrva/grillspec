@@ -1,7 +1,7 @@
 ---
 name: grill-monetization
 description: >-
-  Pin the business model & pricing — model, packaging, plans/tiers, entitlements tied to real features, billing model, unit economics, and the customer-facing SLA/support commitments. Use when there are real features to price and you need the commercial model nailed down. Loads the shared grill engine.
+  Pin the business model & pricing — model, packaging, plans/tiers priced against the entitlement tiers, billing model, unit economics, and the customer-facing SLA/support commitments. Use when the entitlement tiers exist and you need the commercial model nailed down. Loads the shared grill engine.
 disable-model-invocation: true
 argument-hint: an idea, existing docs, or a repo
 ---
@@ -16,28 +16,28 @@ argument-hint: an idea, existing docs, or a repo
 - Treat **hybrid** as first-class — base + metered/credits + optional outcome component — not a fallback.
 
 ## Rules
-- **GATED on having real features to price** — without them there is nothing to package; surface that gap rather than inventing entitlements
-- each plan's entitlements map to **actual features**, never aspirational ones
+- **GATED on the entitlement tiers existing** — the tiers (and what each unlocks) are defined in the **entitlements** area; without them there is nothing to price, so surface that gap rather than inventing tiers here
+- each plan **attaches a price to an entitlement tier** (`ENTL-`, from the entitlements area), never to aspirational or self-invented features
 - every tier price cites a **discovery basis** (corridor / elasticity point) or is marked an **`Untested`** bet — a competitor benchmark alone is not a basis
 - the chosen **value metric** must pass the selection screen (value-alignment · simplicity · measurability · predictability · expansion); record why it beat the alternatives
 - under usage/outcome pricing, each priced unit carries a **per-unit COGS / gross-margin-per-unit** and a **markup floor** below which the unit is never sold
 - a **customer-facing SLA** (uptime / support response) is a commitment the architecture & ops must honour — record it here so it flows to the availability NFRs
 
 ## Output
-Written under `commercial/`:
+Written under `commercial/monetization/`:
 
 | File | Captures | Format |
 |---|---|---|
 | `business-model.md` | the business model (1 line) + packaging + the value metric (with its selection-screen scoring) + pricing axis (per seat · usage · hybrid · outcome) + metering/credit unit when usage-based | 1 line · typed fields |
-| `pricing.md` | plans/tiers table + per-tier **fence** (gating entitlement) + **target persona** + price-discovery basis + competitor benchmark | plan · price · entitlements→features · fence · persona · billing |
+| `pricing.md` | plans/tiers table — each plan **prices an entitlement tier** (`ENTL-` ref) + **target persona** + price-discovery basis + competitor benchmark | plan · price · ENTL- tier · persona · basis · billing |
 | `unit-economics.md` | unit economics — LTV:CAC · CAC-payback · NRR · GRR · gross-margin · Rule-of-40 (+ per-unit COGS / markup floor under usage/outcome) | typed fields |
 | `commitments.md` | customer-facing commitments per plan — **SLA** (uptime · support-response · service credits) · **support tier** · the published terms that bind the build (the availability/support SLA flows to the quality NFRs) | plan · SLA · support-tier · terms |
 
 ADRs → `adr/ADR-MON-NNN.md`
-Consumes: real features to price (the entitlements reference them) + the go-to-market motion (billing model follows PLG vs sales-led) + the **retention/churn target from goals** (it sets LTV's denominator — sourced upstream, not from post-launch growth). The competitor price benchmark is **elicited** here as price-discovery input, not read from an upstream artifact.
+Consumes: the **entitlement tiers** (`ENTL-`, from the entitlements area) to attach prices to + the **go-to-market motion** (billing model follows PLG vs sales-led — the motion lives in the product vision) + the **retention/churn target from goals** (it sets LTV's denominator — sourced upstream, not from post-launch growth). The competitor price benchmark is **elicited** here as price-discovery input, not read from an upstream artifact.
 
 ## Excludes
-the *domain mechanics* of subscriptions (→ the domain model) · billing implementation (→ the architecture)
+the **entitlement model itself** — tiers · feature gating · limits · billing-state access (→ the **entitlements** area; this area only attaches *prices* to its tiers) · the *domain mechanics* of subscriptions (→ the domain model) · billing implementation (→ the architecture)
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/grill-engine.md`

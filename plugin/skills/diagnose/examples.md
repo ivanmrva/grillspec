@@ -11,7 +11,7 @@ A "sometimes wrong" bug: invoice totals occasionally off by one cent.
 
 > **Bisect** narrowed the suspect range to one commit: `git bisect run` flagged `a91f3` "switch Money to double for speed" — confirms **H1**, rules out H2/H3. **Fix:** accumulate in integer minor units, format at the edge. Regression test written **at the totals seam first**: `[0.10,0.20]→0.30` → watched it fail → applied fix → watched it pass → re-ran the 10 000× property loop, 0 failures.
 
-Recorded — `10-delivery/operations/diagnosis-0091.md`:
+Recorded — `10-operate/diagnosis-0091.md`:
 
 | field | value |
 |---|---|

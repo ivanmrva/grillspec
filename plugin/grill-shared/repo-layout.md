@@ -8,11 +8,11 @@
 ├── src/                  implementation CODE        (mirrors the architecture's components)
 └── tests/                implementation TESTS
 ```
-**Zones are exclusive:** spec files only under `spec/`; code only under `src/` + `tests/`; throwaway prototypes under `prototypes/` (never `src/`); the generated doc site only under `docs-site/`; a provided/generated **design system** (raw assets + the DTCG design-tokens file) only under `design-system/`; CI workflows under `.github/workflows/` (GitHub Actions — `spec-governance.yml`, `code-ci.yml`, `docs-site.yml`). **DERIVED zones are regenerate-only** — `09-solution/*`, `05-req-functional/`, `10-delivery/conventions/`, `10-delivery/tasks/`, and root `CLAUDE.md` are written *only* by their derive-* skill and are **never hand-edited** (the `guard_derived.py` pre-commit hook blocks it); to change one, edit its upstream and re-run the skill. Everything else under `spec/` (foundation, `04-domain/ddd/`, the authored `05-req-nonfunctional/*`, commercial, growth, and each area's glossary/actors/decisions) is authored/interview-sourced and freely editable. The
-traceability matrix (`spec/10-delivery/verification/traceability.md`) links spec IDs ↔ code/test paths,
+**Zones are exclusive:** spec files only under `spec/`; code only under `src/` + `tests/`; throwaway prototypes under `prototypes/` (never `src/`); the generated doc site only under `docs-site/`; a provided/generated **design system** (raw assets + the DTCG design-tokens file) only under `design-system/`; CI workflows under `.github/workflows/` (GitHub Actions — `spec-governance.yml`, `code-ci.yml`, `docs-site.yml`). **DERIVED zones are regenerate-only** — `07-solution/*`, `05-functional-spec/`, `08-delivery/conventions/`, `08-delivery/tasks/`, and root `CLAUDE.md` are written *only* by their derive-* skill and are **never hand-edited** (the `guard_derived.py` pre-commit hook blocks it); to change one, edit its upstream and re-run the skill. Everything else under `spec/` (foundation, `04-domain/ddd/`, the authored `06-requirements/*`, the post-launch `09-commercial/*`, and each area's glossary/actors/decisions) is authored/interview-sourced and freely editable. The
+traceability matrix (`spec/08-delivery/verification/traceability.md`) links spec IDs ↔ code/test paths,
 so the dependency tree spans into code. **Change propagation** (`${CLAUDE_PLUGIN_ROOT}/tools/impact.py`) follows the
 reference graph across all zones, down to code. **Reference direction is upstream-only** (L0 foundation
-→ L1 ddd → L2 requirements → L3 solution → L4 delivery → L5 code); a file never references a layer
+→ L1 ddd → L2 functional-spec/requirements → L3 solution → L4 delivery → L5 code); a file never references a layer
 below it — enforced by `lint_spec.py`.
 
 # Output tree — `spec/`  (stage-pure: one leaf folder = one skill = one stage)
@@ -21,8 +21,13 @@ below it — enforced by `lint_spec.py`.
 stages. The only cross-stage shared location is `adr/` (one file per ADR, so two skills never collide). Area folders appear as
 content settles (lazy files); this is the intended structure.
 
-Modes: `elicit` (asked of the user) · `derive` (from an upstream area) · `reference` (read upstream,
-don't restate) · `↑` obligations referenced upward.
+**Stage numbers track the dependency chain** (stage → stage is a chain, so the numbers are honest). The
+*within-stage* order is a partial order (parallel siblings) and is shown as a tier diagram below the tree, never
+as sub-numbers — linear numbering would invent sequence between genuinely-parallel areas.
+
+**Area METHOD** (who drives it — the skill family): `grill` your interview (needs your input) · `derive` projected from
+upstream, regenerate-only · `exec` writes code/records, not spec. (Distinct from the per-field MODE — `elicit` · `derive` ·
+`reference` — which `dependencies.json` carries.)
 
 ```
 spec/
@@ -32,61 +37,77 @@ spec/
 │                      (PREFIX = its area code) so no two skills ever collide; the conductor derives a global index
 
 **ADR prefix registry** (one per area; `adr/` filenames are `ADR-<PREFIX>-NNN.md`):
-`DDD` domain · `PROB` problem-validation · `VIS` product-vision · `CUST` customer-discovery · `MKT` market · `GOAL` goals · `CON` constraints · `CTX` system-context · `QUAL` quality · `DREQ` data-reqs · `IREQ` integration-reqs · `SREQ` security-reqs · `UX` ux-reqs · `DS` design-system · `COMP` compliance · `MLREQ` ml-reqs · `MON` monetization · `GTM` go-to-market · `GRW` growth · `FUNC` derive-functional · `ARCH` architecture · `DATA` data-architecture · `API` api-contracts · `SEC` security-architecture · `INFRA` infra-ops · `OBS` observability · `TEST` test-strategy · `IMPL` impl-design · `MLARCH` ml-architecture · `CONV` conventions · `TASK` tasks · `BUILD` implement-task · `REV` conformance-review · `DIAG` diagnose · `REL` deploy-release · `MIG` migrate-data · `INC` operate-incident · `PROTO` prototype
+`DDD` domain · `PROB` problem-validation · `VIS` product-vision · `CUST` customer-discovery · `MKT` market · `GOAL` goals · `CON` constraints · `CTX` system-context · `QUAL` quality · `DREQ` data-reqs · `IREQ` integration-reqs · `SREQ` security-reqs · `UX` ux-reqs · `DS` design-system · `COMP` compliance · `MLREQ` ml-reqs · `ENTL` entitlements · `FUNC` derive-functional · `ARCH` architecture · `DATA` data-architecture · `API` api-contracts · `SEC` security-architecture · `INFRA` infra-ops · `OBS` observability · `TEST` test-strategy · `IMPL` impl-design · `MLARCH` ml-architecture · `CONV` conventions · `TASK` tasks · `BUILD` implement-task · `REV` conformance-review · `MON` monetization · `GTM` go-to-market · `GRW` growth · `DIAG` diagnose · `REL` deploy-release · `MIG` migrate-data · `INC` operate-incident · `PROTO` prototype
 │  (bets, risks, and gaps live INLINE in each artifact with a status; the conductor derives the
 │   cross-area views — a glossary view, the bet register, risks, readiness — by READING outputs, not as files.
 │   The one operational queue is `_human-input.md` at the spec root: the batched human-in-the-loop asks
 │   `autorun` parks for you to clear in a sitting — an orchestration handoff, not a decision/assumption ledger)
 │
-├── 01-discovery/           grill-problem-validation   (runs first · continuous)   elicit+plan
+│  ┌─────────── PHASE A · AUTHORED — your input drives it (grill, except functional-spec) ───────────┐
+├── 01-discovery/           grill-problem-validation   (runs first · continuous)   grill
 ├── 02-product/
-│   ├── vision/          grill-product-vision        vision·positioning·scope·phasing·GTM-motion         elicit
-│   ├── customers/       grill-customer-discovery     segments·personas·JTBD                              elicit
-│   ├── market/          grill-market                 competitors·alternatives·differentiation·sizing     elicit
-│   └── goals/           grill-goals                  north-star·success metrics·KILL-CRITERIA            elicit
-├── 03-constraints/         grill-constraints            mandates·regulatory·environment                     elicit
-├── 03-system-context/      grill-system-context         scope·actors·neighbor-systems·interfaces·C4-L1      elicit
-├── 04-domain/ddd/          grill-ddd                    strategic/* + tactical/<context>/*  (the hub)       model
-├── 05-req-functional/     derive-functional            use-cases + acceptance (projected from ddd)  derive+ask
-├── 05-req-nonfunctional/
-│   ├── quality/         grill-quality                NFR numbers + ASRs          derive
-│   ├── data/            grill-data-reqs              class/retention/residency   inventory-derive·oblig↑
-│   ├── integration/     grill-integration-reqs       per-boundary SLAs           topology-derive·terms-elicit
-│   ├── security/        grill-security-reqs          threat·authz·privacy        structure-derive·oblig↑
-│   ├── ux/              grill-ux-reqs                journeys·info-needs·IA·a11y·i18n     derive(read-models,actors)·elicit
-│   ├── design-system/  grill-design-system          tokens(DTCG)·components·a11y·brand·voice (DS-)   provided|partial|generate
-│   ├── compliance/      grill-compliance             regimes → obligations (OBL-)  elicit·oblig→sec/data
-│   └── ml/              grill-ml-reqs                model behaviour·evals·data·responsible-AI (ML-)  elicit (AI only)
-├── 06-commercial/          grill-monetization           model·pricing·plans·entitlements·unit-econ  (GATED)  elicit
-├── 07-gtm/                 grill-go-to-market           channels·launch·partnerships  (optional · parallel)  elicit
-├── 08-growth/              grill-growth                 activation/retention·experiments(EXP-)·analytics events  elicit (post-launch)
-├── 09-solution/
-│   ├── arch/            derive-architecture  style·C4·stack·contexts→services·module map+seam contracts·sequences  derive(all)  [GATE]
-│   ├── data/            derive-data-architecture      schema·storage·migration            derive
-│   ├── api/             derive-api-contracts          OpenAPI/AsyncAPI·versioning          derive
-│   ├── security/        derive-security-architecture  authn/authz·encryption·secrets       derive
-│   ├── infra-ops/       derive-infra-ops              topology·IaC·CICD·deploy/rollback·DR  derive
-│   ├── observability/   derive-observability          SLOs(SLO-)·telemetry·alerts·runbooks  derive
-│   ├── test/            derive-test-strategy          levels·edge-discovery·NFR evidence    derive
-│   ├── impl/            derive-impl-design            per-SLICE module internals (NOT code)·filled JIT in execution   derive (per design-first slice)
-│   └── ml/             derive-ml-architecture        serving·eval-harness·pipeline·monitoring·guardrails  derive (AI only)
-├── 10-delivery/                                         STAGE 4-6 · build the runway, execute, then operate
-│   ├── conventions/     derive-conventions            standards·dep/boundary rules·DoD·cmds (+ root CLAUDE.md)
-│   ├── tasks/           derive-tasks         T-NNN.md vertical slices + build-order.md (DAG)
-│   ├── verification/    conformance-review           traceability.md (spec ID↔task↔code) + the post-task review report
-│   └── operations/      deploy-release·migrate-data·operate-incident·diagnose   deploy/migration/incident/diagnosis records + bootstrap.md (human-prerequisites checklist from the walking-skeleton)
-│   (validate/spike skill — throwaway, NOT spec/ and NOT src/:)
-│   prototype        →  prototypes/ (repo root)   throwaway spike; the ANSWER → a bet / ux / an ADR, then deleted
+│   ├── vision/          grill-product-vision        vision·positioning·scope·phasing· GTM MOTION (motion.md)   grill
+│   ├── customers/       grill-customer-discovery     segments·personas·JTBD                              grill
+│   ├── market/          grill-market                 competitors·alternatives·differentiation·sizing     grill
+│   └── goals/           grill-goals                  north-star·success metrics·KILL-CRITERIA            grill
+├── 03-constraints/         grill-constraints            mandates·regulatory·environment                     grill
+├── 03-system-context/      grill-system-context         scope·actors·neighbor-systems·interfaces·C4-L1      grill
+├── 04-domain/ddd/          grill-ddd                    strategic/* + tactical/<context>/*  (the hub)       grill
 │
-│   (execution skills write CODE, not spec/:)
-│   implement-task   →  project source tree (src/, tests/unit|integration|contract|e2e)   tests-first, in-boundary
-│   run-tests     →  test run result (to conductor)
+├── 05-functional-spec/     derive-functional            use-cases (UC-) + acceptance (AC-), projected from ddd   DERIVE
+│                           └─ the one DERIVED area in Phase A · a hinge: requirements build on it (re-derive if ddd changes)
 │
-│   (publish skill — projects spec → a static site, NOT spec/:)
-│   generate-docs    →  docs-site/ (repo root)   full-project docs (full spec + consolidated impl design); self-contained HTML; regenerated wholesale; CI deploys on push to main
-│   generate-ui-prototype →  prototypes/ui/ (repo root)   the slice's clickable HTML screen (per UI slice) from UX + design-system — the implementation reference
-└─  CLAUDE.md  (project root, NOT under spec/)  ← Claude Code entry point, generated by derive-conventions
+├── 06-requirements/        (GRILLED — your input · internal partial order in the tier diagram below)
+│   ├── quality/         grill-quality                NFR numbers + ASRs (keyed to UC- flows)             grill
+│   ├── data/            grill-data-reqs              class/retention/residency   (DATA-)                 grill
+│   ├── integration/     grill-integration-reqs       per-boundary SLAs                                   grill
+│   ├── compliance/      grill-compliance             regimes → obligations (OBL-)                        grill
+│   ├── entitlements/    grill-entitlements           access tiers · feature gating · limits (ENTL-)      grill
+│   ├── security/        grill-security-reqs          threat·authz·privacy   (SEC-/THR-)                  grill
+│   ├── design-system/  grill-design-system          tokens(DTCG)·components·a11y·brand·voice  (DS-)      grill
+│   ├── ml/              grill-ml-reqs                model behaviour·evals·responsible-AI  (ML-)          grill (AI only)
+│   └── ux/              grill-ux-reqs                journeys·info-needs·IA·a11y·i18n  (no ids — a synthesis)   grill
+│   ───────────────── ARCHITECTURE-READINESS GATE ─────────────────
+├── 07-solution/            (DERIVED — the how)
+│   ├── arch/            derive-architecture  style·C4·stack·contexts→services·module map+seam contracts  DERIVE  [GATE]
+│   ├── data/            derive-data-architecture      schema·storage·migration                            DERIVE
+│   ├── api/             derive-api-contracts          OpenAPI/AsyncAPI·versioning  (API-)                 DERIVE
+│   ├── security/        derive-security-architecture  authn/authz·encryption·secrets                      DERIVE
+│   ├── infra-ops/       derive-infra-ops              topology·IaC·CICD·deploy/rollback·DR                DERIVE
+│   ├── observability/   derive-observability          SLOs(SLO-)·telemetry·alerts·runbooks                DERIVE
+│   ├── test/            derive-test-strategy          levels·edge-discovery·NFR evidence                  DERIVE
+│   ├── impl/            derive-impl-design            per-SLICE module internals · filled JIT in execution DERIVE
+│   └── ml/             derive-ml-architecture        serving·eval-harness·pipeline·monitoring  (AI only)  DERIVE
+│   ───────────────── IMPLEMENTATION-READINESS GATE ─────────────────
+├── 08-delivery/            (DERIVED + execution records)
+│   ├── conventions/     derive-conventions            standards·dep/boundary rules·DoD·cmds (+ root CLAUDE.md)  DERIVE
+│   ├── tasks/           derive-tasks         T-NNN.md vertical slices + build-order.md (DAG)               DERIVE
+│   └── verification/    conformance-review           traceability.md (spec ID↔task↔code) + the post-task review report  exec
+│   ───────────────── DELIVERY-READINESS GATE ─────────────────
+│   (execution writes CODE, not spec/:)  implement-task → src/, tests/  ·  run-tests → result
+│
+│  ┌─────────── POST-LAUNCH · pure sinks — nothing upstream depends on these ───────────┐
+├── 09-commercial/
+│   ├── go-to-market/    grill-go-to-market   channels·launch·partnerships  (motion lives in 02-product/vision)   grill
+│   ├── monetization/    grill-monetization   pricing·plans·unit-econ — prices the ENTL- tiers              grill
+│   └── growth/          grill-growth         activation/retention·experiments (EXP-)·analytics events       grill
+└── 10-operate/            deploy-release·migrate-data·operate-incident·diagnose   deploy/migration/incident/diagnosis records + bootstrap.md   exec
 ```
+
+## Within-stage partial order (the tier diagrams — what the numbers can't show)
+
+**`06-requirements/`** — a partial order, heavily parallel (numbers would lie, so none are assigned):
+```
+tier 0  (depend only on ddd / functional — NO order among them):
+        quality · data · integration · compliance · entitlements
+tier 1  (each depends on a tier-0 sibling):
+        design-system ─▶quality   ·   security ─▶data   ·   ml ─▶data
+tier 2:
+        ux ─▶ design-system, quality          (last — it synthesises the rest; mints no ids)
+```
+
+**`09-commercial/`** — flat; zero edges among the three (the old `monetization → go-to-market` edge was the *motion*, now owned by `02-product/vision`). Three independent post-launch sinks.
+
 **Gates:** desirability (soft) · architecture-readiness (requirements→solution) ·
 implementation-readiness (solution→delivery prep) · delivery-readiness (delivery prep→execution) ·
 per-task done (execution loop). **Code lives in the project source tree (`src/`, `tests/`), never in

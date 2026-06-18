@@ -28,7 +28,7 @@ Primary output: a tight pass/fail result + the VERDICT line — no files (standa
 
 | File / target | Captures | Format |
 |---|---|---|
-| `10-delivery/verification/test-run.md` | OPTIONAL, only if persisted: suite · level · pass/fail · coverage vs target · the release-readiness verdict (for a Tier-B/system run) | — |
+| `08-delivery/verification/test-run.md` | OPTIONAL, only if persisted: suite · level · pass/fail · coverage vs target · the release-readiness verdict (for a Tier-B/system run) | — |
 
 (no spec or code changes)
 Consumes: the `T-NNN` package + its acceptance criteria (`AC-…`) + the produced tests/code.

@@ -3,7 +3,7 @@
 # Usage:  python3 tools/impact.py UC-014 CMD-Pay
 #         python3 tools/impact.py --area 04-domain/ddd     (all IDs defined under a folder)
 #         python3 tools/impact.py --since <gitref>      (self-detect: IDs on lines changed since <gitref>)
-# Reads the spec/ reference graph + 10-delivery/verification/traceability.md (to reach code).
+# Reads the spec/ reference graph + 08-delivery/verification/traceability.md (to reach code).
 # Prints the MINIMAL set of downstream spec files / tasks / code that the change touches,
 # ordered upstream -> downstream. This is the dependency tree made operational.
 import os, re, sys, subprocess, pathlib
@@ -66,7 +66,7 @@ while frontier:
         for j in defines.get(f, ()):
             if j not in impacted_ids: frontier.append(j)
 code = set()
-tp = SPEC / "10-delivery" / "verification" / "traceability.md"
+tp = SPEC / "08-delivery" / "verification" / "traceability.md"
 if tp.exists():
     for l in read(tp).splitlines():
         if not l.strip().startswith("|"): continue
@@ -74,10 +74,11 @@ if tp.exists():
             for m in re.findall(r"[\w./-]+\.(?:py|ts|tsx|js|jsx|go|java|rb|rs|cs|kt|sql)", l): code.add(m)
 def layer(r):
     if r.startswith("04-domain/ddd"): return 1
-    if r.startswith("05-req-functional") or r.startswith("05-req-nonfunctional/"): return 2
-    if r.startswith(("06-commercial", "07-gtm", "08-growth")): return 2
-    if r.startswith("09-solution/"): return 3
-    if r.startswith("10-delivery/"): return 4
+    if r.startswith("05-functional-spec") or r.startswith("06-requirements/"): return 2
+    if r.startswith("09-commercial/"): return 2
+    if r.startswith("07-solution/"): return 3
+    if r.startswith("08-delivery/"): return 4
+    if r.startswith("10-operate"): return 4
     return 0   # foundation (01-discovery, 02-product, 03-constraints/system-context) — upstream of ddd
 tasks = sorted(i for i in impacted_ids if i.startswith("T-"))
 print("CHANGED (seeds):", ", ".join(sorted(set(seeds))))

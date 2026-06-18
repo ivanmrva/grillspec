@@ -21,7 +21,7 @@ argument-hint: an idea, existing docs, or a repo
 - each channel's expected CAC / payback must clear an **ACV-band sanity check** vs the motion — name the mismatch where it fails
 
 ## Output
-Written under `gtm/`:
+Written under `commercial/go-to-market/`:
 
 | File | Captures | Format |
 |---|---|---|

@@ -37,7 +37,7 @@ Written under the project source tree:
 | `tests/e2e/` | the user-observable path | — |
 
 (+ ADRs → `adr/ADR-BUILD-NNN.md` — a default accepted mid-implementation)
-(walking-skeleton task only: `10-delivery/operations/bootstrap.md` — the human-prerequisites checklist)
+(walking-skeleton task only: `10-operate/bootstrap.md` — the human-prerequisites checklist)
 *(writes CODE in the source tree — never `spec/`)*
 Consumes: a single `T-NNN` + the exact spec IDs it references + the conventions + the code it touches — load only these (tight context).
 

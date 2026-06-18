@@ -25,7 +25,7 @@ argument-hint: an idea, existing docs, or a repo
 - events follow the pinned **object-action** controlled vocabulary and each carries an **owner**
 
 ## Output
-Written under `growth/`:
+Written under `commercial/growth/`:
 
 | File | Captures | Format |
 |---|---|---|

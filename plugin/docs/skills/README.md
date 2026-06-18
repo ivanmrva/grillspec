@@ -19,6 +19,7 @@ One guide per skill. Each is generated from the skill itself, so it always refle
 | [`grill-data-reqs`](grill-data-reqs.md) | grill-data-reqs | `—` |
 | [`grill-ddd`](grill-ddd.md) | grill-ddd | `—` |
 | [`grill-design-system`](grill-design-system.md) | grill-design-system | `—` |
+| [`grill-entitlements`](grill-entitlements.md) | grill-entitlements | `—` |
 | [`grill-go-to-market`](grill-go-to-market.md) | grill-go-to-market | `—` |
 | [`grill-goals`](grill-goals.md) | grill-goals | `—` |
 | [`grill-growth`](grill-growth.md) | grill-growth | `—` |

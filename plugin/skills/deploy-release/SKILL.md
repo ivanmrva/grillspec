@@ -23,7 +23,7 @@ argument-hint: a built increment to deploy
 - Canary verdict comes from the metric gate's thresholds, never a subjective read of the dashboards.
 
 ## Output
-Written under `10-delivery/operations/`:
+Written under `10-operate/`:
 
 | File / target | Captures | Format |
 |---|---|---|
@@ -33,7 +33,7 @@ Written under `10-delivery/operations/`:
 
 ADRs → `adr/ADR-REL-NNN.md`
 (no spec/code changes — operates the running system)
-Consumes: the merged increment + `09-solution/infra-ops/` (environments + release/rollback strategy) + `09-solution/observability/` (`SLO-`, alerts) + the release-readiness checklist.
+Consumes: the merged increment + `07-solution/infra-ops/` (environments + release/rollback strategy) + `07-solution/observability/` (`SLO-`, alerts) + the release-readiness checklist.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`

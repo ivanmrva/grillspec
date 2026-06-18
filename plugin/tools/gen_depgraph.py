@@ -25,10 +25,9 @@ LINT = ROOT / "tools" / "lint_spec.py"
 
 STAGE_LABEL = {
     "0-discovery": "0 · Discovery", "0-foundation": "0 · Foundation", "1-domain": "1 · Domain",
-    "2-requirements": "2 · Requirements", "2.5-commercial": "2½ · Commercial",
-    "parallel-gtm-growth": "∥ · GTM + Growth", "3-solution": "3 · Solution",
+    "2-requirements": "2 · Requirements", "3-solution": "3 · Solution",
     "4-delivery-prep": "4 · Delivery prep", "5-execution": "5 · Execution", "6-operate": "6 · Operate",
-    "any": "Any stage",
+    "7-commercial": "post-launch · Commercial", "any": "Any stage",
 }
 
 

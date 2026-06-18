@@ -64,32 +64,31 @@ STAGE 0 · FOUNDATION (elicited)
 STAGE 1 · DOMAIN
         ddd                  the hub; seeds glossary + actors                                → 04-domain/ddd/
 STAGE 2 · REQUIREMENTS (derive[domain] + reference[product,constraints] + elicit deltas)
-        derive-functional (projected from ddd)                                                          → 05-req-functional/   (DERIVED — no input)
-        quality · data-reqs · integration-reqs · security-reqs · ux-reqs · design-system (DS-) · compliance (OBL-) · ml-reqs (AI · ML-)  → 05-req-nonfunctional/*   (elicited)
-STAGE 2½ · COMMERCIAL (GATED on functional)
-        monetization         business model · pricing · plans · entitlements · unit economics → 06-commercial/
-PARALLEL · GTM + GROWTH (commercial execution + post-launch loop, not core spec)
-        go-to-market         channels · launch · partnerships                                → 07-gtm/
-        growth               activation/retention model · experiment backlog (EXP-) · analytics events → 08-growth/
+        derive-functional (projected from ddd)                                                          → 05-functional-spec/   (DERIVED — no input)
+        quality · data-reqs · integration-reqs · compliance (OBL-) · entitlements (ENTL-) · security-reqs (SEC-) · design-system (DS-) · ml-reqs (AI · ML-) · ux-reqs (journeys · no ids)  → 06-requirements/*   (grilled; tiered — see repo-layout)
         ───────────────── ARCHITECTURE-READINESS GATE ─────────────────
 STAGE 3 · SOLUTION (the how)
         derive-architecture · derive-data-architecture · derive-api-contracts ·
-        derive-security-architecture · derive-infra-ops · derive-test-strategy · derive-observability (SLO-) · derive-ml-architecture (AI)   → 09-solution/*
+        derive-security-architecture · derive-infra-ops · derive-test-strategy · derive-observability (SLO-) · derive-ml-architecture (AI)   → 07-solution/*
         (architecture fixes the module map + seam contracts; module INTERNALS are designed per-slice in execution — derive-impl-design is JIT, not a Stage-3 area)
         ───────────────── IMPLEMENTATION-READINESS GATE ─────────────────
 STAGE 4 · DELIVERY PREP (build the agent's runway)
-        derive-conventions   standards · dependency/boundary rules · DoD · build/test cmds · CLAUDE.md → 10-delivery/conventions/
-        derive-tasks         minimal vertical slices (T-NNN) · walking-skeleton first · build-order DAG  → 10-delivery/tasks/
+        derive-conventions   standards · dependency/boundary rules · DoD · build/test cmds · CLAUDE.md → 08-delivery/conventions/
+        derive-tasks         minimal vertical slices (T-NNN) · walking-skeleton first · build-order DAG  → 08-delivery/tasks/
         ───────────────── DELIVERY-READINESS GATE ─────────────────
 STAGE 5 · EXECUTION (per task, in build-order; CODE lives in the repo, NOT spec/)
-        (slice flagged design-first → derive-impl-design designs its modules → 09-solution/impl/)  →  implement-task  →  run-tests  →  conformance-review  →  done    (loop; any red routes back)
+        (slice flagged design-first → derive-impl-design designs its modules → 07-solution/impl/)  →  implement-task  →  run-tests  →  conformance-review  →  done    (loop; any red routes back)
         autorun         autonomous driver · runs that loop across the whole task queue (AFK) · stops only on a true blocker (HITL trigger)
-                                                                            conformance-review → 10-delivery/verification/
+                                                                            conformance-review → 08-delivery/verification/
         ──────────── RELEASE-READINESS CHECKLIST (advisory) ────────────
+POST-LAUNCH · COMMERCIAL (pure sinks — nothing upstream depends on these; the build-shaping MOTION lives in 02-product/vision, the ENTITLEMENT tiers in 06-requirements/entitlements)
+        go-to-market         channels · launch · partnerships                                → 09-commercial/go-to-market/
+        monetization         business model · pricing · plans · unit economics — prices the ENTL- tiers → 09-commercial/monetization/
+        growth               activation/retention model · experiment backlog (EXP-) · analytics events → 09-commercial/growth/
 STAGE 6 · OPERATE & MAINTAIN (real/prod systems · feeds back to discovery)
         deploy-release  (rollout/rollback) · migrate-data (on DATA-/AGG- change) · operate-incident (learnings → assumptions/gaps)
         diagnose (hard bugs: feedback-loop → reproduce → hypothesise → fix+regression)
-                                                                            operational records → 10-delivery/operations/
+                                                                            operational records → 10-operate/
 ANY STAGE · prototype (throwaway spike to answer ONE question empirically — resolves a gap/assumption instead of guessing → resolutions/assumptions/ux/ADR)
 ANY STAGE · generate-docs / generate-api-reference / generate-ui-prototype (project the spec → the full-project docs site · the API reference · the slice's clickable UI prototype (per slice); regenerated on change — consumed by readers/clients and the build)
 cross-cutting views (reconciled by reading outputs):  glossary, actors, bets, the risk + technical-debt register, decisions
@@ -207,7 +206,7 @@ dependency graph.
 4. **Re-process only the impact set, incrementally** (diff, don't regenerate): re-grill deltas →
    re-derive (reading existing ADRs, applying a delta) → re-finalize affected tasks → re-run execution
    for affected code. Nothing outside the set is touched. **When a re-derivation rewrites a derived
-   artifact** (anything under `09-solution/`, `05-req-functional/`, `10-delivery/conventions|tasks/`, or
+   artifact** (anything under `07-solution/`, `05-functional-spec/`, `08-delivery/conventions|tasks/`, or
    `CLAUDE.md`), **run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <those paths>`** so the
    derived-guard sees a legitimate regeneration and doesn't false-block the commit.
 5. **Re-verify:** `lint_spec.py` + `guard_derived.py` + `conformance-review`.
