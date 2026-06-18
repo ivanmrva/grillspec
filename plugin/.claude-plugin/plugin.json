@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "grillspec",
   "displayName": "Grill Spec System",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Spec-driven engineering. Interview the idea (or existing docs) into a complete Domain-Driven Design spec, derive architecture/solution/tasks from it, then run the build loop. One conductor orchestrates 38 grilling and derivation skills; bundled deterministic linters gate spec consistency and guard derived artifacts.",
   "author": {
     "name": "Ivan Mrva",

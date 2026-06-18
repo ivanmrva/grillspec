@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 3.1.1
+
+### Fixed
+- **`derive-architecture` no longer names its sibling skills.** The 3.1.0 cross-cutting-concerns note referenced "the specialised `*-architecture` skills," which broke skill independence (a worker skill must reference upstream/downstream *artifacts*, never other skills — only the conductor knows the orchestration). Reworded to state the skill's own scope self-containedly: the core pass commits the architecturally-significant cross-cutting *strategy* (data topology · trust model · ML data-dependencies), and finer per-concern detail is simply "out of this artifact's scope" — naming no one. (The specialised architecture areas remain separate skills that consume *the architecture artifact*, not the skill; merging them was considered and rejected — it would produce one unfocused mega-skill and break standalone usability for no gain.)
+
 ## 3.1.0
 
 ### Changed — dependencies are ORDER + availability, not a fixed edge-list
