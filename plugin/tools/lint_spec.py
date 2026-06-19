@@ -240,12 +240,8 @@ def note_ref(tok, r, i, selfid):
         absent_refs.add(tok); return
     if tok not in defined:
         add("ERROR", r, "reference to undefined ID '" + tok + "'", i)
-    # ADRs are cross-cutting decision records that cite their drivers (NFR/ASR/DATA/SEC/…) by design;
-    # they map to no stage layer (file_layer 0), so the upstream-only check would false-error on a
-    # legitimate driver citation that merely sits after a refmark word or arrow. Exempt ADR source
-    # files, mirroring the ADR-target exemption below.
-    if not is_adr_file(r) and tok.split("-")[0].upper() != "ADR" and id_layer(tok) > file_layer(r):
-        add("ERROR", r, "illegal downward reference: L%d file -> %s (L%d); references must be upstream-only" % (file_layer(r), tok, id_layer(tok)), i)
+    # (the illegal-downward-reference check is NOT here — it runs comprehensively over every id token below,
+    #  not only reference-detected ones, so a downward id in plain prose can't evade the upstream-only invariant.)
 for p, r in cmd_files():
     for i, l in enumerate(read(p).splitlines(), 1):
         l = RANGE.sub(" ", l)                                # drop numeric range/list shorthand before tokenizing
@@ -259,6 +255,27 @@ for p, r in cmd_files():
         for m in DEF3.finditer(l):
             if not in_owner_area(m.group(1), r):
                 note_ref(m.group(1), r, i, selfid)
+# 11b illegal-downward-reference — enforced over EVERY id token, not only reference-detected ones, so a
+# downward id sitting in plain prose (no refmark/arrow) can't evade the upstream-only invariant. High
+# precision: every hit is a real downward occurrence (a definition / same-layer mention has id_layer ==
+# file_layer, never > , so it never fires). Exemptions mirror the reference checks: ADR source files (cite
+# their drivers downward by design), traceability.md (the cross-layer trace spine), and the JIT impl area
+# (derive-impl-design names the task it elaborates — the one acknowledged layer wrinkle). Skip fenced code +
+# the scope header; an id in an absent area (partial spec) is suppressed like the undefined check.
+dn_seen = set()
+for p, r in cmd_files():
+    if is_adr_file(r) or os.path.basename(r) == "traceability.md" or r.startswith("07-solution/impl") or ("/" not in r and r.startswith("_")): continue   # last: spec-root orchestration dashboards (_readiness/_human-input) span all layers by design
+    fl = file_layer(r); fence = False
+    for i, l in enumerate(read(p).splitlines(), 1):
+        s = l.lstrip()
+        if s.startswith("```"): fence = not fence; continue
+        if fence or s.startswith("<!--"): continue
+        for tok in IDTOK.findall(RANGE.sub(" ", l)):
+            pre = tok.split("-")[0].upper()
+            if pre == "ADR" or pre in ABSENT_TYPES: continue
+            if id_layer(tok) > fl and (r, tok) not in dn_seen:
+                dn_seen.add((r, tok))
+                add("ERROR", r, "illegal downward reference: L%d file -> %s (L%d); references must be upstream-only (the invariant covers every mention, not just marked references)" % (fl, tok, id_layer(tok)), i)
 if absent_refs:
     shown = ", ".join(sorted(absent_refs)[:10]) + (" …" if len(absent_refs) > 10 else "")
     add("INFO", "(partial)", "%d reference(s) to areas not present in this spec were not error-checked (partial spec — derived/downstream areas absent): %s" % (len(absent_refs), shown))

@@ -4,6 +4,15 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 3.1.3
+
+### Fixed — the upstream-only invariant is now enforced over ALL id tokens, not just marked references
+- **A downward id in plain prose is now flagged.** The illegal-downward-reference check ran only inside `note_ref`, which is reached only by the reference-detector (after a refmark word / arrow). So a downward id with no marker — `ENTL-217` cited as a phasing/gating note in an L1 `glossary.md`, an L0 discovery bet naming `NFR-030` — evaded the check entirely: neither undefined- nor downward-checked. The check is now a **comprehensive pass over every `ID-` token** in a file (mirroring the duplicate/owning-dir checks), so the invariant holds regardless of position.
+- **High precision, not a heuristic:** a definition or same-layer mention has `id_layer == file_layer` (never `>`), so it never fires — every hit is a real downward occurrence. Deduped per (file, id).
+- **Exemptions** mirror the existing reference rules: ADR source files (cite drivers downward by design), `traceability.md` (the cross-layer trace spine), the spec-root orchestration dashboards (`_readiness.md`/`_human-input.md`, which span all layers), and the JIT impl area (`07-solution/impl/` — `derive-impl-design` names the task it elaborates, the one acknowledged layer wrinkle). Fenced code + the scope header are skipped; an id whose area is absent (partial spec) is suppressed like the undefined check.
+
+This is distinct from the rejected "type-aware coverage" idea: a downward reference is an *unambiguous* violation of a core invariant (not a maybe-gap), so enforcing it everywhere catches real violations rather than manufacturing false positives.
+
 ## 3.1.2
 
 ### Fixed — read-models now have a structural-coverage backstop
