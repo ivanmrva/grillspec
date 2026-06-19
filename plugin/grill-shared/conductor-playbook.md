@@ -108,7 +108,10 @@ entry modes are first-class:
   *is* the fast-path.
 - **Brownfield / import (assess existing):** point the system at existing code/docs → reverse-derive a
   *partial* spec (actors, contexts, contracts, data model from code) → seed every unknown as a tracked
-  gap → then proceed in focused-change mode. Don't pretend a clean greenfield upstream exists.
+  gap → then proceed in focused-change mode. Don't pretend a clean greenfield upstream exists. "Existing"
+  means the **current working tree only** — never reconstruct from git history or from outside the project
+  folder (see the source-of-truth fence in `grill-engine.md`); missing prior work is a **tracked gap to
+  re-grill**, not a draft to recover.
 
 **Gates are readiness signals, not locks.** Skills are independently invocable, so you may run any
 derive/exec skill whenever you like (e.g. to preview output before its upstream is settled). Whatever it

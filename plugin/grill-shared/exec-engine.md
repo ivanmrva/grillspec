@@ -4,6 +4,8 @@ The shared method behind every exec profile. The profile's `SKILL.md` is the ent
 
 **Your output is code and reports in the project source tree** — that, plus your ADRs in the shared `adr/` folder, is the record; there is no side ledger. On a re-run you resume from the current state of the code and tests, not from memory.
 
+**The baseline is the current workspace, nothing else.** Implement, verify, and resume against the **working tree exactly as it exists now** — the spec, code, and tests on disk. **Never** treat **git history** (old commits, `git log`/`git show`, stashes, branches, reflog) as a source of truth to reconstruct from: a removed file is **gone, not a recoverable draft**; "it used to work" is settled by the current code, not a past version; missing prior work is a **blocking gap to escalate**, not something to restore from history. (Routine git *mechanics* — branching/committing per the workflow below, or `git bisect` to localise a regression in `diagnose` — are fine; this fence is about what you treat as the baseline.) Likewise **never read or write outside the project folder** — no parent dirs, home dir, sibling repos, or absolute paths beyond the workspace root — **unless the user explicitly hands you that input**.
+
 ## Tight context (efficiency — what keeps a coding agent fast & accurate)
 Load only the task, the exact spec IDs it references, and the code it touches — nothing more. A bloated context is slower and less accurate; precision is the discipline.
 

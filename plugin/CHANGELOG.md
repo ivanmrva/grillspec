@@ -4,6 +4,16 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.1.0
+
+### Added — workspace is the only source of truth (no git history, no out-of-folder reads)
+All three shared engines now carry an explicit **source-of-truth fence**, closing the gap where the conductor would improvise reasoning like "the prior files were removed but may be recoverable from git as a re-grillable draft." Grilling, derivation, and execution now operate on the **current working tree exactly as it exists now** — and nothing else.
+
+- **`grill-engine.md`** (all `grill-*` + conductor), **`derive-engine.md`** (all `derive-*`), **`exec-engine.md`** (`implement-task`, `deploy-release`, `migrate-data`, `operate-incident`, `diagnose`, `conformance-review`, `autorun`, `generate-*`, `prototype`, `run-tests`): never mine **git history** (commits, `git log`/`git show`, stashes, branches, reflog) as a baseline or content source. A removed file is **gone, not a recoverable draft**; "it used to work" is settled by the current code; **missing prior work is a gap to surface/escalate, never something to reconstruct**.
+- **Never read or write outside the project folder** — no parent dirs, home dir, sibling repos, or absolute paths beyond the workspace root — unless the user **explicitly hands over** that path/doc/file.
+- **Legitimate git uses preserved:** `git diff` for incremental change-set detection (derive), branch/commit mechanics and `git bisect` for regression localisation (exec/`diagnose`). The fence governs the *baseline*, not git as a tool.
+- **`conductor-playbook.md`** brownfield entry mode reinforced: "existing" = the current working tree only; missing prior work is a **tracked gap to re-grill**, not a draft to recover.
+
 ## 4.0.0
 
 ### Changed — design-system and ux are extracted into their own top-level layers (BREAKING: spec folder renumber)
