@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 3.1.5
+
+### Fixed
+- **Four foundation skills were missing their `Consumes:` line.** `grill-product-vision`, `grill-customer-discovery`, `grill-market`, and `grill-goals` each have a declared input in `dependencies.json` (`problem-validation` / `product-vision`) but stated none in their SKILL.md, unlike every peer. Added the line to each (start-here primary input). Verified: every skill with a manifest input now declares it; the two true roots (`grill-problem-validation`, `grill-constraints`) correctly have none. (Did *not* chase verbatim sync between the SKILL prose, `dependencies.json`, and the dependency table — `consumes` is advisory and the reference graph is the propagation truth, so forcing three-way alignment would be false precision and perpetual maintenance.)
+
 ## 3.1.4
 
 ### Changed — broad-upstream context is for synthesis; construction (coding) is scoped

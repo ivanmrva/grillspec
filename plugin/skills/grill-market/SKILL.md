@@ -27,6 +27,7 @@ Written under `product/market/`:
 | `sizing.md` | bottom-up sizing, top-down as a check | SOM = ACV × reachable-ICP-count · TAM/SAM as context · method + key assumption per layer · order-of-magnitude |
 
 ADRs → `adr/ADR-MKT-NNN.md`
+Consumes: the **product vision** — the category/positioning to size and analyse competitively.
 
 ## Excludes
 pricing · go-to-market channels · detailed features

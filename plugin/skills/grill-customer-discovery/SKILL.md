@@ -27,6 +27,7 @@ Written under `product/customers/`:
 | `actors.md` | personas flagged as system users — the product-lens actor source | — |
 
 ADRs → `adr/ADR-CUST-NNN.md`
+Consumes: the **product vision** — the product/segment whose personas, segments, and JTBD this discovers.
 
 ## Excludes
 UX journeys · system actors' command-level permissions · go-to-market

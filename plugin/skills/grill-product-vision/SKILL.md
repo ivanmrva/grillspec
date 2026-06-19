@@ -29,6 +29,7 @@ Written under `product/vision/`:
 | `motion.md` | the go-to-market motion / sales model: PLG · self-serve · sales-led · hybrid — the early fork that drives onboarding, in-app billing & auth/SSO | motion · rationale |
 
 ADRs → `adr/ADR-VIS-NNN.md`
+Consumes: the **validated problem** — the problem hypothesis + DVF bets the vision answers (from discovery).
 
 ## Excludes
 detailed features · pricing · metrics · delivery dates & scheduling

@@ -27,6 +27,7 @@ Written under `product/goals/`:
 | `kill-criteria.md` | pre-committed pivot/persevere/kill decision on a fixed cadence, laddering to a minimum-success bar | review cadence · per signal: 'if <metric> not <threshold> by <date>' → pivot/persevere/kill · minimum-success criterion |
 
 ADRs → `adr/ADR-GOAL-NNN.md`
+Consumes: the **product vision** — the outcome whose north-star, success metrics, and kill-criteria these set.
 
 ## Excludes
 unit economics · analytics implementation & dashboards
