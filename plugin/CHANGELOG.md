@@ -4,6 +4,16 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 3.1.4
+
+### Changed — broad-upstream context is for synthesis; construction (coding) is scoped
+A research pass (software-engineering practice, LLM long-context behaviour, cognitive-load theory) showed the 3.1.0 "consider every upstream layer" rule was right for **synthesis** tasks but wrong for **construction**:
+- **Synthesis** (architecture, test-strategy, task-decomposition, the grilling/derivation areas) genuinely integrates many upstream concerns (Bass/Clements/Kazman ADD inputs; Rozanski & Woods; all-requirement traceability). The broad-context rule stays for these.
+- **Construction** (`implement-task` coding slices) needs a **scoped** input — its acceptance criteria + the domain elements it realises + the boundary contracts/schema + the architecture boundaries it must respect + conventions — **not** the whole spec. Evidence: vertical-slicing / "just barely good enough" practice (market/GTM/business-model is Lean over-processing waste to an implementer); LLM long-context degradation ("Lost in the Middle", Liu TACL 2024; context rot, Chroma 2025; topically-adjacent distractors are the most harmful — Cuconasu SIGIR 2024, Shi ICML 2023); cognitive load (Team Topologies, Sweller).
+- The nuance the research flagged: *drawing* a slice's edges is itself a synthesis act, so "scoped" applies to **executing** a slice, not to deciding it — the task-breakdown stays broad.
+
+Corrected the over-strong 3.1.0 `exec-engine` framing ("every upstream layer is available context") to **scoped-to-the-task + pull-on-demand**, and clarified in the conductor and `repo-layout.md` that the broad-context rule is for synthesis areas, not the execution loop. (The grill/derive engine rules are unchanged — broad context is correct there.)
+
 ## 3.1.3
 
 ### Fixed — the upstream-only invariant is now enforced over ALL id tokens, not just marked references
