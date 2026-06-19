@@ -4,6 +4,13 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 3.1.6
+
+### Changed — `grill-design-system`: explicit base-vs-refinement, and the spec is a thin contract over the asset (not a copy)
+For the workflow of *importing a design export* (e.g. from a design tool) and refining it:
+- **Method "provided" mode now states the base+refine split explicitly:** the export is the **base** — it lands in the non-spec `design-system/` zone (lifted as-is or normalised to DTCG), kept authoritative where given, and is the asset **code consumes**; grilling (verify + gap-fill) happens **on top of it**.
+- **New rule resolving the "doesn't the spec conflict with the export we code against?" tension:** the **asset is the source of truth code consumes; `design-system.md` is a thin contract *over* it, never a copy.** The spec holds only the `DS-` id catalog + variant/state/ARIA contracts + a11y verification + a `provided|generated` mark, and **points at** the asset — it must not re-list the raw tokens/components in prose (that duplicates the asset and drifts). The `DS-` ids are the spec-referenceable glue (a ux journey cites `DS-Card`; a task builds against `DS-Button`) that resolves to the asset substrate; on an asset change you **re-verify**, so the two can't disagree. (`provided|generated` is a *source-authority* mark, not edit history.)
+
 ## 3.1.5
 
 ### Fixed
