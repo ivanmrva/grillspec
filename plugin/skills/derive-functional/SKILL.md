@@ -11,13 +11,14 @@ argument-hint: a recorded spec or design docs
 **Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md` first and follow it.** This skill applies that method to **Functional spec** — use-cases plus testable acceptance criteria, projected from the domain model.
 
 ## Method
-1. per command/flow: project the use-case (actor · trigger · outcome)
+1. per command/flow: project a **command** use-case (actor · trigger · outcome); per **user-facing read-model / read-surface**: project a **view** use-case (actor · what they see · the `RM-` it surfaces) — the query side, not only the command side
 2. project its acceptance criteria from the relevant invariants/rules/specs/policies
 3. missing *domain* rule → gap to the domain model; missing interaction → gap to the UX requirements; missing timing → gap to the quality requirements
 4. only a true residual product-behavior decision is derive-and-asked + recorded
 
 ## Rules
 - every in-scope command/flow projected to ≥1 use-case; each maps to `CMD-`/`EVT-` IDs
+- **every user-facing read-model/read-surface (`RM-`) projects to ≥1 view use-case** — or is marked **N/A** as an internal projection (one only other model elements or the architecture consume); a read surface no use-case surfaces is an under-projected functional spec, not a silent pass
 - **every use-case projects its happy path PLUS the alternate/exception flows entailed by its command's invariants and policies NOW** — invalid-input · permission-denied · timeout · conflict (and any other rejection the model's rules imply); these are not deferrable, they fall straight out of the projection
 - every use-case has acceptance criteria traceable to a domain-model rule (or a logged gap); **each acceptance criterion is singular and verifiable** — one Given/When/Then asserting one outcome (the test oracle), never a compound clause
 - this is a projection — if you find yourself *inventing* a rule, it belongs in the domain model: raise it there, don't author it here. This area carries almost no primary facts of its own

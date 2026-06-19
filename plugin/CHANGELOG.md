@@ -4,6 +4,15 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 3.1.2
+
+### Fixed — read-models now have a structural-coverage backstop
+- **An orphaned domain read-model (`RM-`) that no use-case projects is now flagged.** `COV_HINT`/`DOWN_TYPE` covered the command side (`CMD-`/`EVT- → UC-`) but omitted `RM-` entirely, so a user-facing read-model with no view use-case passed lint silently (an under-projected functional spec). Added `RM → UC` coverage (WARN, with an N/A escape for internal projections; the existing "downstream layer empty → suppress" guard still applies, so it's silent until use-cases exist).
+- **Added a `derive-functional` method/rule for the *query* side:** project a **view use-case** per user-facing read-model (not just a command use-case per command/flow); a read surface no use-case surfaces is an under-projected spec, or explicitly `N/A` for an internal projection.
+- **Added `surfaces` / `renders` / `displays` to the reference markers** (`REFMARK`) — the natural verbs a view use-case uses to reference its read-model. Without this the new `RM-` coverage would have false-WARNed on legitimately-surfaced read-models (caught in testing).
+
+Deliberately **not** done: the report's suggested "type-aware coverage" (an `X→Y` edge satisfied only by a `Y`-type reference). It would change coverage semantics for *every* type and surface a wave of new WARNs (e.g. a `CMD-` referenced by a `SEC-` rule but not yet a `UC-`) — the exact false-coverage-WARN churn removed across 1.3.2 / 1.4.2 / 2.0.1. The under-projection it targets is better guarded by the method rule above than by a noisy mechanical check.
+
 ## 3.1.1
 
 ### Fixed

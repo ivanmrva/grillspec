@@ -183,7 +183,7 @@ RANGE = re.compile(r"(?<![A-Za-z0-9-])(?:" + TYPES + r")-\d+(?:(?:\.\.|/)\d+)+")
 # Reference markers — used to find ID *references* in the resolution pass below. Word markers are
 # \b-anchored so they match only as whole words: 'invalidates' must not match 'validates', etc. The
 # symbols (->, →) sit outside \b.
-REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes)\b|->|→)\s*:?\s*([^\n]*)", re.I)
+REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|surfaces?|renders?|displays?)\b|->|→)\s*:?\s*([^\n]*)", re.I)
 defined = set()
 defsites = {}                                                # id -> files that AUTHORITATIVELY define it (row-key / heading / id:) — drives define-once + owning-area checks
 def3sites = {}                                               # id -> files where it appears inline as '<ID> <Name>' in its OWN area (supplementary; not subject to define-once)
@@ -308,7 +308,7 @@ for p, r in cmd_files():
 
 # 14 structural coverage = the GAP-DETECTION surface (WARN: every X should have its downstream Y)
 COV_HINT = {"CMD":"expected a use-case (UC-) projecting it","EVT":"no downstream consumer",
-    "AGG":"expected persistence (DATA-) / a use-case","UC":"expected acceptance criteria (AC-) or a task",
+    "AGG":"expected persistence (DATA-) / a use-case","RM":"expected a view use-case (UC-) surfacing it, or N/A for an internal projection","UC":"expected acceptance criteria (AC-) or a task",
     "AC":"not exercised by any test/task","OBL":"no control (SEC-/DATA-/arch) addresses it",
     "SLO":"no alert/runbook references it","NFR":"no test/SLO evidences it","ASR":"no verifying test",
     "API":"no consumer/test","EXP":"no analytics event/task wires it","DATA":"no consumer"}
@@ -320,7 +320,7 @@ if _tp.exists():
 # downstream type a coverage WARN expects; if NONE of that type exists yet, the downstream layer is
 # simply empty (early stage) and the WARN is noise, not a gap — suppress it. (#7: a CMD has no UC only
 # once use-cases exist; before then "CMD has no UC" is 100% expected and drowns real within-layer gaps.)
-DOWN_TYPE = {"CMD":("UC",),"EVT":("UC",),"AGG":("DATA",),"UC":("AC",),"AC":("T",),
+DOWN_TYPE = {"CMD":("UC",),"EVT":("UC",),"AGG":("DATA",),"RM":("UC",),"UC":("AC",),"AC":("T",),
     "OBL":("SEC","DATA"),"NFR":("ASR","SLO"),"ASR":("T",),"API":("T",),"EXP":("T",)}
 present_types = {d.split("-")[0].upper() for d in defined}
 # a parent with a keyed child is covered by it (UC-014 by AC-014a; NFR-014 by ASR-014) even with no explicit ref
