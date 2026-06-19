@@ -11,25 +11,25 @@ if not SPEC.exists():
 # Mirrors repo-layout.md (machine copy): folders that may directly hold content, at any depth.
 LEAF_DIRS = ["01-discovery","02-product/vision","02-product/customers","02-product/market","02-product/goals","03-constraints","03-system-context",
     "04-domain/ddd","05-functional-spec","06-requirements/quality","06-requirements/data",
-    "06-requirements/integration","06-requirements/security","06-requirements/ux","06-requirements/design-system","06-requirements/compliance","06-requirements/ml","06-requirements/entitlements",
-    "09-commercial/monetization","09-commercial/go-to-market","09-commercial/growth",
-    "07-solution/arch","07-solution/data","07-solution/api","07-solution/security","07-solution/infra-ops",
-    "07-solution/observability","07-solution/test","07-solution/impl","07-solution/ml",
-    "08-delivery/conventions","08-delivery/tasks","08-delivery/verification","10-operate"]
+    "06-requirements/integration","06-requirements/security","08-ux","07-design-system","06-requirements/compliance","06-requirements/ml","06-requirements/entitlements",
+    "11-commercial/monetization","11-commercial/go-to-market","11-commercial/growth",
+    "09-solution/arch","09-solution/data","09-solution/api","09-solution/security","09-solution/infra-ops",
+    "09-solution/observability","09-solution/test","09-solution/ml",
+    "10-delivery/conventions","10-delivery/tasks","10-delivery/impl-design","10-delivery/verification","12-operate"]
 # Per-area deliverables: glossary.md / actors.md may appear in ANY area folder (no shared root singletons).
 AREA_FILES = ["glossary.md", "actors.md"]
 AREA_DIR = {"problem-validation":"01-discovery","product-vision":"02-product/vision",
     "customer-discovery":"02-product/customers","market":"02-product/market","goals":"02-product/goals","constraints":"03-constraints","system-context":"03-system-context",
     "ddd":"04-domain/ddd","derive-functional":"05-functional-spec","quality":"06-requirements/quality",
     "data-reqs":"06-requirements/data","integration-reqs":"06-requirements/integration",
-    "security-reqs":"06-requirements/security","ux-reqs":"06-requirements/ux","design-system":"06-requirements/design-system","compliance":"06-requirements/compliance","ml-reqs":"06-requirements/ml","entitlements":"06-requirements/entitlements",
-    "monetization":"09-commercial/monetization","go-to-market":"09-commercial/go-to-market","growth":"09-commercial/growth",
-    "derive-architecture":"07-solution/arch","derive-data-architecture":"07-solution/data",
-    "derive-api-contracts":"07-solution/api","derive-security-architecture":"07-solution/security",
-    "derive-infra-ops":"07-solution/infra-ops","derive-observability":"07-solution/observability",
-    "derive-test-strategy":"07-solution/test","derive-impl-design":"07-solution/impl","derive-ml-architecture":"07-solution/ml",
-    "derive-conventions":"08-delivery/conventions","derive-tasks":"08-delivery/tasks",
-    "conformance-review":"08-delivery/verification"}
+    "security-reqs":"06-requirements/security","ux-reqs":"08-ux","design-system":"07-design-system","compliance":"06-requirements/compliance","ml-reqs":"06-requirements/ml","entitlements":"06-requirements/entitlements",
+    "monetization":"11-commercial/monetization","go-to-market":"11-commercial/go-to-market","growth":"11-commercial/growth",
+    "derive-architecture":"09-solution/arch","derive-data-architecture":"09-solution/data",
+    "derive-api-contracts":"09-solution/api","derive-security-architecture":"09-solution/security",
+    "derive-infra-ops":"09-solution/infra-ops","derive-observability":"09-solution/observability",
+    "derive-test-strategy":"09-solution/test","derive-impl-design":"10-delivery/impl-design","derive-ml-architecture":"09-solution/ml",
+    "derive-conventions":"10-delivery/conventions","derive-tasks":"10-delivery/tasks",
+    "conformance-review":"10-delivery/verification"}
 # Which ID-prefixes are DEFINED in which directory (enforces stage purity / no-unrelated-content).
 # The type-prefix set here is the SINGLE source of truth; selfcheck.py diffs it against the prefixes
 # the skills declare, so adding a prefix to a skill without registering it here is caught.
@@ -37,18 +37,20 @@ PREFIX_OWNER = {"UC":"05-functional-spec","AC":"05-functional-spec",
     "CMD":"04-domain/ddd","EVT":"04-domain/ddd","AGG":"04-domain/ddd",
     "VO":"04-domain/ddd","HOT":"04-domain/ddd","POL":"04-domain/ddd","RM":"04-domain/ddd","ENT":"04-domain/ddd",
     "NFR":"06-requirements/quality","ASR":"06-requirements/quality","DATA":"06-requirements/data",
-    "SEC":"06-requirements/security","THR":"06-requirements/security","OBL":"06-requirements/compliance","API":"07-solution/api","ML":"06-requirements/ml",
+    "SEC":"06-requirements/security","THR":"06-requirements/security","OBL":"06-requirements/compliance","API":"09-solution/api","ML":"06-requirements/ml",
     "ENTL":"06-requirements/entitlements",
-    "SLO":"07-solution/observability","EXP":"09-commercial/growth","T":"08-delivery/tasks","DS":"06-requirements/design-system"}
+    "SLO":"09-solution/observability","EXP":"11-commercial/growth","T":"10-delivery/tasks","DS":"07-design-system"}
 def file_layer(r):
     if r.startswith("04-domain/ddd"): return 1
     if r.startswith("05-functional-spec") or r.startswith("06-requirements/"): return 2
-    if r.startswith("09-commercial/"): return 2          # monetization · go-to-market · growth (post-launch sinks)
-    if r.startswith("07-solution/"): return 3
-    if r.startswith("08-delivery/"): return 4
-    if r.startswith("10-operate"): return 4
+    if r.startswith("11-commercial/"): return 2          # monetization · go-to-market · growth (post-launch sinks)
+    if r.startswith("07-design-system"): return 3        # the visual + interaction contract (consumes requirements)
+    if r.startswith("08-ux"): return 4                   # journeys (consume the design system + requirements)
+    if r.startswith("09-solution/"): return 5
+    if r.startswith("10-delivery/"): return 6
+    if r.startswith("12-operate"): return 6
     return 0  # constraints, 02-product/*, discovery, singletons
-ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"VO":1,"HOT":1,"POL":1,"RM":1,"ENT":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"THR":2,"DATA":2,"OBL":2,"ENTL":2,"EXP":2,"DS":2,"ML":2,"API":3,"SLO":3,"T":4,"ADR":0}
+ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"VO":1,"HOT":1,"POL":1,"RM":1,"ENT":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"THR":2,"DATA":2,"OBL":2,"ENTL":2,"EXP":2,"ML":2,"DS":3,"API":5,"SLO":5,"T":6,"ADR":0}
 def id_layer(tok): return ID_LAYER.get(tok.split("-")[0].upper(), 0)
 PROSE_WORDS = 40
 
@@ -146,10 +148,10 @@ if rd.exists():
         if "not-started" in st and c > 0: add("WARN", "_readiness.md", "'" + area + "' has content but is marked not-started", i)
 
 # 9 gate order
-if any(ccount(d) > 0 for d in LEAF_DIRS if d.startswith("07-solution/")):
-    empty = [d for d in LEAF_DIRS if (d.startswith("05-functional-spec") or d.startswith("06-requirements/")) and ccount(d) == 0]
+if any(ccount(d) > 0 for d in LEAF_DIRS if d.startswith("09-solution/")):
+    empty = [d for d in LEAF_DIRS if (d.startswith("05-functional-spec") or d.startswith("06-requirements/") or d.startswith("07-design-system") or d.startswith("08-ux")) and ccount(d) == 0]
     if empty:
-        add("WARN", "(gate)", "07-solution/* has content but requirements incomplete (" + ", ".join(empty) + ") - architecture-readiness gate not met")
+        add("WARN", "(gate)", "09-solution/* has content but requirements/design-system/ux incomplete (" + ", ".join(empty) + ") - architecture-readiness gate not met")
 
 # 10 prose heuristic - flag prose BLOCKS (consecutive long non-structural lines), not a lone clarifying sentence
 def struct(l):
@@ -259,12 +261,11 @@ for p, r in cmd_files():
 # downward id sitting in plain prose (no refmark/arrow) can't evade the upstream-only invariant. High
 # precision: every hit is a real downward occurrence (a definition / same-layer mention has id_layer ==
 # file_layer, never > , so it never fires). Exemptions mirror the reference checks: ADR source files (cite
-# their drivers downward by design), traceability.md (the cross-layer trace spine), and the JIT impl area
-# (derive-impl-design names the task it elaborates — the one acknowledged layer wrinkle). Skip fenced code +
+# their drivers downward by design) and traceability.md (the cross-layer trace spine). Skip fenced code +
 # the scope header; an id in an absent area (partial spec) is suppressed like the undefined check.
 dn_seen = set()
 for p, r in cmd_files():
-    if is_adr_file(r) or os.path.basename(r) == "traceability.md" or r.startswith("07-solution/impl") or ("/" not in r and r.startswith("_")): continue   # last: spec-root orchestration dashboards (_readiness/_human-input) span all layers by design
+    if is_adr_file(r) or os.path.basename(r) == "traceability.md" or ("/" not in r and r.startswith("_")): continue   # last: spec-root orchestration dashboards (_readiness/_human-input) span all layers by design
     fl = file_layer(r); fence = False
     for i, l in enumerate(read(p).splitlines(), 1):
         s = l.lstrip()
@@ -330,7 +331,7 @@ COV_HINT = {"CMD":"expected a use-case (UC-) projecting it","EVT":"no downstream
     "SLO":"no alert/runbook references it","NFR":"no test/SLO evidences it","ASR":"no verifying test",
     "API":"no consumer/test","EXP":"no analytics event/task wires it","DATA":"no consumer"}
 trace_ids = set()
-_tp = SPEC / "08-delivery" / "verification" / "traceability.md"
+_tp = SPEC / "10-delivery" / "verification" / "traceability.md"
 if _tp.exists():
     for l in read(_tp).splitlines():
         trace_ids |= set(IDTOK.findall(l))
@@ -426,7 +427,7 @@ for p, r in cmd_files():
 
 # 15 no task ships with an unresolved gap (the last-responsible-moment forcing checkpoint, enforced)
 for p, r in cmd_files():
-    if not r.startswith("08-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
     for i, l in enumerate(read(p).splitlines(), 1):
         if re.search(r"\bGAP\b", l) and re.search(r"\bUNRESOLVED\b", l, re.I):
             add("ERROR", r, "unresolved GAP in task - complete it (upstream), mark N/A, or accept (ADR) before it can be implemented", i)
@@ -470,7 +471,7 @@ if superseded:
 _hin = SPEC / "_human-input.md"
 _htxt = read(_hin) if _hin.exists() else ""
 for p, r in cmd_files():
-    if not r.startswith("08-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
     if re.search(r"afk:\s*blocked", read(p), re.I):
         for tid in [d for d in defined if d.split("-")[0].upper() == "T" and r in defsites.get(d, set())]:
             if tid not in _htxt:

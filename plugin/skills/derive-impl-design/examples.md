@@ -14,7 +14,7 @@ seam interface (the test surface, fixed in the architecture):
 This slice is flagged `design-first` (real concurrency + a cross-system notification), so we design the **internals behind that seam** — a deep module: much behavior, the small interface unchanged.
 
 ## Output
-`solution/impl/reschedule-job-service.md`
+`delivery/impl-design/reschedule-job-service.md`
 
 ```
 algorithm (sketch)

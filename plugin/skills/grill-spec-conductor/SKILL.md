@@ -44,7 +44,7 @@ The same skills, handed no input and no target, run standalone for someone who c
   Validated / Testing / Accepted-risk / Untested / Invalidated; plus kill-criteria status and PMF
   signals. A green spec next to a red bet is the point — keep them visibly separate. *Spec consistent*
   ≠ *bet validated.*
-- **Delivery health** (once in Stage 4–5) — tasks todo / in-progress / done / blocked, conformance
+- **Delivery health** (once in Stage 6–7) — tasks todo / in-progress / done / blocked, conformance
   pass-rate, next gate. The execution loop follows `build-order` (dependencies first); the conductor
   hands each execution skill a **tight context** (the task + its referenced spec IDs only) so the
   coding agent stays efficient.
@@ -65,32 +65,37 @@ STAGE 1 · DOMAIN
         ddd                  the hub; seeds glossary + actors                                → 04-domain/ddd/
 STAGE 2 · REQUIREMENTS (derive[domain] + reference[product,constraints] + elicit deltas)
         derive-functional (projected from ddd)                                                          → 05-functional-spec/   (DERIVED — no input)
-        quality · data-reqs · integration-reqs · compliance (OBL-) · entitlements (ENTL-) · security-reqs (SEC-) · design-system (DS-) · ml-reqs (AI · ML-) · ux-reqs (journeys · no ids)  → 06-requirements/*   (grilled; tiered — see repo-layout)
+        quality · data-reqs · integration-reqs · compliance (OBL-) · entitlements (ENTL-) · security-reqs (SEC-) · ml-reqs (AI · ML-)  → 06-requirements/*   (grilled; tiered — see repo-layout)
+STAGE 3 · DESIGN SYSTEM (the visual + interaction contract — its own layer; consumes requirements)
+        design-system        tokens(DTCG) · components · a11y · brand · voice  (DS-)                 → 07-design-system/   (grilled; a provided export as base, or generated)
+STAGE 4 · UX (the experience — journeys synthesise the design system + the requirements)
+        ux-reqs              journeys · info-needs · IA · a11y · i18n  (no ids — a synthesis)         → 08-ux/   (grilled)
         ───────────────── ARCHITECTURE-READINESS GATE ─────────────────
-STAGE 3 · SOLUTION (the how)
+STAGE 5 · SOLUTION (the how)
         derive-architecture · derive-data-architecture · derive-api-contracts ·
-        derive-security-architecture · derive-infra-ops · derive-test-strategy · derive-observability (SLO-) · derive-ml-architecture (AI)   → 07-solution/*
-        (architecture fixes the module map + seam contracts; module INTERNALS are designed per-slice in execution — derive-impl-design is JIT, not a Stage-3 area)
+        derive-security-architecture · derive-infra-ops · derive-test-strategy · derive-observability (SLO-) · derive-ml-architecture (AI)   → 09-solution/*
+        (architecture fixes the module map + seam contracts; module INTERNALS are designed per-slice in execution — derive-impl-design is JIT, its output landing in 10-delivery/impl-design/ downstream of tasks, NOT a solution area)
         ───────────────── IMPLEMENTATION-READINESS GATE ─────────────────
-STAGE 4 · DELIVERY PREP (build the agent's runway)
-        derive-conventions   standards · dependency/boundary rules · DoD · build/test cmds · CLAUDE.md → 08-delivery/conventions/
-        derive-tasks         minimal vertical slices (T-NNN) · walking-skeleton first · build-order DAG  → 08-delivery/tasks/
+STAGE 6 · DELIVERY PREP (build the agent's runway)
+        derive-conventions   standards · dependency/boundary rules · DoD · build/test cmds · CLAUDE.md → 10-delivery/conventions/
+        derive-tasks         minimal vertical slices (T-NNN) · walking-skeleton first · build-order DAG  → 10-delivery/tasks/
         ───────────────── DELIVERY-READINESS GATE ─────────────────
-STAGE 5 · EXECUTION (per task, in build-order; CODE lives in the repo, NOT spec/)
-        (UI slice → generate-ui-prototype renders its screen[s] → prototypes/ui/ ;  slice flagged design-first → derive-impl-design designs its modules → 07-solution/impl/)  →  implement-task (builds against the prototype + module design)  →  run-tests  →  conformance-review  →  done    (loop; any red routes back)
+STAGE 7 · EXECUTION (per task, in build-order; CODE lives in the repo, NOT spec/)
+        (slice flagged design-first → derive-impl-design designs its modules → 10-delivery/impl-design/)  →  implement-task (builds against the slice's frozen UI prototype, if any, + the module design)  →  run-tests  →  conformance-review  →  done    (loop; any red routes back)
+        (the UI prototype is NOT a loop step — it is produced + reviewed + frozen at task finalization, before the run; see Task readiness)
         autorun         autonomous driver · runs that loop across the whole task queue (AFK) · stops only on a true blocker (HITL trigger)
-                                                                            conformance-review → 08-delivery/verification/
+                                                                            conformance-review → 10-delivery/verification/
         ──────────── RELEASE-READINESS CHECKLIST (advisory) ────────────
 POST-LAUNCH · COMMERCIAL (pure sinks — nothing upstream depends on these; the build-shaping MOTION lives in 02-product/vision, the ENTITLEMENT tiers in 06-requirements/entitlements)
-        go-to-market         channels · launch · partnerships                                → 09-commercial/go-to-market/
-        monetization         business model · pricing · plans · unit economics — prices the ENTL- tiers → 09-commercial/monetization/
-        growth               activation/retention model · experiment backlog (EXP-) · analytics events → 09-commercial/growth/
-STAGE 6 · OPERATE & MAINTAIN (real/prod systems · feeds back to discovery)
+        go-to-market         channels · launch · partnerships                                → 11-commercial/go-to-market/
+        monetization         business model · pricing · plans · unit economics — prices the ENTL- tiers → 11-commercial/monetization/
+        growth               activation/retention model · experiment backlog (EXP-) · analytics events → 11-commercial/growth/
+STAGE 8 · OPERATE & MAINTAIN (real/prod systems · feeds back to discovery)
         deploy-release  (rollout/rollback) · migrate-data (on DATA-/AGG- change) · operate-incident (learnings → assumptions/gaps)
         diagnose (hard bugs: feedback-loop → reproduce → hypothesise → fix+regression)
-                                                                            operational records → 10-operate/
+                                                                            operational records → 12-operate/
 ANY STAGE · prototype (throwaway spike to answer ONE question empirically — resolves a gap/assumption instead of guessing → resolutions/assumptions/ux/ADR)
-ANY STAGE · generate-docs / generate-api-reference / generate-ui-prototype (project the spec → the full-project docs site · the API reference · the slice's clickable UI prototype (per slice); regenerated on change — consumed by readers/clients and the build)
+ANY STAGE · generate-docs / generate-api-reference / generate-ui-prototype (project the spec → the full-project docs site · the API reference · a ux-heavy slice's clickable UI prototype (produced + frozen at that task's finalization, not in the coding loop; skipped when the IA + design system already fully determine the screen); regenerated on change — consumed by readers/clients and the build)
 cross-cutting views (reconciled by reading outputs):  glossary, actors, bets, the risk + technical-debt register, decisions
 ```
 **Stage purity:** each leaf folder is the exclusive output of one skill/stage; nothing co-located
@@ -100,7 +105,7 @@ across stages. The only cross-stage shared location is `adr/` (one file per ADR,
 customer-discovery.personas → actors · constraints → bounds all · personas + neighbor-systems → system-context (the boundary) → ddd + integration + C4-L1 · ddd → all requirements · functional →
 **monetization** (no priceable features ⇒ don't ask) · ddd flows + functional → quality, ux,
 goals (refinement) · ALL requirements + product + monetization → solution (the gate) · derive-architecture →
-the other solution areas · functional + data → ml-reqs (AI) → derive-ml-architecture · brand seed / provided tokens → design-system (DS-) → ux journeys + ui-prototype (per slice) → tasks/build · architecture seams + a design-first slice → derive-impl-design (JIT in execution) → module internals.
+the other solution areas · functional + data → ml-reqs (AI) → derive-ml-architecture · brand seed / provided tokens → design-system (DS-) → ux journeys + ui-prototype (per ux-heavy slice, at task finalization) → tasks/build · architecture seams + a design-first slice → derive-impl-design (JIT in execution) → module internals.
 
 ## Topic readiness — don't ask what isn't answerable yet
 A topic is offered only when its prerequisites have **content**, not when its area is merely
@@ -118,8 +123,8 @@ function exists.** Mechanism (reuses Deferred, pointed at sequencing):
 1. **Desirability gate (soft, early):** don't pour effort into deep speccing until the riskiest
    *desirability* assumptions are at least **named with a test plan** (not necessarily passed). Stops
    speccing a product nobody's checked anyone wants.
-2. **Architecture-readiness gate (requirements → solution):** every foundation + requirements +
-   monetization area `done` & cross-area-consistent, **and** every *critical* assumption `Validated`
+2. **Architecture-readiness gate (requirements + design-system + ux → solution):** every foundation +
+   requirements + **design-system + ux** + monetization area `done` & cross-area-consistent, **and** every *critical* assumption `Validated`
    or explicitly `Accepted-risk` (logged). You may proceed on accepted risks; not on un-acknowledged
    ones. When proceeding on accepted risk, **flag scoping the first build (MVP) to test it cheaply.**
    (`gtm` may trail — not a code prerequisite.)
@@ -191,6 +196,15 @@ forced upfront — it's recorded as `GAP … UNRESOLVED` and **surfaced at this 
 moment), forcing the user to complete it, mark it N/A, or accept a default (ADR)**. A task with **any
 `UNRESOLVED` gap is not implementation-final and cannot be coded** (lint-enforced). The conductor hands
 `implement-task` only the task + its referenced spec IDs (tight context).
+**UI slices — the prototype is a finalization artifact, not a coding step.** When a UI slice's **`ux`
+dimension carries slice-specific composition** (a new screen/flow, non-obvious states), finalizing the
+task **generates its clickable prototype (`generate-ui-prototype`), you review/tweak it, and it freezes
+into the task** as the `ux` resolution — this is the design-review window, and it sits **here, before the
+build run**, so an AFK `autorun` builds against already-approved frozen prototypes and never has to break
+to show you a screen. A slice the **IA + design system already fully determine** (existing components,
+obvious composition) needs **no prototype** — mark `ux` `N/A — reuses DS-… on the existing screen`. A
+design surprise that only surfaces mid-build is the normal GAP path: `autorun` parks that one slice
+(HITL trigger → `_human-input.md`) and keeps going on the rest.
 
 ## Change propagation (ALWAYS on, self-triggered — not a step you wait to be told to run)
 Every change — from an interview, a derivation, a ratified decision, or an operational learning — **must
@@ -206,7 +220,7 @@ dependency graph.
 4. **Re-process only the impact set, incrementally** (diff, don't regenerate): re-grill deltas →
    re-derive (reading existing ADRs, applying a delta) → re-finalize affected tasks → re-run execution
    for affected code. Nothing outside the set is touched. **When a re-derivation rewrites a derived
-   artifact** (anything under `07-solution/`, `05-functional-spec/`, `08-delivery/conventions|tasks/`, or
+   artifact** (anything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions|tasks|impl-design/`, or
    `CLAUDE.md`), **run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <those paths>`** so the
    derived-guard sees a legitimate regeneration and doesn't false-block the commit.
 5. **Re-verify:** `lint_spec.py` + `guard_derived.py` + `conformance-review`.

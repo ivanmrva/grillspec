@@ -6,7 +6,7 @@ Promoting a merged increment to production, gated on a real metric gate.
 > Staging reconciled to revision `r-4471` (declarative; the reconciler converged it — no hand-apply). Smoke checks green. Promoting to prod as a **canary** behind flag `checkout.split-tender` (shipped dark).
 > Canary 10% for 15 min, metric gate: `error_rate < 0.5%` AND `p95_latency_ms < 400`. Observed `error_rate 0.21%`, `p95 312ms` → **gate PASS, auto-promote** to 100%. (Verdict is the gate's, not my read of the dashboard.)
 
-Recorded — `10-operate/deploy-prod-2.7.0.md`:
+Recorded — `12-operate/deploy-prod-2.7.0.md`:
 
 | field | value |
 |---|---|

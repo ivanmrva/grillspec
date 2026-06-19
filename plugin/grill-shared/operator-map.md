@@ -24,7 +24,7 @@ Always available: **`prototype`** (answer one empirical question) · **`generate
 - **greenfield** (full walk) · **focused-change** (fast path: enter at the one artifact that changes,
   auto-propagate over the minimal subgraph) · **brownfield-import** (reverse-derive from existing code)
   · **lite path** (tiny product: `discovery` + `product-vision` + `ddd` + a merged `quality`/`context`
-  note + minimal `07-solution/arch`; everything else N-A until warranted).
+  note + minimal `09-solution/arch`; everything else N-A until warranted).
 
 ## Gates are readiness signals, not locks
 Skills are independently invocable — run any derive/exec skill whenever you want (including early, to
@@ -66,7 +66,7 @@ The repo holds two different things; govern them separately (scope hooks by path
 **B. Specification / documentation** (`spec/`, the doc-site) — framework-level, ships with the system
 - *Instructions:* the skills/engines.
 - *Spec governance (GitHub Actions, ships ready-to-run):* `.github/workflows/spec-governance.yml` runs **`lint_spec.py`** + **`guard_derived.py`** on every PR touching the spec. (Also a pre-commit hook locally.)
-- *Derived artifacts are regenerate-only:* everything under `07-solution/`, `05-functional-spec/`, `08-delivery/conventions/`, `08-delivery/tasks/`, and root `CLAUDE.md` changes **only** by re-running its derive-* skill (which records its hash). The guard fails any derived file edited by hand; change the **upstream** and re-derive instead.
+- *Derived artifacts are regenerate-only:* everything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions/`, `10-delivery/tasks/`, and root `CLAUDE.md` changes **only** by re-running its derive-* skill (which records its hash). The guard fails any derived file edited by hand; change the **upstream** and re-derive instead.
 - *Publish:* **`generate-docs`** + **`generate-api-reference`** build the doc-site; `.github/workflows/docs-site.yml` deploys it to Pages on push to main.
 - *Propagation-miss backup (see below).*
 

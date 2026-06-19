@@ -2,7 +2,7 @@
 
 Projecting the **whole** spec tree into the project's doc-site — every area, organized by the **four documentation modes** rather than mirroring the spec folders.
 
-> **Claude:** The spec sections feed the modes, they don't define the top-level shape. Every area is covered (discovery → delivery), so the site is the complete project documentation. Each section is tagged by its mode; releases are tagged, so the root carries a version selector. API contracts exist → the API reference folds in under `api/`. Module internals were designed **per-slice**, so the scattered `07-solution/impl/*` files + the per-task `design:` decisions are consolidated into one **Implementation design** section, grouped by module — read as a document, not per-task fragments.
+> **Claude:** The spec sections feed the modes, they don't define the top-level shape. Every area is covered (discovery → delivery), so the site is the complete project documentation. Each section is tagged by its mode; releases are tagged, so the root carries a version selector. API contracts exist → the API reference folds in under `api/`. Module internals were designed **per-slice**, so the scattered `10-delivery/impl-design/*` files + the per-task `design:` decisions are consolidated into one **Implementation design** section, grouped by module — read as a document, not per-task fragments.
 
 Doc-site outline written to `docs-site/` (regenerated wholesale — pure projection, mints no IDs):
 
@@ -19,7 +19,7 @@ Doc-site outline written to `docs-site/` (regenerated wholesale — pure project
   - Constraints & stakeholders · System context (boundary + C4 L1)
   - Domain model: context-map · aggregates · events (Mermaid)
   - Solution architecture: style · C4 · stack · **module map & seam contracts** · key sequences — plus data / security / infra / observability / test / **ML** architecture
-  - **Implementation design** — consolidated from the per-module `07-solution/impl/*` internals + the per-task `design:` decisions, grouped by module / subsystem
+  - **Implementation design** — consolidated from the per-module `10-delivery/impl-design/*` internals + the per-task `design:` decisions, grouped by module / subsystem
   - Commercial model & growth · ADRs · key decisions
 - Plus: readiness dashboards
 - `index.html` — navigable root, sections cross-linked by stable ID, each tagged by mode, **version selector** (v1.0 / v1.1)

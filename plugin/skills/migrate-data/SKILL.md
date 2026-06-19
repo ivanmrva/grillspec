@@ -23,15 +23,15 @@ argument-hint: a schema or data change to migrate
 - Code lives in the source tree, never in `spec/`.
 
 ## Output
-Written under `10-operate/`:
+Written under `12-operate/`:
 
 | File / target | Captures | Format |
 |---|---|---|
-| `10-operate/migration-<DATA\|AGG-id>.md` | migration record: the change · forward + rollback plan · online strategy (batch size + throttle) · verification (counts + integrity; checksum/shadow-compare for high-value data) · result | — |
+| `12-operate/migration-<DATA\|AGG-id>.md` | migration record: the change · forward + rollback plan · online strategy (batch size + throttle) · verification (counts + integrity; checksum/shadow-compare for high-value data) · result | — |
 
 (migration CODE → project source tree, never spec/)
 (+ ADRs → `adr/ADR-MIG-NNN.md`)
-Consumes: the changed `DATA-`/`AGG-` IDs + `07-solution/data/` (the data architecture, incl. its migration approach) + the current schema/state.
+Consumes: the changed `DATA-`/`AGG-` IDs + `09-solution/data/` (the data architecture, incl. its migration approach) + the current schema/state.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`

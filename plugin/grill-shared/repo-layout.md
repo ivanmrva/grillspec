@@ -8,11 +8,11 @@
 ├── src/                  implementation CODE        (mirrors the architecture's components)
 └── tests/                implementation TESTS
 ```
-**Zones are exclusive:** spec files only under `spec/`; code only under `src/` + `tests/`; throwaway prototypes under `prototypes/` (never `src/`); the generated doc site only under `docs-site/`; a provided/generated **design system** (raw assets + the DTCG design-tokens file) only under `design-system/`; CI workflows under `.github/workflows/` (GitHub Actions — `spec-governance.yml`, `code-ci.yml`, `docs-site.yml`). **DERIVED zones are regenerate-only** — `07-solution/*`, `05-functional-spec/`, `08-delivery/conventions/`, `08-delivery/tasks/`, and root `CLAUDE.md` are written *only* by their derive-* skill and are **never hand-edited** (the `guard_derived.py` pre-commit hook blocks it); to change one, edit its upstream and re-run the skill. Everything else under `spec/` (foundation, `04-domain/ddd/`, the authored `06-requirements/*`, the post-launch `09-commercial/*`, and each area's glossary/actors/decisions) is authored/interview-sourced and freely editable. The
-traceability matrix (`spec/08-delivery/verification/traceability.md`) links spec IDs ↔ code/test paths,
+**Zones are exclusive:** spec files only under `spec/`; code only under `src/` + `tests/`; throwaway prototypes under `prototypes/` (never `src/`); the generated doc site only under `docs-site/`; a provided/generated **design system** (raw assets + the DTCG design-tokens file) only under `design-system/`; CI workflows under `.github/workflows/` (GitHub Actions — `spec-governance.yml`, `code-ci.yml`, `docs-site.yml`). **DERIVED zones are regenerate-only** — `09-solution/*`, `05-functional-spec/`, `10-delivery/conventions/`, `10-delivery/tasks/`, `10-delivery/impl-design/`, and root `CLAUDE.md` are written *only* by their derive-* skill and are **never hand-edited** (the `guard_derived.py` pre-commit hook blocks it); to change one, edit its upstream and re-run the skill. Everything else under `spec/` (foundation, `04-domain/ddd/`, the authored `06-requirements/*`, `07-design-system/`, `08-ux/`, the post-launch `11-commercial/*`, and each area's glossary/actors/decisions) is authored/interview-sourced and freely editable. The
+traceability matrix (`spec/10-delivery/verification/traceability.md`) links spec IDs ↔ code/test paths,
 so the dependency tree spans into code. **Change propagation** (`${CLAUDE_PLUGIN_ROOT}/tools/impact.py`) follows the
 reference graph across all zones, down to code. **Reference direction is upstream-only** (L0 foundation
-→ L1 ddd → L2 functional-spec/requirements → L3 solution → L4 delivery → L5 code); a file never references a layer
+→ L1 ddd → L2 functional-spec/requirements → L3 design-system → L4 ux → L5 solution → L6 delivery → L7 code); a file never references a layer
 below it — enforced by `lint_spec.py`.
 
 # Output tree — `spec/`  (stage-pure: one leaf folder = one skill = one stage)
@@ -66,11 +66,13 @@ spec/
 │   ├── compliance/      grill-compliance             regimes → obligations (OBL-)                        grill
 │   ├── entitlements/    grill-entitlements           access tiers · feature gating · limits (ENTL-)      grill
 │   ├── security/        grill-security-reqs          threat·authz·privacy   (SEC-/THR-)                  grill
-│   ├── design-system/  grill-design-system          tokens(DTCG)·components·a11y·brand·voice  (DS-)      grill
-│   ├── ml/              grill-ml-reqs                model behaviour·evals·responsible-AI  (ML-)          grill (AI only)
-│   └── ux/              grill-ux-reqs                journeys·info-needs·IA·a11y·i18n  (no ids — a synthesis)   grill
+│   └── ml/              grill-ml-reqs                model behaviour·evals·responsible-AI  (ML-)          grill (AI only)
+│
+├── 07-design-system/      grill-design-system          tokens(DTCG)·components·a11y·brand·voice  (DS-)      grill
+│                           └─ its OWN layer (L3 · the visual + interaction contract; consumes requirements). The token ASSET lives in the non-spec `design-system/` zone; this area is its `DS-` contract over it.
+├── 08-ux/                  grill-ux-reqs                journeys·info-needs·IA·a11y·i18n (L4 · no ids — a synthesis of the design system + requirements)   grill
 │   ───────────────── ARCHITECTURE-READINESS GATE ─────────────────
-├── 07-solution/            (DERIVED — the how)
+├── 09-solution/            (DERIVED — the how)
 │   ├── arch/            derive-architecture  style·C4·stack·contexts→services·module map+seam contracts  DERIVE  [GATE]
 │   ├── data/            derive-data-architecture      schema·storage·migration                            DERIVE
 │   ├── api/             derive-api-contracts          OpenAPI/AsyncAPI·versioning  (API-)                 DERIVE
@@ -78,22 +80,22 @@ spec/
 │   ├── infra-ops/       derive-infra-ops              topology·IaC·CICD·deploy/rollback·DR                DERIVE
 │   ├── observability/   derive-observability          SLOs(SLO-)·telemetry·alerts·runbooks                DERIVE
 │   ├── test/            derive-test-strategy          levels·edge-discovery·NFR evidence                  DERIVE
-│   ├── impl/            derive-impl-design            per-SLICE module internals · filled JIT in execution DERIVE
 │   └── ml/             derive-ml-architecture        serving·eval-harness·pipeline·monitoring  (AI only)  DERIVE
 │   ───────────────── IMPLEMENTATION-READINESS GATE ─────────────────
-├── 08-delivery/            (DERIVED + execution records)
+├── 10-delivery/            (DERIVED + execution records)
 │   ├── conventions/     derive-conventions            standards·dep/boundary rules·DoD·cmds (+ root CLAUDE.md)  DERIVE
 │   ├── tasks/           derive-tasks         T-NNN.md vertical slices + build-order.md (DAG)               DERIVE
+│   ├── impl-design/     derive-impl-design   per-SLICE module internals · derived JIT in execution (downstream of tasks)  DERIVE
 │   └── verification/    conformance-review           traceability.md (spec ID↔task↔code) + the post-task review report  exec
 │   ───────────────── DELIVERY-READINESS GATE ─────────────────
 │   (execution writes CODE, not spec/:)  implement-task → src/, tests/  ·  run-tests → result
 │
 │  ┌─────────── POST-LAUNCH · pure sinks — nothing upstream depends on these ───────────┐
-├── 09-commercial/
+├── 11-commercial/
 │   ├── go-to-market/    grill-go-to-market   channels·launch·partnerships  (motion lives in 02-product/vision)   grill
 │   ├── monetization/    grill-monetization   pricing·plans·unit-econ — prices the ENTL- tiers              grill
 │   └── growth/          grill-growth         activation/retention·experiments (EXP-)·analytics events       grill
-└── 10-operate/            deploy-release·migrate-data·operate-incident·diagnose   deploy/migration/incident/diagnosis records + bootstrap.md   exec
+└── 12-operate/            deploy-release·migrate-data·operate-incident·diagnose   deploy/migration/incident/diagnosis records + bootstrap.md   exec
 ```
 
 ## Within-stage partial order (the tier diagrams — what the numbers can't show)
@@ -103,14 +105,18 @@ spec/
 tier 0  (depend only on ddd / functional — NO order among them):
         quality · data · integration · compliance · entitlements
 tier 1  (each depends on a tier-0 sibling):
-        design-system ─▶quality   ·   security ─▶data   ·   ml ─▶data
-tier 2:
-        ux ─▶ design-system, quality          (last — it synthesises the rest; mints no ids)
+        security ─▶data   ·   ml ─▶data
 ```
 
-**`09-commercial/`** — flat; zero edges among the three (the old `monetization → go-to-market` edge was the *motion*, now owned by `02-product/vision`). Three independent post-launch sinks.
+**`07-design-system/` (L3) → `08-ux/` (L4)** — their own layers, above requirements and below the solution:
+`design-system ─▶ quality` (the visual + interaction contract), then `ux ─▶ design-system, quality` (journeys
+synthesise both; mint no ids). The split into two numbered layers is deliberate — they are *experience design*,
+not constraint-requirements, and the upstream-only rule now enforces the direction (requirements can't reference
+the design system; the design system can't reference ux).
 
-**Gates:** desirability (soft) · architecture-readiness (requirements→solution) ·
+**`11-commercial/`** — flat; zero edges among the three (the old `monetization → go-to-market` edge was the *motion*, now owned by `02-product/vision`). Three independent post-launch sinks.
+
+**Gates:** desirability (soft) · architecture-readiness (requirements + design-system + ux→solution) ·
 implementation-readiness (solution→delivery prep) · delivery-readiness (delivery prep→execution) ·
 per-task done (execution loop). **Code lives in the project source tree (`src/`, `tests/`), never in
 `spec/`** — the closed-world rule governs `spec/` only; `CLAUDE.md` sits at the repo root.

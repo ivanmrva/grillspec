@@ -28,7 +28,7 @@ argument-hint: a production incident to work
 - **Never pass on:** an incident with no postmortem · a recurring failure with no new runbook/rule · a learning that doesn't reach the spec.
 
 ## Output
-Written under `10-operate/`:
+Written under `12-operate/`:
 
 | File / target | Captures | Format |
 |---|---|---|
@@ -38,7 +38,7 @@ Written under `10-operate/`:
 
 ADRs → `adr/ADR-INC-NNN.md`
 (no spec/code changes)
-Consumes: the firing alert + its linked `SLO-` and runbook (`07-solution/observability/`) + the DR/backup procedures (`07-solution/infra-ops/`).
+Consumes: the firing alert + its linked `SLO-` and runbook (`09-solution/observability/`) + the DR/backup procedures (`09-solution/infra-ops/`).
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`

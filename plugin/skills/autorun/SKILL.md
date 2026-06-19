@@ -11,7 +11,7 @@ argument-hint: the task wave to run autonomously
 **Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill: **autonomous execution of the task DAG (AFK)** — implement → done-gate → conformance, in parallel, until each task's gate is fully green.
 
 ## Process
-1. **Select the ready wave.** From `08-delivery/tasks/build-order.md`, take every task that is **AFK-eligible** (`afk: eligible` — no HITL trigger, no unresolved gap) **and** whose `depends:` are all merged.
+1. **Select the ready wave.** From `10-delivery/tasks/build-order.md`, take every task that is **AFK-eligible** (`afk: eligible` — no HITL trigger, no unresolved gap) **and** whose `depends:` are all merged.
 2. **Run the wave in parallel.** Prefer **dynamic workflows** (Opus 4.8) for the whole wave; otherwise one subagent (or `claude -p`) per task. **Each task runs the full done-gate loop** — implement → run the whole gate → self-correct the *code* → repeat until green — honoring the **anti-cheat invariants** (fix code not goalposts · spec is upstream truth · green ≠ done · never disable a gate).
 3. **Merge, propagate, recompute.** On a green gate that passes the conformance review — **run in a fresh / independent context, not the self-correcting loop's own verdict** — merge → run propagation (`impact.py`) → **run the wave-level integration gate** (the system/Tier-B suite after this wave's merges, before launching the next) → recompute the ready wave (dependents now unlocked) → launch the next wave. If the integration gate turns main red, **park the wave** and stop launching. Repeat until no AFK-eligible, dependency-ready task remains.
 

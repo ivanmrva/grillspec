@@ -24,7 +24,7 @@ argument-hint: the slice (and the modules it touches) to design
 - DESIGN fidelity — no code, no heavy pseudocode
 
 ## Output
-Written under `solution/impl/` — **filled incrementally**, one file per module **as a slice touches it** (not all modules up front):
+Written under `delivery/impl-design/` — **filled incrementally**, one file per module **as a slice touches it** (not all modules up front):
 
 | File | Captures | Format |
 |---|---|---|

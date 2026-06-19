@@ -21,32 +21,34 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `compliance` | grill-compliance | elicit | constraints | OBL- |
 | `data-reqs` | grill-data-reqs | derive | ddd | DATA- |
 | `derive-functional` | derive-functional | derive | ddd | UC-, AC- |
-| `design-system` | grill-design-system | elicit | quality | DS- |
 | `entitlements` | grill-entitlements | derive | derive-functional | ENTL- |
 | `integration-reqs` | grill-integration-reqs | elicit | system-context, ddd | — |
 | `ml-reqs` | grill-ml-reqs | elicit | derive-functional, data-reqs | ML- |
 | `quality` | grill-quality | derive | ddd | NFR-, ASR- |
 | `security-reqs` | grill-security-reqs | derive | data-reqs, ddd, product-vision | SEC-, THR- |
+| **3 · Design system** | | | | |
+| `design-system` | grill-design-system | elicit | quality | DS- |
+| **4 · UX** | | | | |
 | `ux-reqs` | grill-ux-reqs | derive | derive-functional, ddd, design-system, quality, product-vision | — |
-| **3 · Solution** | | | | |
+| **5 · Solution** | | | | |
 | `derive-api-contracts` | derive-api-contracts | derive | ddd, integration-reqs, security-reqs, derive-architecture | API- |
 | `derive-architecture` | derive-architecture | derive | derive-functional, ddd, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, entitlements | — |
 | `derive-data-architecture` | derive-data-architecture | derive | data-reqs, ddd, derive-functional, derive-architecture | — |
-| `derive-impl-design` | derive-impl-design | derive | derive-architecture, derive-tasks | — |
 | `derive-infra-ops` | derive-infra-ops | derive | quality, constraints, derive-architecture | — |
 | `derive-ml-architecture` | derive-ml-architecture | derive | ml-reqs, derive-architecture, derive-data-architecture | — |
 | `derive-observability` | derive-observability | derive | quality, security-reqs, derive-architecture | SLO- |
 | `derive-security-architecture` | derive-security-architecture | derive | security-reqs, derive-architecture, derive-data-architecture | — |
 | `derive-test-strategy` | derive-test-strategy | derive | derive-functional, ux-reqs, derive-architecture, quality, derive-api-contracts, derive-observability, security-reqs | — |
-| **4 · Delivery prep** | | | | |
+| **6 · Delivery prep** | | | | |
 | `derive-conventions` | derive-conventions | derive | derive-architecture, derive-test-strategy | — |
 | `derive-tasks` | derive-tasks | derive | derive-functional, ddd, derive-architecture, derive-conventions, product-vision, ux-reqs, derive-api-contracts | T- |
-| **5 · Execution** | | | | |
+| **7 · Execution** | | | | |
 | `autorun` | autorun | exec | derive-tasks | — |
 | `conformance-review` | conformance-review | exec | derive-tasks, implement-task, derive-architecture, derive-api-contracts, derive-data-architecture, security-reqs, compliance, quality, derive-conventions, ddd | — |
+| `derive-impl-design` | derive-impl-design | derive | derive-architecture, derive-tasks | — |
 | `implement-task` | implement-task | exec | derive-tasks, derive-architecture, derive-conventions, derive-impl-design | — |
 | `run-tests` | run-tests | exec | derive-tasks, implement-task | — |
-| **6 · Operate** | | | | |
+| **8 · Operate** | | | | |
 | `deploy-release` | deploy-release | exec | derive-infra-ops, derive-observability | — |
 | `diagnose` | diagnose | exec | — | — |
 | `migrate-data` | migrate-data | exec | data-reqs, derive-data-architecture | — |
@@ -83,42 +85,46 @@ flowchart TD
     compliance["compliance<br/>OBL-"]
     data_reqs["data-reqs<br/>DATA-"]
     derive_functional["derive-functional<br/>UC- AC-"]
-    design_system["design-system<br/>DS-"]
     entitlements["entitlements<br/>ENTL-"]
     integration_reqs["integration-reqs"]
     ml_reqs["ml-reqs<br/>ML-"]
     quality["quality<br/>NFR- ASR-"]
     security_reqs["security-reqs<br/>SEC- THR-"]
+  end
+  subgraph stage_3_design_system["3 · Design system"]
+    design_system["design-system<br/>DS-"]
+  end
+  subgraph stage_4_ux["4 · UX"]
     ux_reqs["ux-reqs"]
   end
-  subgraph stage_3_solution["3 · Solution"]
+  subgraph stage_5_solution["5 · Solution"]
     derive_api_contracts["derive-api-contracts<br/>API-"]
     derive_architecture["derive-architecture"]
     derive_data_architecture["derive-data-architecture"]
-    derive_impl_design["derive-impl-design"]
     derive_infra_ops["derive-infra-ops"]
     derive_ml_architecture["derive-ml-architecture"]
     derive_observability["derive-observability<br/>SLO-"]
     derive_security_architecture["derive-security-architecture"]
     derive_test_strategy["derive-test-strategy"]
   end
-  subgraph stage_4_delivery_prep["4 · Delivery prep"]
+  subgraph stage_6_delivery_prep["6 · Delivery prep"]
     derive_conventions["derive-conventions"]
     derive_tasks["derive-tasks<br/>T-"]
   end
-  subgraph stage_5_execution["5 · Execution"]
+  subgraph stage_7_execution["7 · Execution"]
     autorun["autorun"]
     conformance_review["conformance-review"]
+    derive_impl_design["derive-impl-design"]
     implement_task["implement-task"]
     run_tests["run-tests"]
   end
-  subgraph stage_6_operate["6 · Operate"]
+  subgraph stage_8_operate["8 · Operate"]
     deploy_release["deploy-release"]
     diagnose["diagnose"]
     migrate_data["migrate-data"]
     operate_incident["operate-incident"]
   end
-  subgraph stage_7_commercial["post-launch · Commercial"]
+  subgraph stage_9_commercial["post-launch · Commercial"]
     go_to_market["go-to-market"]
     growth["growth<br/>EXP-"]
     monetization["monetization"]
@@ -141,7 +147,6 @@ flowchart TD
   constraints --> compliance
   ddd --> data_reqs
   ddd --> derive_functional
-  quality --> design_system
   derive_functional --> entitlements
   system_context --> integration_reqs
   ddd --> integration_reqs
@@ -151,6 +156,7 @@ flowchart TD
   data_reqs --> security_reqs
   ddd --> security_reqs
   product_vision --> security_reqs
+  quality --> design_system
   derive_functional --> ux_reqs
   ddd --> ux_reqs
   design_system --> ux_reqs
@@ -176,8 +182,6 @@ flowchart TD
   ddd --> derive_data_architecture
   derive_functional --> derive_data_architecture
   derive_architecture --> derive_data_architecture
-  derive_architecture --> derive_impl_design
-  derive_tasks --> derive_impl_design
   quality --> derive_infra_ops
   constraints --> derive_infra_ops
   derive_architecture --> derive_infra_ops
@@ -217,6 +221,8 @@ flowchart TD
   quality --> conformance_review
   derive_conventions --> conformance_review
   ddd --> conformance_review
+  derive_architecture --> derive_impl_design
+  derive_tasks --> derive_impl_design
   derive_tasks --> implement_task
   derive_architecture --> implement_task
   derive_conventions --> implement_task

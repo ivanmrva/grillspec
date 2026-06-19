@@ -4,6 +4,36 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.0.0
+
+### Changed — design-system and ux are extracted into their own top-level layers (BREAKING: spec folder renumber)
+`design-system` and `ux` were subfolders of `06-requirements/`. They are **experience design**, not constraint-requirements — the design system is the visual + interaction contract; ux journeys synthesise it with the requirements. They are now **two distinct reference-layers of their own**, between requirements and the solution:
+
+| was | now | reference layer |
+|---|---|---|
+| `06-requirements/design-system/` | **`07-design-system/`** | L3 |
+| `06-requirements/ux/` | **`08-ux/`** | L4 |
+| `07-solution/*` | `09-solution/*` | L5 |
+| `08-delivery/*` | `10-delivery/*` | L6 |
+| `09-commercial/*` | `11-commercial/*` | L2 (post-launch sink) |
+| `10-operate` | `12-operate` | L6 |
+
+- **Distinct layers, not just folders.** `lint_spec.py` (`file_layer`/`ID_LAYER`) now places design-system at **L3** and ux at **L4**, so the **upstream-only rule enforces the direction**: a requirement can't reference the design system, and the design system can't reference ux. `DS-` ids are L3; `API-`/`SLO-` are L5; `T-` is L6.
+- **Architecture-readiness gate** now requires `design-system` + `ux` done (they feed the solution) and sits *after* ux.
+- **Stages** renumbered to match: design-system = stage 3, ux = stage 4, solution = 5, delivery-prep = 6, execution = 7, operate = 8, commercial (post-launch) = 9.
+- Updated `repo-layout.md` (tree · tier diagrams · the L-chain · derived/authored zone lists), the conductor stage map + gates, `dependencies.json` (the `stages` list + each area's `stage`), `lint_spec.py` (`LEAF_DIRS`·`AREA_DIR`·`PREFIX_OWNER`·`file_layer`·`ID_LAYER`·the readiness-gate set), `guard_derived.py`/`impact.py`/`gen_docsite.py` paths, and every skill/doc/example that cites a numbered folder.
+- **Naming:** the `design-system` spec area (`07-design-system/` — the `DS-` contract) is distinct from the non-spec `design-system/` **asset zone** it points at (raw tokens/assets code consumes); grill-design-system's output line now says so explicitly, since the old `06-requirements/design-system/` path no longer disambiguates them.
+- **`derive-impl-design` relocated `09-solution/impl/` → `10-delivery/impl-design/`, deleting the last lint exemption.** It's a `derive-*` artifact (it *originates* module-internal design — pure spec), but it **consumes the task it elaborates**, so sitting in solution (L5, upstream of tasks at L6) made it reference downstream and forced a special-case exemption in the downward-reference check. Moved to the delivery band (**L6, same layer as tasks**) where the `T-` reference is same-layer and legal; its `stage` is now `7-execution` (where it runs JIT). **The exemption is removed, not patched** — the artifact now sits at its true dependency position. (The UI prototype stays a non-spec render in its own zone — `derive-*` originates spec, `generate-*` renders it; that line is what splits them.) Updated `lint_spec.py`, `dependencies.json`, `guard_derived.py`, `gen_docsite.py`, `repo-layout.md`, the conductor, `conductor-playbook.md`, `generate-docs`, and the skill's own output path.
+
+## 3.1.8
+
+### Changed — the UI prototype is a task-finalization artifact, not a coding-loop step (and it's opt-in)
+3.1.7 placed `generate-ui-prototype` **inside** the execution loop, right before `implement-task`. That created an unresolvable fork: a JIT prototype can't be both *reviewable* (the human wants to tweak the screen) and *AFK-compatible* (an autonomous run can't break to show every screen). Two corrections:
+- **Moved to task finalization.** The prototype is now produced + reviewed/tweaked + **frozen into the task** when the task is finalized — the attended, batched design-review window that sits **before** the build run. `autorun` then builds against frozen, approved prototypes and never has to stop for a screen. A design surprise that only surfaces mid-build is the normal GAP path: `autorun` parks that one slice (HITL trigger → `_human-input.md`) and continues on the rest. Updated the conductor execution loop, the "Task readiness" section, the ANY-STAGE line, and the key-edges line.
+- **Made it opt-in (answers "is a prototype obligatory for every UI task?" — no).** A prototype earns its place only when the slice's `ux` dimension carries **slice-specific composition** (a new screen/flow, non-obvious states). A slice the **IA + design system already fully determine** (existing components, obvious composition — a copy change, a field on an existing form) marks `ux` `N/A — reuses DS-… on the existing screen` and skips it. Same opt-in logic as `derive-impl-design` (design-first slices only). Reframed `generate-ui-prototype` (description, a new "When it runs (and when it doesn't)" section, Process step 4 = freeze-into-task).
+- **Documented the autorun-JIT fallback.** A UI slice that reaches the autorun queue *without* a frozen prototype has one generated just-in-time and builds against it unattended (the build reference + after-the-fact record, minus the review-first window). To force a review, withhold the slice from the queue — that *is* the gate; no separate flag exists or is needed (so "if any" no longer reads as "a prototype must exist before any run").
+- **`exec-engine`: a missing design-system element mid-build is a GAP to the design system, never bespoke-styled.** Made explicit (parallel to the behavior-gap rule) that a component/variant/token a UI slice needs but the design system lacks is a `GAP … — design-system — UNRESOLVED`, resolved by extending the design system (which propagates) — not hand-styled in code. Already enforced by the conventions fitness rule; now stated so it's discoverable upfront, not caught after the fact.
+
 ## 3.1.6
 
 ### Changed — `grill-design-system`: explicit base-vs-refinement, and the spec is a thin contract over the asset (not a copy)

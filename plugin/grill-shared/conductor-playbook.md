@@ -34,10 +34,10 @@ Per-area ingestion points one area at a file; migration **scatters** one mixed p
 
 ## Lite path (small products)
 Don't force the apparatus. Offer: `discovery` (name the bet) + `product-vision` (1-pager, incl. coarse
-scope) + `ddd` + a merged `quality`+`context` note → minimal `07-solution/arch`. Everything else stays
+scope) + `ddd` + a merged `quality`+`context` note → minimal `09-solution/arch`. Everything else stays
 Deferred/N-A until warranted. A whole area may be **N/A** — record it.
 **What still applies vs what you skip:** spec-governance stays on automatically (the `lint_spec.py` +
-`guard_derived.py` GitHub Action — free, no setup) and `07-solution/arch` is still a **guarded derived
+`guard_derived.py` GitHub Action — free, no setup) and `09-solution/arch` is still a **guarded derived
 artifact** (regenerate-only); but you can **skip the two-tier test rig, the fitness-function suite, and
 the full `code-ci.yml` pipeline** (keep one plain test job) until the project grows into them. Lite means
 fewer areas and lighter ceremony — not a different system.
@@ -90,8 +90,8 @@ Both are produced JIT per slice and **regenerated from a source, never hand-edit
   - flow · screen states · what's shown · microcopy → the **UX requirements** (`journeys.md` · `information-needs.md`)
   - a component's look · a token (colour/spacing/variant/state) → the **design system**
   - *exploring* (you don't yet know what you want)? the **throwaway spike** (`prototype`) is the disposable one — its chosen direction lands in the UX requirement, then the kept prototype regenerates from it. (Two different prototypes: the disposable explorer vs this kept projection.)
-- **impl-design** (`solution/impl/<module>.md` — derived & guard-protected) — re-run the design for that slice:
-  - **internals** (algorithm · concurrency · error handling) → re-run `derive-impl-design` with the new direction; the updated design lands in `solution/impl/<module>.md`, a load-bearing choice as an `ADR-IMPL-NNN`, the rest in git.
+- **impl-design** (`delivery/impl-design/<module>.md` — derived & guard-protected) — re-run the design for that slice:
+  - **internals** (algorithm · concurrency · error handling) → re-run `derive-impl-design` with the new direction; the updated design lands in `delivery/impl-design/<module>.md`, a load-bearing choice as an `ADR-IMPL-NNN`, the rest in git.
   - **the seam** (the module's public interface · role · dependency direction) → that's an **architecture** change, not an impl-design one: raise a gap → change the module map in the architecture → regenerate downstream.
 
 Then: **in flight** (slice not built) → just regenerate and continue; **already built** → the change process above (`impact.py` → revise/supersede the task → `needs-rework` → re-run the slice's loop).

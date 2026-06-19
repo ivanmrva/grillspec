@@ -5,11 +5,13 @@
     "0-foundation",
     "1-domain",
     "2-requirements",
-    "3-solution",
-    "4-delivery-prep",
-    "5-execution",
-    "6-operate",
-    "7-commercial",
+    "3-design-system",
+    "4-ux",
+    "5-solution",
+    "6-delivery-prep",
+    "7-execution",
+    "8-operate",
+    "9-commercial",
     "any"
   ],
   "areas": {
@@ -179,9 +181,9 @@
       "method": "grill"
     },
     "ux-reqs": {
-      "stage": "2-requirements",
+      "stage": "4-ux",
       "skill": "grill-ux-reqs",
-      "folder": "06-requirements/ux",
+      "folder": "08-ux",
       "kind": "derive",
       "consumes": [
         "derive-functional",
@@ -194,9 +196,9 @@
       "method": "grill"
     },
     "design-system": {
-      "stage": "2-requirements",
+      "stage": "3-design-system",
       "skill": "grill-design-system",
-      "folder": "06-requirements/design-system",
+      "folder": "07-design-system",
       "kind": "elicit",
       "consumes": [
         "quality"
@@ -247,9 +249,9 @@
       ]
     },
     "monetization": {
-      "stage": "7-commercial",
+      "stage": "9-commercial",
       "skill": "grill-monetization",
-      "folder": "09-commercial/monetization",
+      "folder": "11-commercial/monetization",
       "kind": "elicit",
       "consumes": [
         "entitlements",
@@ -260,9 +262,9 @@
       "method": "grill"
     },
     "go-to-market": {
-      "stage": "7-commercial",
+      "stage": "9-commercial",
       "skill": "grill-go-to-market",
-      "folder": "09-commercial/go-to-market",
+      "folder": "11-commercial/go-to-market",
       "kind": "elicit",
       "consumes": [
         "product-vision"
@@ -271,9 +273,9 @@
       "method": "grill"
     },
     "growth": {
-      "stage": "7-commercial",
+      "stage": "9-commercial",
       "skill": "grill-growth",
-      "folder": "09-commercial/growth",
+      "folder": "11-commercial/growth",
       "kind": "elicit",
       "consumes": [
         "goals",
@@ -286,9 +288,9 @@
       "method": "grill"
     },
     "derive-architecture": {
-      "stage": "3-solution",
+      "stage": "5-solution",
       "skill": "derive-architecture",
-      "folder": "07-solution/arch",
+      "folder": "09-solution/arch",
       "kind": "derive",
       "consumes": [
         "derive-functional",
@@ -308,9 +310,9 @@
       "method": "derive"
     },
     "derive-data-architecture": {
-      "stage": "3-solution",
+      "stage": "5-solution",
       "skill": "derive-data-architecture",
-      "folder": "07-solution/data",
+      "folder": "09-solution/data",
       "kind": "derive",
       "consumes": [
         "data-reqs",
@@ -322,9 +324,9 @@
       "method": "derive"
     },
     "derive-api-contracts": {
-      "stage": "3-solution",
+      "stage": "5-solution",
       "skill": "derive-api-contracts",
-      "folder": "07-solution/api",
+      "folder": "09-solution/api",
       "kind": "derive",
       "consumes": [
         "ddd",
@@ -338,9 +340,9 @@
       "method": "derive"
     },
     "derive-security-architecture": {
-      "stage": "3-solution",
+      "stage": "5-solution",
       "skill": "derive-security-architecture",
-      "folder": "07-solution/security",
+      "folder": "09-solution/security",
       "kind": "derive",
       "consumes": [
         "security-reqs",
@@ -351,9 +353,9 @@
       "method": "derive"
     },
     "derive-infra-ops": {
-      "stage": "3-solution",
+      "stage": "5-solution",
       "skill": "derive-infra-ops",
-      "folder": "07-solution/infra-ops",
+      "folder": "09-solution/infra-ops",
       "kind": "derive",
       "consumes": [
         "quality",
@@ -364,9 +366,9 @@
       "method": "derive"
     },
     "derive-observability": {
-      "stage": "3-solution",
+      "stage": "5-solution",
       "skill": "derive-observability",
-      "folder": "07-solution/observability",
+      "folder": "09-solution/observability",
       "kind": "derive",
       "consumes": [
         "quality",
@@ -379,9 +381,9 @@
       "method": "derive"
     },
     "derive-test-strategy": {
-      "stage": "3-solution",
+      "stage": "5-solution",
       "skill": "derive-test-strategy",
-      "folder": "07-solution/test",
+      "folder": "09-solution/test",
       "kind": "derive",
       "consumes": [
         "derive-functional",
@@ -396,9 +398,9 @@
       "method": "derive"
     },
     "derive-impl-design": {
-      "stage": "3-solution",
+      "stage": "7-execution",
       "skill": "derive-impl-design",
-      "folder": "07-solution/impl",
+      "folder": "10-delivery/impl-design",
       "kind": "derive",
       "consumes": [
         "derive-architecture",
@@ -408,9 +410,9 @@
       "method": "derive"
     },
     "derive-ml-architecture": {
-      "stage": "3-solution",
+      "stage": "5-solution",
       "skill": "derive-ml-architecture",
-      "folder": "07-solution/ml",
+      "folder": "09-solution/ml",
       "kind": "derive",
       "consumes": [
         "ml-reqs",
@@ -421,9 +423,9 @@
       "method": "derive"
     },
     "derive-conventions": {
-      "stage": "4-delivery-prep",
+      "stage": "6-delivery-prep",
       "skill": "derive-conventions",
-      "folder": "08-delivery/conventions",
+      "folder": "10-delivery/conventions",
       "kind": "derive",
       "consumes": [
         "derive-architecture",
@@ -433,9 +435,9 @@
       "method": "derive"
     },
     "derive-tasks": {
-      "stage": "4-delivery-prep",
+      "stage": "6-delivery-prep",
       "skill": "derive-tasks",
-      "folder": "08-delivery/tasks",
+      "folder": "10-delivery/tasks",
       "kind": "derive",
       "consumes": [
         "derive-functional",
@@ -452,7 +454,7 @@
       "method": "derive"
     },
     "implement-task": {
-      "stage": "5-execution",
+      "stage": "7-execution",
       "skill": "implement-task",
       "folder": "src/+tests/",
       "kind": "exec",
@@ -466,7 +468,7 @@
       "method": "exec"
     },
     "run-tests": {
-      "stage": "5-execution",
+      "stage": "7-execution",
       "skill": "run-tests",
       "folder": "(test run)",
       "kind": "exec",
@@ -478,9 +480,9 @@
       "method": "exec"
     },
     "conformance-review": {
-      "stage": "5-execution",
+      "stage": "7-execution",
       "skill": "conformance-review",
-      "folder": "08-delivery/verification",
+      "folder": "10-delivery/verification",
       "kind": "exec",
       "consumes": [
         "derive-tasks",
@@ -498,7 +500,7 @@
       "method": "exec"
     },
     "autorun": {
-      "stage": "5-execution",
+      "stage": "7-execution",
       "skill": "autorun",
       "folder": "(driver)",
       "kind": "exec",
@@ -509,9 +511,9 @@
       "method": "exec"
     },
     "deploy-release": {
-      "stage": "6-operate",
+      "stage": "8-operate",
       "skill": "deploy-release",
-      "folder": "10-operate",
+      "folder": "12-operate",
       "kind": "exec",
       "consumes": [
         "derive-infra-ops",
@@ -521,9 +523,9 @@
       "method": "exec"
     },
     "migrate-data": {
-      "stage": "6-operate",
+      "stage": "8-operate",
       "skill": "migrate-data",
-      "folder": "10-operate",
+      "folder": "12-operate",
       "kind": "exec",
       "consumes": [
         "data-reqs",
@@ -533,9 +535,9 @@
       "method": "exec"
     },
     "operate-incident": {
-      "stage": "6-operate",
+      "stage": "8-operate",
       "skill": "operate-incident",
-      "folder": "10-operate",
+      "folder": "12-operate",
       "kind": "exec",
       "consumes": [
         "derive-observability",
@@ -545,9 +547,9 @@
       "method": "exec"
     },
     "diagnose": {
-      "stage": "6-operate",
+      "stage": "8-operate",
       "skill": "diagnose",
-      "folder": "10-operate",
+      "folder": "12-operate",
       "kind": "exec",
       "consumes": [],
       "produces_ids": [],

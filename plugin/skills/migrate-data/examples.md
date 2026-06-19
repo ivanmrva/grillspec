@@ -8,7 +8,7 @@ An online expand-contract migration for `DATA-Order`: split a free-text `address
 > **Verify** — on a prod copy first: counts match (4 204 118 = 4 204 118), FK integrity clean. High-value, so a **checksum shadow-compare** of `md5(address)` vs `md5(concat(line1,city,postcode))` over all rows: 0 mismatches.
 > Switch reads → new columns. **Contract** (next release): drop `address` + trigger.
 
-Recorded — `10-operate/migration-DATA-Order.md`:
+Recorded — `12-operate/migration-DATA-Order.md`:
 
 | field | value |
 |---|---|

@@ -22,11 +22,11 @@ argument-hint: a bug or performance regression to diagnose
 - Code lives in the source tree, never in `spec/`.
 
 ## Output
-Written under `10-operate/`:
+Written under `12-operate/`:
 
 | File / target | Captures | Format |
 |---|---|---|
-| `10-operate/diagnosis-<id>.md` | diagnosis record: repro · hypotheses tried · root cause · the fix + regression test · prevention note (→ conformance review) | — |
+| `12-operate/diagnosis-<id>.md` | diagnosis record: repro · hypotheses tried · root cause · the fix + regression test · prevention note (→ conformance review) | — |
 
 (the code fix + regression test → project source tree, never spec/)
 (+ ADRs → `adr/ADR-DIAG-NNN.md`)

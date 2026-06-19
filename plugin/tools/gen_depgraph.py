@@ -25,9 +25,10 @@ LINT = ROOT / "tools" / "lint_spec.py"
 
 STAGE_LABEL = {
     "0-discovery": "0 · Discovery", "0-foundation": "0 · Foundation", "1-domain": "1 · Domain",
-    "2-requirements": "2 · Requirements", "3-solution": "3 · Solution",
-    "4-delivery-prep": "4 · Delivery prep", "5-execution": "5 · Execution", "6-operate": "6 · Operate",
-    "7-commercial": "post-launch · Commercial", "any": "Any stage",
+    "2-requirements": "2 · Requirements", "3-design-system": "3 · Design system", "4-ux": "4 · UX",
+    "5-solution": "5 · Solution",
+    "6-delivery-prep": "6 · Delivery prep", "7-execution": "7 · Execution", "8-operate": "8 · Operate",
+    "9-commercial": "post-launch · Commercial", "any": "Any stage",
 }
 
 

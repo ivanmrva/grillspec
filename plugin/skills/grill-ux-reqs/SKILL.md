@@ -18,7 +18,7 @@ argument-hint: an idea, existing docs, or a repo
 - **the journey is rendered in the design system, not redefined here** — reference its components/tokens by `DS-` id; a missing component is a **gap raised to the design-system area**, not invented in a journey
 
 ## Output
-Written under `requirements/ux/`:
+Written under `ux/`:
 
 | File | Captures | Format |
 |---|---|---|

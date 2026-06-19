@@ -27,7 +27,7 @@ argument-hint: a brand seed, an existing token set / design handoff, or a repo
 
 ## Output
 **Stable IDs** (bare type prefix, ID = the leading table column / row key): `DS-` design-system element (token · component · voice term).
-Written under `requirements/design-system/`:
+Written under the **design-system spec area** — its own layer (the `DS-` contract; *not* the non-spec `design-system/` asset zone it points at, which holds the raw tokens/assets code consumes):
 
 | File | Captures | Format |
 |---|---|---|

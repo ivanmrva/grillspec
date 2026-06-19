@@ -5,7 +5,7 @@ A blameless incident record for a checkout outage.
 > **Claude:** Payment success rate dropped to 12% — revenue-impacting, customer-facing → **sev1**. Paging on, status page to "investigating", 30-min comms cadence.
 > Incident-command stood up: **commander** = Mira (decides, not debugging), **scribe** = Jon (timeline), **comms-lead** = Priya (status page), **SME** = Lee (hands-on). Runbook RB-07: failed over the payment gateway to the secondary region → success rate back to 99%. Stable. Root-cause hunt handed to the disciplined diagnosis loop.
 
-Recorded — `10-operate/incident-2026-0142.md` (**blameless** — systems, not people):
+Recorded — `12-operate/incident-2026-0142.md` (**blameless** — systems, not people):
 
 | field | value |
 |---|---|

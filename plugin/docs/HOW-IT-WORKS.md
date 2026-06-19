@@ -20,11 +20,12 @@ flowchart TB
   I1 --> C
   I2 --> C
 
-  subgraph PIPE["spec/ — single source of truth — stages 01 to 10"]
+  subgraph PIPE["spec/ — single source of truth — stages 01 to 12"]
     direction TB
     P1["01 Discovery"] --> P2["02 Product vision"] --> PF["03 Constraints<br/>+ System context"] --> P3["04 Domain / DDD"]
-    P3 --> P4["05 Requirements<br/>functional, quality, data, security,<br/>ux, compliance, integration"]
-    P4 --> P5["09 Solution<br/>architecture, api, observability, infra-ops"]
+    P3 --> P4["05–06 Requirements<br/>functional, quality, data, security,<br/>compliance, integration, ml"]
+    P4 --> P4a["07 Design system (DS-)"] --> P4b["08 UX<br/>journeys, IA, a11y"]
+    P4b --> P5["09 Solution<br/>architecture, api, observability, infra-ops"]
     P5 --> P6["10 Delivery<br/>conventions, tasks, test-strategy"]
   end
   C --> PIPE
@@ -61,11 +62,13 @@ Each stage takes the stage(s) before it as input and produces the artifacts the 
 | 03 Constraints | `grill-constraints` | the idea / existing docs | technical · organizational · regulatory bounds, assumptions, dependencies |
 | 03 System context | `grill-system-context` | product + constraints | external actors, neighbor systems, interfaces, the C4 System Context (L1) |
 | 04 Domain (DDD) | `grill-ddd` | vision + system context | aggregates, commands, events, invariants, ubiquitous language |
-| 05 Requirements | `derive-functional` · `grill-quality` · `grill-data-reqs` · `grill-security-reqs` · `grill-ux-reqs` · `grill-design-system` · `grill-compliance` · `grill-integration-reqs` · `grill-ml-reqs` (AI) | domain | use-cases + acceptance criteria (`UC-`/`AC-`), quality bars (`NFR-`/`ASR-`), data (`DATA-`), security (`SEC-`), UX journeys + a11y, the design system (`DS-`), obligations (`OBL-`), integration, ML behaviour/evals (`ML-`, AI) |
+| 05–06 Requirements | `derive-functional` · `grill-quality` · `grill-data-reqs` · `grill-security-reqs` · `grill-compliance` · `grill-integration-reqs` · `grill-entitlements` · `grill-ml-reqs` (AI) | domain | use-cases + acceptance criteria (`UC-`/`AC-`), quality bars (`NFR-`/`ASR-`), data (`DATA-`), security (`SEC-`), obligations (`OBL-`), integration, entitlements (`ENTL-`), ML behaviour/evals (`ML-`, AI) |
+| 07 Design system | `grill-design-system` | requirements | tokens (DTCG), components, a11y, brand, voice — the `DS-` contract over the design-system asset (its **own layer**) |
+| 08 UX | `grill-ux-reqs` | design-system + requirements | user journeys, information architecture, a11y/i18n + usability targets (no ids — a **synthesis** of the design system and the requirements) |
 | 06 Commercial | `grill-monetization` | functional — real features to price | business model · pricing · plans · **entitlements → which features sit in which tier** · metering — **feeds 09 Solution** (entitlement enforcement, billing, metering become build work) |
 | 09 Solution | `derive-architecture` · `derive-data-architecture` · `derive-api-contracts` · `derive-security-architecture` · `derive-infra-ops` · `derive-observability` · `derive-test-strategy` · `derive-ml-architecture` (AI) | requirements | architecture incl. the **module map & seam contracts** + key sequences, API / event contracts (`API-`), observability (`SLO-`), deployment & ops, the two-tier test strategy, ML serving / eval / guardrails (AI) — *module internals are designed per-slice in Build, not here* |
 | 10 Delivery | `derive-conventions` · `derive-tasks` | solution | `CLAUDE.md`, the task list (`T-`), coding conventions |
-| Build | `implement-task` · `run-tests` · `conformance-review`  (· `autorun` drives it AFK; a **design-first** slice first runs `derive-impl-design` for its module internals; a UI slice first runs `generate-ui-prototype` for its screen) | delivery | working code, one slice at a time: (design-first → module internals) → implement → test → conformance-review |
+| Build | `implement-task` · `run-tests` · `conformance-review`  (· `autorun` drives it AFK; a **design-first** slice first runs `derive-impl-design` for its module internals; a ux-heavy slice already carries its **frozen UI prototype** from task finalization) | delivery | working code, one slice at a time: (design-first → module internals) → implement → test → conformance-review |
 | Build Docs | `generate-docs` · `generate-api-reference` | the spec (any change) | a self-contained docs site (HTML) — **continuous: rebuilt in CI on every spec change**, not a one-time slot |
 | Operate | `deploy-release` · `migrate-data` · `operate-incident` · `diagnose` | the running system | deploys, migrations, incident & diagnosis records, day-2 cadence |
 
@@ -97,7 +100,7 @@ The tools enforce **structure**. They cannot tell you whether a requirement is *
 
 ## Where things live
 
-- `spec/` — the specification, stage-numbered `01-discovery` … `10-operate`. The single source of truth.
+- `spec/` — the specification, stage-numbered `01-discovery` … `12-operate`. The single source of truth.
 - `adr/` — every Architecture Decision Record, **one file per ADR**, named `ADR-<AREA>-NNN.md` (the area prefix stops two skills colliding); the conductor derives a global ADR index from it.
 - **No side-ledger files** — there is no `open-questions.md`, `assumptions.md`, or `resolutions.md`. An open point is resolved into its artifact, **deferred in the artifact** with the trigger that reopens it, or — if it's a deliberate choice — captured as an ADR. `glossary.md` and `actors.md` are **per-area deliverables**; the conductor reconciles a system-wide view at the spec root.
 - `_human-input.md` (spec root) — the **one operational queue**: the batched human-in-the-loop asks `autorun` parks for you to clear in a sitting. Maintained by the orchestration loop; it's a handoff queue, not a decision ledger.
