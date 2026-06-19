@@ -77,7 +77,7 @@ STAGE 4 · DELIVERY PREP (build the agent's runway)
         derive-tasks         minimal vertical slices (T-NNN) · walking-skeleton first · build-order DAG  → 08-delivery/tasks/
         ───────────────── DELIVERY-READINESS GATE ─────────────────
 STAGE 5 · EXECUTION (per task, in build-order; CODE lives in the repo, NOT spec/)
-        (slice flagged design-first → derive-impl-design designs its modules → 07-solution/impl/)  →  implement-task  →  run-tests  →  conformance-review  →  done    (loop; any red routes back)
+        (UI slice → generate-ui-prototype renders its screen[s] → prototypes/ui/ ;  slice flagged design-first → derive-impl-design designs its modules → 07-solution/impl/)  →  implement-task (builds against the prototype + module design)  →  run-tests  →  conformance-review  →  done    (loop; any red routes back)
         autorun         autonomous driver · runs that loop across the whole task queue (AFK) · stops only on a true blocker (HITL trigger)
                                                                             conformance-review → 08-delivery/verification/
         ──────────── RELEASE-READINESS CHECKLIST (advisory) ────────────
