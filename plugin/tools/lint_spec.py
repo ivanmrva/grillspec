@@ -546,6 +546,10 @@ def md_tables(lines):
 SMARK = re.compile(r"^[\-—*•]+$|^\(?(?:initial|start|terminal|final|end|none)\)?$", re.I)
 def nstate(s):
     return re.sub(r"\s*\((?:initial|start|terminal|final|end)\)\s*$", "", s, flags=re.I).strip(" *`_·").strip()
+def split_states(raw):
+    # a compound 'A / B' from/to cell is shorthand for several states sharing the row's trigger/guard;
+    # split on ' / ' (spaces required, so kebab names like 'awaiting-retry' and 'n/a' are untouched) and normalize each
+    return [x for x in (nstate(s) for s in re.split(r"\s+/\s+", raw.strip())) if x]
 for p, r in cmd_files():
     if not r.startswith("04-domain/ddd"): continue
     for header, body in md_tables(read(p).splitlines()):
@@ -559,16 +563,17 @@ for p, r in cmd_files():
             fr_raw, to_raw = row[fi], row[ti]
             trig = row[tri] if tri is not None and len(row) > tri else ""
             guard = row[gi] if gi is not None and len(row) > gi else ""
-            fr, to = nstate(fr_raw), nstate(to_raw)
             fr_init = bool(SMARK.match(fr_raw.strip())) or "(initial" in fr_raw.lower() or "(start" in fr_raw.lower()
             to_term = bool(SMARK.match(to_raw.strip())) or "(terminal" in to_raw.lower() or "(final" in to_raw.lower() or "(end" in to_raw.lower()
-            if ("(terminal" in fr_raw.lower() or "(final" in fr_raw.lower()) and fr: terminals.add(fr)
-            if ("(initial" in to_raw.lower() or "(start" in to_raw.lower()) and to: initials.add(to)
-            if fr_init and to: initials.add(to)
-            if to_term and fr: terminals.add(fr)
-            if fr and not fr_init: states.add(fr)
-            if to and not to_term: states.add(to)
-            if fr and to and not fr_init and not to_term: trans.append((fr, trig.strip(), to, guard.strip()))
+            for fr in (split_states(fr_raw) or [""]):
+                for to in (split_states(to_raw) or [""]):
+                    if ("(terminal" in fr_raw.lower() or "(final" in fr_raw.lower()) and fr: terminals.add(fr)
+                    if ("(initial" in to_raw.lower() or "(start" in to_raw.lower()) and to: initials.add(to)
+                    if fr_init and to: initials.add(to)
+                    if to_term and fr: terminals.add(fr)
+                    if fr and not fr_init: states.add(fr)
+                    if to and not to_term: states.add(to)
+                    if fr and to and not fr_init and not to_term: trans.append((fr, trig.strip(), to, guard.strip()))
         if len(states) < 2: continue
         outgoing = {}
         for fr, trig, to, g in trans: outgoing.setdefault(fr, []).append((trig, to, g))

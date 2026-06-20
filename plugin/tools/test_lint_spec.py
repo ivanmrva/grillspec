@@ -79,6 +79,15 @@ expect("state-machine-not-a-transition-table", run(LINT, {
     "04-domain/ddd/ctx.md": HDR + "\n| from | to | type |\n|---|---|---|\n| Orders | Billing | customer-supplier |\n| Billing | Orders | conformist |\n",
 }), forbid=["state-machine:"])
 
+# a compound 'A / B' from-cell is shorthand for two source states sharing the row's trigger/to — both must
+# register, so neither 'running' nor 'awaiting-retry' is falsely flagged unreachable/dead-end
+SM_COMPOUND = HDR + "\n| ID | N |\n|---|---|\n| AGG-1 | Job |\n\n### states\n" + \
+    "| from | trigger | to | guard |\n|---|---|---|---|\n" + \
+    "| pending (initial) | start | running |  |\n| running | retry | awaiting-retry | attempts left |\n" + \
+    "| awaiting-retry | resume | running |  |\n| running / awaiting-retry | exhausted | dead-lettered (terminal) |  |\n" + \
+    "| running | finish | done (terminal) |  |\n"
+expect("state-machine-compound-from-cell", run(LINT, {"04-domain/ddd/s.md": SM_COMPOUND}), forbid=["state-machine:"])
+
 # a 'command'-headed table OUTSIDE 06-requirements/security must not be read as an authorization matrix
 expect("authz-not-in-security", run(LINT, {
     "09-solution/arch/ops.md": HDR + "\n| command | latency | notes |\n|---|---|---|\n| GET /orders | 50ms |  |\n",

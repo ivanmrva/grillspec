@@ -4,9 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
-## 4.2.5
+## 4.2.6
 
-### Changed — domain vocabulary is now an explicit elicit-or-ratify class (not a free DECIDE)
+### Fixed — `lint_spec.py` state-machine checker mis-parsed a compound `from`/`to` cell
+A transition row whose `from` (or `to`) cell listed several states as `A / B` — shorthand for multiple states sharing the row's trigger/guard — was read as one state named `running / awaiting-retry`. That phantom never matched the real `running`/`awaiting-retry` states defined in other rows, so both were falsely flagged unreachable and/or dead-end.
+- The checker now splits a `from`/`to` cell on ` / ` (spaces required, so kebab names like `awaiting-retry` and `n/a` are untouched), normalizes each part, and expands the row into the cartesian product of source×target transitions. All existing marker logic (`(initial)`/`(terminal)`, nondeterminism) is preserved. Added a regression test (`state-machine-compound-from-cell`).
 `decision-classes.md` protected user-owned *values* (SLAs, retention, jurisdictions) as ratify-not-invent but never named user-owned *vocabulary* — so the universal "default hard toward deciding" had no counterweight for naming, leaving UL definition to a stance rather than a rule. A bare-idea or expert-user start could therefore coin a generic-but-wrong domain term and move on without surfacing it, producing the wrong-but-consistent model the audit's Phase 3 calls the costliest failure.
 - Added an **edge call**: a domain term (entity · command · event · role · state) the domain already has a word for is an ASK — proposed for confirmation, never silently christened; a label coined for a genuinely-new concept is allowed but **marked coined** (`inferred`, or a `HOT-` if contested) so the expert can supersede it. Harvest an expert's jargon from provided input and confirm rather than override with a synonym.
 - Tightened `grill-ddd` step 4 ("build the ubiquitous language") to make "agree the terms" explicitly propose-and-confirm, with coined terms flagged.
