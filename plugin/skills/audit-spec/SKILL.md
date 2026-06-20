@@ -10,7 +10,8 @@ argument-hint: "[--depth consistency|full] [--scope all|<area>] — default: --d
 **Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill is the
 **whole-spec audit**: a cross-area verification that the spec is complete, consistent, and buildable —
 the **judgment layer above the deterministic tools**. The tools (`lint_spec.py`, `spec_status.py`,
-`guard_derived.py`, `impact.py`) decide everything mechanical; this skill makes only the calls a sound
+`guard_derived.py`, `impact.py`, and — when API contracts exist — `check_contracts.py`) decide everything
+mechanical; this skill makes only the calls a sound
 script cannot. **Do not re-do what the tools already do** — run them, trust their output, and spend your
 effort on meaning.
 
@@ -62,7 +63,16 @@ neighbours (for a focused re-check after a change).
 ## Phase 0 — mechanical baseline (run, attribute, don't duplicate)
 Run from the project root and record the raw counts:
 `python3 ${CLAUDE_PLUGIN_ROOT}/tools/lint_spec.py` · `…/spec_status.py` · `…/guard_derived.py` (or its
-check) · `…/impact.py` over any suspect IDs. Every linter ERROR → `blocking`; every WARN → a `important`
+check) · `…/impact.py` over any suspect IDs. **If `spec/09-solution/api` exists, also run
+`…/check_contracts.py`** — it binds the machine contracts (`openapi.yaml`/`asyncapi.yaml`) to the ID graph:
+every grillspec id a contract references (`x-grillspec-id` · `x-serves` · `SEC-` scopes · `x-data`) must
+resolve to a real definition (ERROR), and every REST op must carry its traceability hooks + a mutation
+security scope + an error response (WARN). It no-ops cleanly when PyYAML or the api folder is absent, so it
+is safe to always attempt. Also run **`…/check_freshness.py`** (advisory) — it lists every artifact, grilled
+OR derived, that cites an upstream definition which has CHANGED since the artifact was last reconciled
+(`.claude/freshness.lock`). It never gates; it hands you the precise, complete candidate set for the
+staleness judgment in Phase 2, so you no longer guess which IDs to spot-check. (No lock yet = a baseline gap
+to note, not an error.) Every ERROR → `blocking`; every WARN → a `important`
 candidate to confirm; every INFO heuristic → a candidate to judge (the linter flagged it precisely because
 it cannot decide it — that decision is yours).
 
@@ -92,10 +102,15 @@ The predicates here are about MEANING, so no script is sound on them. Walk each:
 - **Gate readiness** — architecture-readiness (requirements + design-system + ux carry no `UNRESOLVED`
   gap) before `09-solution/*` is trusted; implementation-readiness before `10-delivery`; delivery-readiness
   before code. Report each gate met / not-met with its blocking items.
-- **Derived-staleness (judgment, until a provenance mechanism exists)** — for each derived artifact, do its
-  facts still follow from the CURRENT upstream? `guard_derived.py` proves it wasn't hand-edited; it cannot
-  prove it was re-derived after upstream moved. Spot-check the high-traffic IDs via `impact.py`; a derived
-  claim that contradicts current upstream → `blocking`, routed to "re-run the derive-* step."
+- **Artifact-staleness (grilled AND derived)** — does each artifact's content still follow from the CURRENT
+  upstream? `guard_derived.py` proves a derived file wasn't hand-edited; it cannot prove it was re-derived
+  after upstream moved, and it says nothing about a grilled artifact going stale. `check_freshness.py`
+  (Phase 0) closes that: it hands you every artifact whose CITED upstream definition has drifted — work that
+  candidate set, judging whether each drift is materially relevant (a renamed field that an NFR keys on vs a
+  typo fix). A derived claim that no longer follows from current upstream → `blocking`, routed to "re-run the
+  derive-* step"; a stale GRILLED artifact → `important`, routed to "re-grill the area against the corrected
+  upstream." Freshness is advisory, not a verdict — a drift you judge immaterial is dismissed with a note,
+  not a finding.
 
 ## Phase 3 — domain & usage completeness  *(--depth full only — the part nothing mechanical can do)*
 You cannot find a MISSING requirement by checking that references resolve — a spec where every link

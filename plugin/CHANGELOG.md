@@ -4,6 +4,18 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.2.4
+
+### Added — `check_freshness.py`: an advisory artifact-staleness guard (grilled AND derived)
+`guard_derived.py` proves a derived file wasn't hand-edited but cannot prove it was re-derived after upstream moved, and it says nothing about a *grilled* artifact going stale when an upstream definition it cites changes. New `check_freshness.py` closes that gap as the complement of the derived-guard: where `guard_derived` is hash-of-self, this is hash-of-upstream-inputs.
+- It records each artifact's cited-upstream **definition-block** hashes into `.claude/freshness.lock`, and at check time lists any artifact — in either zone — whose cited definition has drifted since the artifact was last reconciled. Granularity is the cited ID's definition block, so an unrelated edit elsewhere never false-flags.
+- **Advisory by design** (default exit 0; `--strict` to gate). The system prevents stale work by propagation, not by a status flag — this only hands the auditor the precise candidate set, it never blocks a commit.
+- Wired in: `audit-spec` Phase 0 runs it and Phase 2's staleness check (renamed derived-staleness → **artifact-staleness**) consumes the candidate list; the conductor records `freshness.lock` beside `derived.lock` after reconciling any area; `selfcheck.py` guards its TYPES vocabulary against `lint_spec.py`; `operator-map.md` documents it as the spec-side analogue of the `impact.py --since` propagation net.
+
+### Added — `audit-spec` Phase 0 now runs `check_contracts.py` when API contracts exist
+The audit's mechanical baseline invoked `lint_spec.py` / `spec_status.py` / `guard_derived.py` / `impact.py` but not the contract↔ID binder, so a spec with `openapi.yaml`/`asyncapi.yaml` got no deterministic check that its contracts point at real IDs — the audit would only catch a contract defect if it happened to read the file during the judgment pass.
+- Phase 0 now also runs `check_contracts.py` when `spec/09-solution/api` exists: every grillspec id a contract references (`x-grillspec-id` · `x-serves` · `SEC-` scopes · `x-data`) must resolve to a real definition (ERROR → `blocking`); every REST op must carry its traceability hooks + a mutation security scope + an error response (WARN → `important` candidate). It no-ops cleanly without PyYAML or the api folder, so it is always safe to attempt.
+
 ## 4.2.3
 
 ### Changed — `audit-spec` reports fixes as dependency-ordered chains, not authored/derived buckets

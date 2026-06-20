@@ -224,8 +224,12 @@ dependency graph.
    for affected code. Nothing outside the set is touched. **When a re-derivation rewrites a derived
    artifact** (anything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions|tasks|impl-design/`, or
    `CLAUDE.md`), **run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <those paths>`** so the
-   derived-guard sees a legitimate regeneration and doesn't false-block the commit.
-5. **Re-verify:** `lint_spec.py` + `guard_derived.py` + `conformance-review`.
+   derived-guard sees a legitimate regeneration and doesn't false-block the commit. **After writing or
+   reconciling ANY area — grilled or derived — also run `python3
+   ${CLAUDE_PLUGIN_ROOT}/tools/check_freshness.py --record <those paths>`** so the freshness baseline
+   captures the upstream those artifacts were just reconciled against (this is how a re-grill clears its own
+   stale flag).
+5. **Re-verify:** `lint_spec.py` + `guard_derived.py` + `check_freshness.py` (advisory) + `conformance-review`.
 Default end-state: **nothing stale remains.** Skills may be invoked directly (that's fine) — but *any*
 skill that makes a change owns steps 1–5; the engines bake this in so it happens whether or not the
 conductor is driving.

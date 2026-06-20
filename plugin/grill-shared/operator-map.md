@@ -81,7 +81,11 @@ When you change a spec ID (say `AC-101`) that's already built, **propagation flo
 the old version ships silently. **Backup only:** CI runs `impact.py --since <last-release>`, lists every
 changed ID and its dependents, and flags any dependent code/task that wasn't updated — catching a
 propagation *miss*. This is a safety net under spec-governance, secondary to propagation; not a parallel
-system.
+system. The analogous net for *spec artifacts* (grilled and derived alike) is `check_freshness.py`: it
+records each artifact's cited-upstream hashes (`.claude/freshness.lock`, written beside `derived.lock` when
+an area is reconciled) and, at audit time, lists any artifact whose cited definition has since drifted. Also
+advisory, also secondary to propagation — it tells the auditor where a re-grill/re-derive may have been
+missed; it never gates a commit (that would be the status flag this section rejects).
 
 ## Verification map — who checks what, and how it composes (no overlap)
 Several surfaces verify the work; they're complementary, not redundant:
