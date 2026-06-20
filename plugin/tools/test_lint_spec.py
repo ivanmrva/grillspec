@@ -141,6 +141,21 @@ expect("event-consumer-policy-and-sinks", run(LINT, {
         "| EVT-701 | Placed | core |\n| EVT-208 | Audited | audit-only |\n| EVT-110 | Nudged | operator-console-internal |\n| EVT-999 | Orphan | core |\n"}),
     must=["'EVT-999' has no downstream"], forbid=["'EVT-701' has no downstream", "'EVT-208' has no downstream", "'EVT-110' has no downstream"])
 
+# a sink marker on a NON-first event in a '·'-joined inline list must attribute to that event, not the first:
+# EVT-208 (audit-only, 2nd of three) is a sink; the bare siblings still WARN.
+expect("event-sink-non-first-in-joined-list", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "V")),
+    "04-domain/ddd/a.md": HDR + "\n## AGG-1 X\n- **events:** EVT-207 Placed · EVT-208 Audited audit-only · EVT-209 Shipped\n",
+}), must=["'EVT-207' has no downstream", "'EVT-209' has no downstream"], forbid=["'EVT-208' has no downstream"])
+
+# a 'whenever' reaction whose events sit in a SEPARATE '·'-joined cell from the keyword must credit every
+# joined event (REFMARK only sees ids after the keyword); both EVT-704 and EVT-705 are consumed by POL-704.
+expect("event-consumer-joined-whenever-cell", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "V")),
+    "04-domain/ddd/e.md": HDR + "\n## AGG-1 X\n- **events:** EVT-704 A · EVT-705 B\n",
+    "04-domain/ddd/p.md": HDR + "\n| reaction | events | trigger |\n|---|---|---|\n| POL-704 | EVT-704 · EVT-705 | whenever the operator escalates |\n",
+}), forbid=["'EVT-704' has no downstream", "'EVT-705' has no downstream"])
+
 # a contract YAML credits coverage: an EVT- consumed only by asyncapi.yaml must NOT false-WARN "no consumer"
 expect("contract-coverage-credit", run(LINT, {
     "04-domain/ddd/a.md": HDR + "\n## AGG-1 X\n- **events:** EVT-9 Done\n",

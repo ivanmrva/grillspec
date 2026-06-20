@@ -186,6 +186,7 @@ RANGE = re.compile(r"(?<![A-Za-z0-9-])(?:" + TYPES + r")-\d+(?:(?:\.\.|/)\d+)+")
 # \b-anchored so they match only as whole words: 'invalidates' must not match 'validates', etc. The
 # symbols (->, →) sit outside \b.
 REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|surfaces?|renders?|displays?|mitigat(?:es|ed-by)|prices?|priced-by|gates?|gated-by|enforces?|enforced-by|evidences?|evidenced-by|whenever|reacts?-to|consumed-by|consumes)\b|->|→)\s*:?\s*([^\n]*)", re.I)
+REACT = re.compile(r"\bwhenever\b|\breacts?-to\b", re.I)     # a POL- reaction line consumes every event named on it (any cell)
 defined = set()
 defsites = {}                                                # id -> files that AUTHORITATIVELY define it (row-key / heading / id:) — drives define-once + owning-area checks
 def3sites = {}                                               # id -> files where it appears inline as '<ID> <Name>' in its OWN area (supplementary; not subject to define-once)
@@ -276,6 +277,13 @@ for p, r in cmd_files():
         for m in DEF3.finditer(l):
             if not in_owner_area(m.group(1), r):
                 note_ref(m.group(1), r, i, selfid)
+        # a POL- reaction line ('whenever EVT-… then CMD-…') CONSUMES every event named on it. REFMARK only
+        # captures ids AFTER the keyword, so events in a separate '·'-joined cell (or listed before the
+        # marker) are missed; credit ALL events on the line for coverage (refset only — no error path, to
+        # avoid double-reporting). This is how a reaction crediting works regardless of cell layout.
+        if REACT.search(l):
+            for tok in IDTOK.findall(l):
+                if tok != selfid and tok.split("-")[0].upper() == "EVT": refset.add(tok)
 # 11b illegal-downward-reference — enforced over EVERY id token, not only reference-detected ones, so a
 # downward id sitting in plain prose (no refmark/arrow) can't evade the upstream-only invariant. High
 # precision: every hit is a real downward occurrence (a definition / same-layer mention has id_layer ==
@@ -379,25 +387,32 @@ thr_covered, evt_sinks = set(), set()
 for _p, _r in cmd_files():
     if os.path.basename(_r) == "traceability.md": continue
     _lines = read(_p).splitlines()
-    _dpos = []                                                # (lineno, id) definition positions, in file order
+    _dpos = []                                                # (lineno, [ids…]) — ALL owner-area defs on the line, in order
     for _i, _l in enumerate(_lines):
         if "|" in _l and _i + 1 < len(_lines) and SEP.match(_lines[_i + 1]): continue   # table header row
         _ll = RANGE.sub(" ", _l)
+        _ids = []
         _m = DEF1.match(_ll)
-        _gid = _m.group(1) if _m else None
-        if not _gid:
-            for _m3 in DEF3.finditer(_l):
-                if in_owner_area(_m3.group(1), _r): _gid = _m3.group(1); break
-        if _gid: _dpos.append((_i, _gid))
-    for _j, (_ln, _gid) in enumerate(_dpos):
-        _pre = _gid.split("-")[0].upper()
-        if _pre not in ("THR", "EVT"): continue
+        if _m: _ids.append(_m.group(1))
+        for _m3 in DEF3.finditer(_l):                         # EVERY inline '<ID> <Name>' def, not just the first
+            _g = _m3.group(1)
+            if in_owner_area(_g, _r) and _g not in _ids: _ids.append(_g)
+        if _ids: _dpos.append((_i, _ids))
+    for _j, (_ln, _ids) in enumerate(_dpos):
         _end = _dpos[_j + 1][0] if _j + 1 < len(_dpos) else len(_lines)
-        _block = "\n".join(_lines[_ln:_end])
-        if _pre == "THR" and (CTRLID.search(_block) or ACCRISK.search(_block) or (DATAID.search(_block) and MITCUE.search(_block))):
-            thr_covered.add(_gid)
-        if _pre == "EVT" and EVTSINK.search(_block):
-            evt_sinks.add(_gid)
+        # a multi-id line is an inline '·'-joined list — each id owns only its own segment, so a marker on a
+        # later item (audit-only on the 2nd of three events) isn't misattributed; a lone def owns the block
+        # down to the next def line.
+        _multi = len(_ids) > 1
+        _segs = re.split(r"·", _lines[_ln]) if _multi else None
+        for _gid in _ids:
+            _pre = _gid.split("-")[0].upper()
+            if _pre not in ("THR", "EVT"): continue
+            _block = next((s for s in _segs if _gid in s), _lines[_ln]) if _multi else "\n".join(_lines[_ln:_end])
+            if _pre == "THR" and (CTRLID.search(_block) or ACCRISK.search(_block) or (DATAID.search(_block) and MITCUE.search(_block))):
+                thr_covered.add(_gid)
+            if _pre == "EVT" and EVTSINK.search(_block):
+                evt_sinks.add(_gid)
 # downstream type a coverage WARN expects; if NONE of that type exists yet, the downstream layer is
 # simply empty (early stage) and the WARN is noise, not a gap — suppress it. (#7: a CMD has no UC only
 # once use-cases exist; before then "CMD has no UC" is 100% expected and drowns real within-layer gaps.)

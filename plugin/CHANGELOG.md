@@ -4,6 +4,14 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.2.8
+
+### Fixed — `lint_spec.py` EVT sink/consumer detection only saw the first id per line
+A follow-up to 4.2.7's block-scan: `_dpos` recorded one def per line, so a sink marker on a non-first event in an inline `events: A · B · C` list was never scanned, and a `whenever` reaction whose events sat in a `·`-joined cell separate from the keyword credited only the ids REFMARK captured after the keyword. Result: `EVT-208` carried `audit-only` yet still WARNed; events with a real shared `POL-` consumer WARNed.
+- The block-scan now records EVERY owner-area id on a line (all `DEF3` matches, not just the first), and on a multi-id `·`-joined line each id is scanned against its OWN segment — so a marker on the 2nd of three events attributes to that event, not the first.
+- A `whenever`/`reacts-to` reaction line now credits ALL events named on it (refset-only, no error path), regardless of which cell holds them — so events listed in a `·`-joined cell apart from the keyword are consumed.
+- Added regression tests `event-sink-non-first-in-joined-list` and `event-consumer-joined-whenever-cell`.
+
 ## 4.2.7
 
 ### Fixed — `lint_spec.py` coverage false-positives on non-SEC threat mitigations and non-UC event consumers
