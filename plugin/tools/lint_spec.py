@@ -185,7 +185,7 @@ RANGE = re.compile(r"(?<![A-Za-z0-9-])(?:" + TYPES + r")-\d+(?:(?:\.\.|/)\d+)+")
 # Reference markers — used to find ID *references* in the resolution pass below. Word markers are
 # \b-anchored so they match only as whole words: 'invalidates' must not match 'validates', etc. The
 # symbols (->, →) sit outside \b.
-REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|surfaces?|renders?|displays?|mitigat(?:es|ed-by)|prices?|priced-by|gates?|gated-by|enforces?|enforced-by|evidences?|evidenced-by)\b|->|→)\s*:?\s*([^\n]*)", re.I)
+REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|surfaces?|renders?|displays?|mitigat(?:es|ed-by)|prices?|priced-by|gates?|gated-by|enforces?|enforced-by|evidences?|evidenced-by|whenever|reacts?-to|consumed-by|consumes)\b|->|→)\s*:?\s*([^\n]*)", re.I)
 defined = set()
 defsites = {}                                                # id -> files that AUTHORITATIVELY define it (row-key / heading / id:) — drives define-once + owning-area checks
 def3sites = {}                                               # id -> files where it appears inline as '<ID> <Name>' in its OWN area (supplementary; not subject to define-once)
@@ -344,10 +344,10 @@ for p, r in cmd_files():
                 break
 
 # 14 structural coverage = the GAP-DETECTION surface (WARN: every X should have its downstream Y)
-COV_HINT = {"CMD":"expected a use-case (UC-) projecting it","EVT":"no downstream consumer",
+COV_HINT = {"CMD":"expected a use-case (UC-) projecting it","EVT":"no downstream consumer (a UC-, a 'whenever EVT-' POL- reaction, the asyncapi contract, or an intentional audit-only/internal sink)",
     "AGG":"expected persistence (DATA-) / a use-case","RM":"expected a view use-case (UC-) surfacing it, or N/A for an internal projection","UC":"expected acceptance criteria (AC-) or a task",
     "AC":"not exercised by any test/task","OBL":"no control (SEC-/DATA-/arch) addresses it",
-    "THR":"no mitigating control (SEC-) addresses it",
+    "THR":"no mitigating control (SEC-/ADR-/OBL-/DATA-) addresses it and it isn't marked accepted-risk",
     "SLO":"no alert/runbook references it","NFR":"no test/SLO evidences it","ASR":"no verifying test",
     "API":"no consumer/test","EXP":"no analytics event/task wires it","DATA":"no consumer"}
 trace_ids = set()
@@ -363,6 +363,41 @@ _apidir = SPEC / "09-solution" / "api"
 if _apidir.exists():
     for _yf in sorted(_apidir.glob("*.yaml")) + sorted(_apidir.glob("*.yml")):
         refset.update(IDTOK.findall(read(_yf)))
+# THR / EVT coverage exceptions the back-reference test (tok in refset) structurally misses, read from the
+# element's OWN definition block (its def line through the line before the next def in the same file):
+#  - a THR is covered when its block forward-cites a CONTROL — SEC-/ADR-/OBL- (a security control, an ADR
+#    structural layer, a compliance obligation), or a DATA- control NEAR a mitigation cue — or is marked
+#    accepted-risk; none of those back-reference the THR, so refset never sees it.
+#  - an EVT is complete when its block marks it an intentional terminal SINK (audit-only /
+#    operator-console-internal — deliberately absent from the published asyncapi catalog, consumed by nothing).
+CTRLID = re.compile(r"\b(?:SEC|ADR|OBL)-[A-Za-z0-9._-]*[A-Za-z0-9]\b")   # control-type id: a forward cite IS a mitigation (not an asset)
+DATAID = re.compile(r"\bDATA-[A-Za-z0-9._-]*[A-Za-z0-9]\b")
+MITCUE = re.compile(r"mitigat|control|address|counter|defen|residual|remediat|safeguard|protect", re.I)
+ACCRISK = re.compile(r"accept(?:ed|s)?[ \-]risk", re.I)
+EVTSINK = re.compile(r"audit-only|operator-console-internal|internal[ \-]sink|terminal[ \-]sink|intentional[ \-]sink|no[ \-]consumer[ \-]by[ \-]design", re.I)
+thr_covered, evt_sinks = set(), set()
+for _p, _r in cmd_files():
+    if os.path.basename(_r) == "traceability.md": continue
+    _lines = read(_p).splitlines()
+    _dpos = []                                                # (lineno, id) definition positions, in file order
+    for _i, _l in enumerate(_lines):
+        if "|" in _l and _i + 1 < len(_lines) and SEP.match(_lines[_i + 1]): continue   # table header row
+        _ll = RANGE.sub(" ", _l)
+        _m = DEF1.match(_ll)
+        _gid = _m.group(1) if _m else None
+        if not _gid:
+            for _m3 in DEF3.finditer(_l):
+                if in_owner_area(_m3.group(1), _r): _gid = _m3.group(1); break
+        if _gid: _dpos.append((_i, _gid))
+    for _j, (_ln, _gid) in enumerate(_dpos):
+        _pre = _gid.split("-")[0].upper()
+        if _pre not in ("THR", "EVT"): continue
+        _end = _dpos[_j + 1][0] if _j + 1 < len(_dpos) else len(_lines)
+        _block = "\n".join(_lines[_ln:_end])
+        if _pre == "THR" and (CTRLID.search(_block) or ACCRISK.search(_block) or (DATAID.search(_block) and MITCUE.search(_block))):
+            thr_covered.add(_gid)
+        if _pre == "EVT" and EVTSINK.search(_block):
+            evt_sinks.add(_gid)
 # downstream type a coverage WARN expects; if NONE of that type exists yet, the downstream layer is
 # simply empty (early stage) and the WARN is noise, not a gap — suppress it. (#7: a CMD has no UC only
 # once use-cases exist; before then "CMD has no UC" is 100% expected and drowns real within-layer gaps.)
@@ -385,6 +420,8 @@ for tok in sorted(defined):
     dts = DOWN_TYPE.get(pre)
     if dts and not any(t in present_types for t in dts): continue   # downstream layer empty - premature to warn
     if tok in refset or tok in trace_ids or tok in keyed_parents: continue
+    if pre == "THR" and tok in thr_covered: continue            # mitigated by a non-SEC control / accepted-risk (its own block)
+    if pre == "EVT" and tok in evt_sinks: continue              # intentional audit-only / operator-console-internal sink
     add("WARN", sorted(defsites.get(tok) or def3sites.get(tok) or ["(?)"])[0],
         "coverage: '" + tok + "' has no downstream reference - " + COV_HINT[pre] + " (structural gap to resolve or mark N/A)")
 

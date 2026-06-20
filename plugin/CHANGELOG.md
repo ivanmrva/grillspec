@@ -4,6 +4,14 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.2.7
+
+### Fixed — `lint_spec.py` coverage false-positives on non-SEC threat mitigations and non-UC event consumers
+Two structural-coverage checks credited only one narrow downstream shape and false-WARNed on legitimate alternatives.
+- **`THR-` coverage** required a back-referencing `SEC-` control. A threat mitigated by a *non-SEC* control — an `ADR-` structural layer, an `OBL-`/`DATA-` compliance control — or explicitly **accepted-risk**, carries that on the threat's own row (a forward cite that never lands in the reference set), so it false-WARNed. The check now also credits a `THR-` whose definition block forward-cites a control (`SEC-`/`ADR-`/`OBL-`, or a `DATA-` near a mitigation cue) or is marked accepted-risk. A genuinely unmitigated threat still WARNs.
+- **`EVT-` consumer** missed two real consumers: a cross-context `POL-` reaction phrased `whenever EVT-x then CMD-y` (the DDD policy convention — `whenever`/`reacts-to`/`consumed-by`/`consumes` are now reference markers, so a reaction in any context, including a deferred one, credits its event), and an intentional **terminal sink** (an `audit-only` / `operator-console-internal` event deliberately absent from the published asyncapi catalog), now recognized as complete rather than orphaned. A true orphan event still WARNs.
+- Added regression tests `threat-coverage-nonsec-controls` and `event-consumer-policy-and-sinks`.
+
 ## 4.2.6
 
 ### Fixed — `lint_spec.py` state-machine checker mis-parsed a compound `from`/`to` cell

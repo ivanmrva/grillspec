@@ -119,7 +119,27 @@ expect("module-role", run(LINT, {
 }), must=["module 'Worker' declares no role"], forbid=["module 'Api' declares no role"])
 
 expect("threat-coverage", run(LINT, {"06-requirements/security/t.md": idtable(("THR-1", "Spoof"), ("SEC-1", "Sign"))}),
-       must=["no mitigating control (SEC-)"])
+       must=["no mitigating control (SEC-/ADR-/OBL-/DATA-)"])
+
+# a THR is covered when its OWN row forward-cites a non-SEC control (ADR-/OBL-/DATA- near a mitigation cue)
+# or is marked accepted-risk - none of which back-reference the THR, so the refset test alone false-WARNed.
+expect("threat-coverage-nonsec-controls", run(LINT, {"06-requirements/security/t.md":
+    HDR + "\n| ID | threat | mitigation |\n|---|---|---|\n" +
+    "| THR-1 | spoof | ADR-SREQ-3 structural auth boundary |\n" +
+    "| THR-2 | leak | OBL-12 retention obligation |\n" +
+    "| THR-3 | tamper | control: DATA-Ledger append-only |\n" +
+    "| THR-4 | minor dos | accepted-risk: edge rate-limit suffices |\n" +
+    "| THR-9 | UNMITIGATED | (none) |\n| SEC-1 | Sign |\n"}),
+    must=["'THR-9' has no downstream"], forbid=["'THR-1' has no downstream", "'THR-2' has no downstream", "'THR-3' has no downstream", "'THR-4' has no downstream"])
+
+# an EVT is covered by a cross-context 'whenever EVT-' POL- reaction (even a deferred context) or when it is
+# an intentional audit-only / operator-console-internal sink; only a true orphan still WARNs.
+expect("event-consumer-policy-and-sinks", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "V")),
+    "04-domain/ddd/strat/policies.md": HDR + "\nPOL-1 Ship: whenever EVT-701 then CMD-2 (Fulfillment, deferred)\n",
+    "04-domain/ddd/tac/events.md": HDR + "\n| ID | name | note |\n|---|---|---|\n" +
+        "| EVT-701 | Placed | core |\n| EVT-208 | Audited | audit-only |\n| EVT-110 | Nudged | operator-console-internal |\n| EVT-999 | Orphan | core |\n"}),
+    must=["'EVT-999' has no downstream"], forbid=["'EVT-701' has no downstream", "'EVT-208' has no downstream", "'EVT-110' has no downstream"])
 
 # a contract YAML credits coverage: an EVT- consumed only by asyncapi.yaml must NOT false-WARN "no consumer"
 expect("contract-coverage-credit", run(LINT, {
