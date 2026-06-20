@@ -4,6 +4,14 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.2.2
+
+### Fixed — `check_contracts.py` false positives against a complete spec
+The contract↔ID binder diverged from `lint_spec.py`'s tokenizer, so a lint-clean spec produced spurious errors.
+- **Inline `<ID> <Name>` definitions were not harvested.** The defined-id set only recognized leading-cell / `id:` forms; it missed grill-ddd's prescribed inline enumerations (`commands: CMD-101 Ingest · CMD-103 …`) and the event-flow `EVT- ⟵ CMD-` form that `lint_spec.py` accepts. Added lint_spec's DEF3 pattern to the harvest, so every `CMD-`/`EVT-`/`RM-` a contract references now resolves.
+- **The ID tokenizer captured trailing prose punctuation.** `IDCORE` ended `[A-Za-z0-9._-]*`, so a description like `Realizes RM-601.` tokenized as `RM-601.` and read as undefined. Aligned `IDCORE` to `lint_spec.py`'s form (mandatory trailing alnum) — `DATA-Customer.id` is still captured whole; a sentence-ending dot is not.
+- **Document-level OpenAPI `security` inheritance was ignored.** The mutation-needs-authz WARN read only the operation's own `security`; per OpenAPI a root-level `security` applies unless the operation overrides it. The check now uses the effective requirement (op-level if present, else document-level), so a globally-secured contract no longer false-flags every mutation, while an explicit op-level `security: []` override still warns.
+
 ## 4.2.1
 
 ### Fixed — ID-tokenizer correctness

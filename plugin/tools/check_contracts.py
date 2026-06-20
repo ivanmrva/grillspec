@@ -26,12 +26,14 @@ if not API.exists():
 
 # Mirror lint_spec's type-prefix vocabulary (kept in sync via selfcheck).
 TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|ADR|T"
-IDCORE = r"(?:" + TYPES + r")-[A-Za-z0-9][A-Za-z0-9._-]*"
+IDCORE = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"   # mirrors lint_spec's IDCORE: a trailing '.'/',' from prose ('Realizes RM-601.') is NOT captured
 IDTOK = re.compile(r"(?<![A-Za-z0-9-])" + IDCORE)
-DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + IDCORE + r")\b")
-DEF2 = re.compile(r"\bid:\s*(" + IDCORE + r")", re.I)
+DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + IDCORE + r")\b")        # ID as the first token of a line/cell (after leading -, *, #, |, or bold)
+DEF2 = re.compile(r"\bid:\s*(" + IDCORE + r")", re.I)                 # id: <ID>
+DEF3 = re.compile(r"(?:^|[·;:,|←→⟵⟶])\s*[*`_]*\s*(" + IDCORE + r")\s+[A-Z]")   # lint_spec DEF3: inline '<ID> <Name>' enumeration (grill-ddd's 'commands: CMD-201 ExtractAtoms · CMD-204 …', event-flow 'EVT- ⟵ CMD-')
 
-# Defined-id set from markdown (leading row-key / `id:`). Errs toward MORE-defined, never a false "undefined".
+# Defined-id set from markdown. Mirrors lint_spec's definition harvest (leading row-key / `id:` / inline
+# '<ID> <Name>' enumeration). Errs toward MORE-defined, never a false "undefined".
 defined = set()
 for p in SPEC.rglob("*.md"):
     try: txt = p.read_text(encoding="utf-8", errors="replace")
@@ -39,6 +41,7 @@ for p in SPEC.rglob("*.md"):
     for l in txt.splitlines():
         m = DEF1.match(l) or DEF2.search(l)
         if m: defined.add(m.group(1))
+        for m in DEF3.finditer(l): defined.add(m.group(1))   # commands/events/read-models enumerated inline as '<ID> <Name>'
 for p in SPEC.rglob("ADR-*.md"):
     m = re.match(r"(ADR-[A-Za-z][A-Za-z0-9]*-\d+)", p.name)
     if m: defined.add(m.group(1).upper())
@@ -68,6 +71,7 @@ METHODS = {"get", "put", "post", "delete", "patch", "options", "head", "trace"}
 for yf in sorted(API.glob("openapi*.y*ml")):
     doc = load(yf)
     if not isinstance(doc, dict): continue
+    root_security = doc.get("security")   # OpenAPI: a document-level security requirement applies to every operation unless the operation overrides it
     # API- ids are MINTED by the contract (an operation's x-grillspec-id), not referenced from spec/ - collect
     # them so they are not flagged as undefined; every OTHER id type is a cross-layer reference that must resolve.
     minted = set()
@@ -91,8 +95,10 @@ for yf in sorted(API.glob("openapi*.y*ml")):
                 add("WARN", yf.name, "%s has no 'x-grillspec-id: API-NNN' - the operation is not traceable to the API catalogue" % loc)
             if not op.get("x-serves"):
                 add("WARN", yf.name, "%s has no 'x-serves: [UC-… / CMD-…]' - every endpoint serves a use-case or command" % loc)
-            if method.lower() in {"post", "put", "patch", "delete"} and not op.get("security") and not op.get("x-public"):
-                add("WARN", yf.name, "%s is a mutation with no 'security' scope - default-deny wants an explicit per-operation authz rule (or 'x-public: true')" % loc)
+            # effective security per OpenAPI inheritance: the operation's own 'security' (even an explicit []) overrides the document-level one
+            eff_sec = op["security"] if "security" in op else root_security
+            if method.lower() in {"post", "put", "patch", "delete"} and not eff_sec and not op.get("x-public"):
+                add("WARN", yf.name, "%s is a mutation with no effective 'security' scope (no per-operation rule and no document-level default) - default-deny wants an explicit authz rule (or 'x-public: true')" % loc)
             responses = op.get("responses") or {}
             if not any(str(c).startswith(("4", "5")) or c == "default" for c in responses):
                 add("WARN", yf.name, "%s declares no 4xx/5xx/default response - every endpoint carries an RFC 9457 problem+json error model" % loc)
