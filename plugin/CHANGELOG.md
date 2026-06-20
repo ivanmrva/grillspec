@@ -4,6 +4,13 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.2.5
+
+### Changed — domain vocabulary is now an explicit elicit-or-ratify class (not a free DECIDE)
+`decision-classes.md` protected user-owned *values* (SLAs, retention, jurisdictions) as ratify-not-invent but never named user-owned *vocabulary* — so the universal "default hard toward deciding" had no counterweight for naming, leaving UL definition to a stance rather than a rule. A bare-idea or expert-user start could therefore coin a generic-but-wrong domain term and move on without surfacing it, producing the wrong-but-consistent model the audit's Phase 3 calls the costliest failure.
+- Added an **edge call**: a domain term (entity · command · event · role · state) the domain already has a word for is an ASK — proposed for confirmation, never silently christened; a label coined for a genuinely-new concept is allowed but **marked coined** (`inferred`, or a `HOT-` if contested) so the expert can supersede it. Harvest an expert's jargon from provided input and confirm rather than override with a synonym.
+- Tightened `grill-ddd` step 4 ("build the ubiquitous language") to make "agree the terms" explicitly propose-and-confirm, with coined terms flagged.
+
 ## 4.2.4
 
 ### Added — `check_freshness.py`: an advisory artifact-staleness guard (grilled AND derived)

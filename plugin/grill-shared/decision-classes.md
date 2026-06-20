@@ -51,6 +51,17 @@ product is silent on. Each forks on a fact that isn't — and can't be — in th
   kill-criterion, a cloud/region/datastore commitment, an irreversible data deletion — is the user's
   or org's to set. **Propose a profiled default for them to ratify; proposing is not deciding.**
   Silently picking it is the costliest under-ask.
+- **A domain *term* is elicited or ratified, not invented.** The name of a concept the domain already
+  has a word for — an entity, command, event, role, state — is the user's to give, a fact the spec
+  can't carry until they do: it is an ASK, never a free DECIDE, even though "default hard toward
+  deciding" otherwise governs. **Propose the term for confirmation** ("I'll call this a *Booking* — is
+  that your word?"); never silently christen domain vocabulary. Coining a label for a genuinely-new,
+  unnamed concept is allowed, but **mark it coined** — an `inferred` term, or a `HOT-` hotspot if it is
+  contested or you're unsure — so the expert can rename it (supersede, don't rename). The trap is the
+  expert user whose established jargon you override with a generic synonym; harvest their term from any
+  provided input and confirm it rather than re-eliciting. Silently inventing domain vocabulary is the
+  costliest under-ask after silently picking a user-owned value, because a wrong-but-consistent
+  ubiquitous language produces correct code for the wrong domain.
 - **Hard-to-reverse but spec-settled.** Hard-to-reverse alone doesn't make it a user question — it makes
   it an **ADR**. You still decide it; you just document it with more care.
 
