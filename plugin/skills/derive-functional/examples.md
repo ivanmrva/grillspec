@@ -7,7 +7,7 @@ The domain model carries `CMD-RescheduleJob`, invariant `INV-Job-LeadTime` (no m
 Residual product-behavior edge found while projecting: *what happens to a customer who already received an SMS confirmation when the slot moves?* No invariant speaks to it → recorded as a **Deferred** gap (`at-task`), not authored here.
 
 ## Output
-`requirements/functional/use-cases.md`
+`functional-spec/use-cases.md`
 
 **UC-014 — Reschedule a booked job**
 - actor: Dispatcher (booking branch)

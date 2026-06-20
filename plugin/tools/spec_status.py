@@ -5,8 +5,10 @@
 # structure; it does NOT judge whether the content is correct - that stays the conductor's job.
 import sys, re, pathlib
 SPEC = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "spec")
-PREFIXES = ["UC","AC","CMD","EVT","AGG","NFR","ASR","API","SEC","DATA","OBL","SLO","EXP","DS","T","ADR"]
-ID = "(?:" + "|".join(PREFIXES) + r")-[A-Za-z0-9][A-Za-z0-9-]*"
+# TYPES mirrors lint_spec.py's vocabulary (selfcheck guards them in sync).
+TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|ADR|T"
+PREFIXES = TYPES.split("|")
+ID = "(?:" + TYPES + r")-[A-Za-z0-9][A-Za-z0-9-]*"
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + ID + r")\b")
 DEF2 = re.compile(r"^\s*id:\s*(" + ID + r")\b", re.I)
 IDTOK = re.compile(r"(?<![A-Za-z0-9])" + ID)   # left boundary: don't match T-/DS- inside words
@@ -35,7 +37,7 @@ tps = list(SPEC.glob("**/traceability.md"))
 trace = set()
 if tps:
     for l in read(tps[0]).splitlines(): trace |= set(IDTOK.findall(l))
-adrs = of("ADR") or sorted(set(re.findall(r"ADR-\d+", " ".join(p.name for p in files))))
+adrs = of("ADR") or sorted(set(re.findall(r"ADR-[A-Za-z][A-Za-z0-9]*-\d+", " ".join(p.name for p in files))))
 def pct(a, b): return ("%d%%" % round(100.0 * a / b)) if b else "n/a"
 def shown(x): return "-" if x is None else str(x)
 print("SPEC STATUS  (" + str(SPEC) + ")")

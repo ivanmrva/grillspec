@@ -185,7 +185,7 @@ RANGE = re.compile(r"(?<![A-Za-z0-9-])(?:" + TYPES + r")-\d+(?:(?:\.\.|/)\d+)+")
 # Reference markers — used to find ID *references* in the resolution pass below. Word markers are
 # \b-anchored so they match only as whole words: 'invalidates' must not match 'validates', etc. The
 # symbols (->, →) sit outside \b.
-REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|surfaces?|renders?|displays?)\b|->|→)\s*:?\s*([^\n]*)", re.I)
+REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|surfaces?|renders?|displays?|mitigat(?:es|ed-by)|prices?|priced-by|gates?|gated-by|enforces?|enforced-by|evidences?|evidenced-by)\b|->|→)\s*:?\s*([^\n]*)", re.I)
 defined = set()
 defsites = {}                                                # id -> files that AUTHORITATIVELY define it (row-key / heading / id:) — drives define-once + owning-area checks
 def3sites = {}                                               # id -> files where it appears inline as '<ID> <Name>' in its OWN area (supplementary; not subject to define-once)
@@ -206,12 +206,31 @@ SEP = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
 def in_owner_area(tok, r):
     owner = PREFIX_OWNER.get(tok.split("-")[0].upper())
     return bool(owner) and (r == owner or r.startswith(owner + "/"))
+# An authorization matrix (header first-cell command/cmd/operation, other cols = actors) keys its rows by
+# CMD- as a ROW-KEY REFERENCE, not a definition (the command is defined in ddd). Precompute those body-row
+# line numbers so the definition scan skips them — same spirit as the traceability.md exemption.
+authz_rows = {}                                             # rel-path -> set of 1-based body-row line numbers
+for p, r in cmd_files():
+    lines = read(p).splitlines(); i = 0
+    while i < len(lines):
+        if lines[i].strip().startswith("|") and i+1 < len(lines) and SEP.match(lines[i+1]):
+            hdr = [c.strip().lower() for c in lines[i].strip().strip("|").split("|")]; j = i+2
+            is_authz = bool(hdr) and hdr[0] in ("command", "cmd", "cmd-id", "operation") and len(hdr) >= 2 and r.startswith("06-requirements/security")
+            while j < len(lines) and lines[j].strip().startswith("|") and not SEP.match(lines[j]):
+                if is_authz: authz_rows.setdefault(r, set()).add(j+1)
+                j += 1
+            i = j
+        else:
+            i += 1
 for p, r in cmd_files():
     if os.path.basename(r) == "traceability.md": continue   # the traceability matrix references IDs (ID->task->code); it never defines them
     lines = read(p).splitlines()
+    arows = authz_rows.get(r, ())
     for i, l in enumerate(lines):
         if "|" in l and i+1 < len(lines) and SEP.match(lines[i+1]):
             continue                                         # table HEADER row — first cell is a column label, not an ID definition
+        if (i+1) in arows:
+            continue                                         # authz-matrix body row — leading CMD- is a row-key reference, not a definition
         l = RANGE.sub(" ", l)                                # drop numeric range/list shorthand before tokenizing
         m = DEF1.match(l)
         if m: defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
@@ -328,6 +347,7 @@ for p, r in cmd_files():
 COV_HINT = {"CMD":"expected a use-case (UC-) projecting it","EVT":"no downstream consumer",
     "AGG":"expected persistence (DATA-) / a use-case","RM":"expected a view use-case (UC-) surfacing it, or N/A for an internal projection","UC":"expected acceptance criteria (AC-) or a task",
     "AC":"not exercised by any test/task","OBL":"no control (SEC-/DATA-/arch) addresses it",
+    "THR":"no mitigating control (SEC-) addresses it",
     "SLO":"no alert/runbook references it","NFR":"no test/SLO evidences it","ASR":"no verifying test",
     "API":"no consumer/test","EXP":"no analytics event/task wires it","DATA":"no consumer"}
 trace_ids = set()
@@ -335,11 +355,19 @@ _tp = SPEC / "10-delivery" / "verification" / "traceability.md"
 if _tp.exists():
     for l in read(_tp).splitlines():
         trace_ids |= set(IDTOK.findall(l))
+# The machine contracts (openapi/asyncapi under solution/api) are REAL artifacts, but the scan above is
+# .md-only - so an EVT-/API- whose only consumer is the YAML contract would false-WARN 'no downstream
+# consumer'. Credit raw ID tokens found in the contract YAML as references for coverage purposes only
+# (never as definitions; check_contracts.py validates the contracts' own id references).
+_apidir = SPEC / "09-solution" / "api"
+if _apidir.exists():
+    for _yf in sorted(_apidir.glob("*.yaml")) + sorted(_apidir.glob("*.yml")):
+        refset.update(IDTOK.findall(read(_yf)))
 # downstream type a coverage WARN expects; if NONE of that type exists yet, the downstream layer is
 # simply empty (early stage) and the WARN is noise, not a gap — suppress it. (#7: a CMD has no UC only
 # once use-cases exist; before then "CMD has no UC" is 100% expected and drowns real within-layer gaps.)
 DOWN_TYPE = {"CMD":("UC",),"EVT":("UC",),"AGG":("DATA",),"RM":("UC",),"UC":("AC",),"AC":("T",),
-    "OBL":("SEC","DATA"),"NFR":("ASR","SLO"),"ASR":("T",),"API":("T",),"EXP":("T",)}
+    "OBL":("SEC","DATA"),"THR":("SEC",),"NFR":("ASR","SLO"),"ASR":("T",),"API":("T",),"EXP":("T",)}
 present_types = {d.split("-")[0].upper() for d in defined}
 # a parent with a keyed child is covered by it (UC-014 by AC-014a; NFR-014 by ASR-014) even with no explicit ref
 keyed_parents = set()
@@ -476,6 +504,257 @@ for p, r in cmd_files():
         for tid in [d for d in defined if d.split("-")[0].upper() == "T" and r in defsites.get(d, set())]:
             if tid not in _htxt:
                 add("WARN", r, tid + " is afk:blocked but absent from _human-input.md - queue the human ask so the handoff is not lost")
+
+# 19 every task traces UP: a T- file must cite at least one upstream spec ID (the UC-/AC-/CMD-/NFR-/…
+#    it implements). A task that references nothing has no spec basis - its code can't be conformance-traced.
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    upstream = [t for t in IDTOK.findall(RANGE.sub(" ", read(p))) if t.split("-")[0].upper() not in ("T", "ADR")]
+    if not upstream:
+        add("WARN", r, "task cites no upstream spec ID - a task must trace to what it implements (a UC-/AC-/CMD-/NFR-/DATA-/API-…), else its code has no spec basis to conformance-check against")
+
+# 20 every ADR declares a recognized lifecycle status - makes the obsolete-ADR check (#17) reliable and
+#    keeps supersession trackable. (template.md / _archive/ exempt.)
+ADRSTATUS = re.compile(r"(?im)^[\s>*#-]*\**\s*status\**\s*:?\s*\**\s*(?:proposed|accepted|superseded|deprecated|rejected|draft)\b")
+for p, r in cmd_files():
+    if not (r.startswith("adr/") or "/adr/" in r): continue
+    b = os.path.basename(r)
+    if b == "template.md" or "_archive/" in r: continue
+    if not ADRSTATUS.search(read(p)):
+        add("WARN", r, "ADR has no recognized 'status:' (Proposed/Accepted/Superseded/Deprecated/Rejected) - record the lifecycle status so supersession stays trackable")
+
+# ── structured-fact enforcement (state machines · authz matrix · typed scalar facts) ──
+# These reward the canonical-form structure the skills emit: a structured slot is a question the author had
+# to answer, so the check both verifies it AND forces completeness. All WARN — a partial artifact is legal
+# mid-spec, and value-normalization is heuristic; ERROR is reserved for the unambiguous violations above.
+def md_tables(lines):
+    """Yield (lowercased-header-cells, [body-row-cell-lists]) for each markdown table in `lines`."""
+    i = 0
+    while i < len(lines):
+        l = lines[i].strip()
+        if l.startswith("|") and i + 1 < len(lines) and SEP.match(lines[i+1]):
+            header = [c.strip().lower() for c in l.strip("|").split("|")]
+            body, j = [], i + 2
+            while j < len(lines) and lines[j].strip().startswith("|") and not SEP.match(lines[j]):
+                body.append([c.strip() for c in lines[j].strip().strip("|").split("|")]); j += 1
+            yield header, body; i = j
+        else:
+            i += 1
+
+# 21 state-machine integrity (ddd only). A transition table = header carrying 'from' and 'to' (+ optional
+#    'trigger'/'event', 'guard'). Build the graph and flag unreachable / dead-end / nondeterministic states.
+SMARK = re.compile(r"^[\-—*•]+$|^\(?(?:initial|start|terminal|final|end|none)\)?$", re.I)
+def nstate(s):
+    return re.sub(r"\s*\((?:initial|start|terminal|final|end)\)\s*$", "", s, flags=re.I).strip(" *`_·").strip()
+for p, r in cmd_files():
+    if not r.startswith("04-domain/ddd"): continue
+    for header, body in md_tables(read(p).splitlines()):
+        if "from" not in header or "to" not in header or ("trigger" not in header and "event" not in header): continue
+        fi, ti = header.index("from"), header.index("to")
+        gi = header.index("guard") if "guard" in header else None
+        tri = header.index("trigger") if "trigger" in header else (header.index("event") if "event" in header else None)
+        trans, initials, terminals, states = [], set(), set(), set()
+        for row in body:
+            if len(row) <= max(fi, ti): continue
+            fr_raw, to_raw = row[fi], row[ti]
+            trig = row[tri] if tri is not None and len(row) > tri else ""
+            guard = row[gi] if gi is not None and len(row) > gi else ""
+            fr, to = nstate(fr_raw), nstate(to_raw)
+            fr_init = bool(SMARK.match(fr_raw.strip())) or "(initial" in fr_raw.lower() or "(start" in fr_raw.lower()
+            to_term = bool(SMARK.match(to_raw.strip())) or "(terminal" in to_raw.lower() or "(final" in to_raw.lower() or "(end" in to_raw.lower()
+            if ("(terminal" in fr_raw.lower() or "(final" in fr_raw.lower()) and fr: terminals.add(fr)
+            if ("(initial" in to_raw.lower() or "(start" in to_raw.lower()) and to: initials.add(to)
+            if fr_init and to: initials.add(to)
+            if to_term and fr: terminals.add(fr)
+            if fr and not fr_init: states.add(fr)
+            if to and not to_term: states.add(to)
+            if fr and to and not fr_init and not to_term: trans.append((fr, trig.strip(), to, guard.strip()))
+        if len(states) < 2: continue
+        outgoing = {}
+        for fr, trig, to, g in trans: outgoing.setdefault(fr, []).append((trig, to, g))
+        tos = {to for _, _, to, _ in trans}
+        roots = initials or {s for s in states if s not in tos}
+        seen, stack = set(roots), list(roots)
+        while stack:
+            for _, to, _ in outgoing.get(stack.pop(), []):
+                if to not in seen: seen.add(to); stack.append(to)
+        for s in sorted(states - seen):
+            add("WARN", r, "state-machine: '%s' is unreachable (nothing transitions into it, not marked initial) - add an entering transition or mark it initial" % s)
+        for s in sorted(states - set(outgoing) - terminals):
+            add("WARN", r, "state-machine: '%s' is a dead-end (nothing transitions out, not marked terminal) - add an exit transition or mark it terminal/final" % s)
+        bytrig = {}
+        for fr, trig, to, g in trans: bytrig.setdefault((fr, trig.lower()), []).append((to, g))
+        for (fr, trig), outs in bytrig.items():
+            if len({to for to, _ in outs}) > 1 and any(not g for _, g in outs):
+                add("WARN", r, "state-machine: from '%s' on '%s' multiple targets (%s) lack a distinguishing guard - the transition is nondeterministic" % (fr, trig or "?", ", ".join(sorted({to for to, _ in outs}))))
+
+# 22 authorization completeness, in either authored shape:
+#    matrix  — header[0] ∈ command/cmd/operation, other cols = actors, cells = a decision; OR
+#    longform— rows keyed by SEC-, with an 'actor' col + a 'command' col + a decision col.
+#    Flag empty decision cells; flag any defined CMD- with no rule/row (default-deny still wants it explicit).
+seen_cmds, have_authz = set(), False
+for p, r in cmd_files():
+    if not r.startswith("06-requirements/security"): continue   # authz matrices/rules are authored only here
+    for header, body in md_tables(read(p).splitlines()):
+        if not header: continue
+        if header[0] in ("command", "cmd", "cmd-id", "operation") and len(header) >= 2:   # matrix form
+            have_authz = True; actors = header[1:]
+            for row in body:
+                key = (row[0] if row else "").strip(" *`_")
+                mk = re.match(r"^(" + IDCORE + r")", key)
+                if mk and mk.group(1).split("-")[0].upper() == "CMD": seen_cmds.add(mk.group(1))
+                for ci, actor in enumerate(actors, start=1):
+                    if (row[ci].strip() if ci < len(row) else "") == "":
+                        add("WARN", r, "authorization matrix: '%s' × '%s' has no decision - every actor × command cell is allow / deny / a named condition" % (key or "?", actor))
+        elif "actor" in header and ("command" in header or "cmd" in header):            # long form
+            have_authz = True
+            ai = header.index("actor"); ci2 = header.index("command") if "command" in header else header.index("cmd")
+            di = next((header.index(k) for k in ("decision", "access", "allow", "rule") if k in header), None)
+            for row in body:
+                if ci2 < len(row):
+                    for mk in re.finditer(r"(" + IDCORE + r")", row[ci2]):
+                        if mk.group(1).split("-")[0].upper() == "CMD": seen_cmds.add(mk.group(1))
+                for idx, label in [(ai, "actor"), (ci2, "command")] + ([(di, "decision")] if di is not None else []):
+                    if (row[idx].strip() if idx < len(row) else "") == "":
+                        add("WARN", r, "authorization rule with an empty %s cell - actor, command, and decision are all required (default-deny means every command needs an explicit who-may rule)" % label)
+if have_authz and seen_cmds:
+    for cmd in sorted(d for d in defined if d.split("-")[0].upper() == "CMD"):
+        if cmd not in seen_cmds:
+            add("WARN", sorted(defsites.get(cmd) or def3sites.get(cmd) or ["(?)"])[0],
+                "authorization: command '%s' has no rule/row in any authorization model - default-deny still wants each command's who-may rule explicit (or mark it system/unguarded)" % cmd)
+
+# 23 typed scalar facts, harvested in BOTH authored forms: an inline '<key>: <value>' (attributed to the
+#    nearest preceding ID on the line), AND a table COLUMN whose header is a typed key (attributed to the
+#    row's leading ID). Flag (a) the same (ID, key) carrying differing values across the spec - a likely
+#    contradiction (retention 30d vs 90d); (b) a DATA- element declaring none of class/retention/residency.
+#    WARN throughout — value normalization is heuristic, and a partial element is legal mid-spec.
+TYPED_LIST = ["retention", "residency", "classification", "class", "sla", "limit", "quota", "price", "tier"]
+TF = re.compile(r"\b(" + "|".join(TYPED_LIST) + r")\s*:\s*([^|<>\n]+?)\s*(?:\||$)", re.I)
+EMPTY_CELL = {"", "—", "-", "–", "n/a", "tbd", "…"}
+def nval(v):
+    v = v.strip().lower().rstrip(".")
+    v = re.sub(r"\byears?\b|\byrs?\b", "y", v); v = re.sub(r"\bmonths?\b|\bmos?\b", "mo", v)
+    v = re.sub(r"\bdays?\b", "d", v); v = re.sub(r"\bhours?\b|\bhrs?\b", "h", v)
+    return re.sub(r"\s+", "", v)
+def canon_key(k): return "class" if k.lower() == "classification" else k.lower()
+fieldvals, data_fields = {}, {}
+def record(owner, key, val, r, ln):
+    key = canon_key(key)
+    fieldvals.setdefault((owner, key), []).append((nval(val), r, ln, val.strip()))
+    if owner.split("-")[0].upper() == "DATA" and key in ("class", "retention", "residency"):
+        data_fields.setdefault(owner, set()).add(key)
+for p, r in cmd_files():
+    if is_adr_file(r): continue
+    lines = read(p).splitlines()
+    for i, l in enumerate(lines, 1):                                                   # inline form
+        idpos = [(m.start(), m.group(0)) for m in IDTOK.finditer(l)]
+        if not idpos: continue
+        for mk in TF.finditer(l):
+            prior = [tok for pos, tok in idpos if pos <= mk.start()]
+            record(prior[-1] if prior else idpos[0][1], mk.group(1), mk.group(2), r, i)
+    for header, body in md_tables(lines):                                              # table-column form
+        keycols = {}
+        for ci, h in enumerate(header):
+            for k in TYPED_LIST:
+                if h == k or h.startswith(k + " ") or h.startswith(k + "("): keycols[ci] = k; break
+        if not keycols: continue
+        for row in body:
+            mk = re.match(r"^[*`_ ]*(" + IDCORE + r")", row[0]) if row else None
+            if not mk: continue
+            for ci, k in keycols.items():
+                cell = row[ci].strip() if ci < len(row) else ""
+                if cell.lower() not in EMPTY_CELL and not cell.lower().startswith("deferred"):
+                    record(mk.group(1), k, cell, r, 0)
+def floc(e): return ("%s:%d" % (e[1], e[2])) if e[2] else e[1]
+for (idk, key), es in fieldvals.items():
+    if len({e[0] for e in es}) > 1:
+        where = "; ".join("%s=%s" % (floc(e), e[3]) for e in sorted(es, key=lambda x: (x[1], x[2]))[:4])
+        add("WARN", es[0][1], "typed field '%s' for %s has conflicting values (%s) - state one canonical value, or supersede" % (key, idk, where))
+for did in sorted(d for d in defined if d.split("-")[0].upper() == "DATA"):
+    if not data_fields.get(did):
+        add("WARN", sorted(defsites.get(did) or def3sites.get(did) or ["(?)"])[0],
+            "data element '%s' declares no class/retention/residency - a data element carries each as a typed field/column (a value, or 'deferred until <trigger>')" % did)
+
+# 24 the task dependency graph must be a DAG. Edges from explicit 'depends-on: T-…' under 10-delivery/tasks/
+#    (source = the task the file/row defines; targets = the T- it depends on). A cycle is unbuildable - the
+#    execution loop cannot sequence it - so it is a hard ERROR (IDs + an explicit verb = a sound parse).
+DEP = re.compile(r"\bdepends(?:-on)?\b\s*:?\s*([^\n]*)", re.I)
+file_tid, tdeps = {}, {}
+for tid, files in defsites.items():
+    if tid.split("-")[0].upper() == "T":
+        for f in files:
+            if f.startswith("10-delivery/tasks/"): file_tid.setdefault(f, tid)
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/"): continue
+    for l in read(p).splitlines():
+        ls = RANGE.sub(" ", l)
+        lead = re.match(r"^\s*[-*#]*\s*\|?\s*\**(" + IDCORE + r")", ls)
+        src = lead.group(1) if (lead and lead.group(1).split("-")[0].upper() == "T") else file_tid.get(r)
+        if not src: continue
+        for mk in DEP.finditer(l):
+            for tok in IDTOK.findall(mk.group(1)):
+                if tok.split("-")[0].upper() == "T" and tok != src: tdeps.setdefault(src, set()).add(tok)
+# iterative three-colour DFS (no recursion limit — a task graph can be arbitrarily deep)
+color, cyc = {}, []
+for root in list(tdeps):
+    if color.get(root, 0) != 0: continue
+    stack = [(root, iter(tdeps.get(root, ())))]; path = [root]; color[root] = 1
+    while stack and not cyc:
+        u, it = stack[-1]
+        advanced = False
+        for v in it:
+            if color.get(v, 0) == 1: cyc.append(path[path.index(v):] + [v])
+            elif color.get(v, 0) == 0:
+                color[v] = 1; path.append(v); stack.append((v, iter(tdeps.get(v, ())))); advanced = True
+            if cyc or advanced: break
+        if cyc: break
+        if not advanced:
+            color[u] = 2; stack.pop(); path.pop()
+if cyc:
+    add("ERROR", "10-delivery/tasks/", "task dependency cycle: " + " -> ".join(cyc[0]) + " - the build order is not a DAG and cannot be sequenced; break it (split a task, or invert a dependency)")
+
+# 25 every NFR names HOW it's enforced (a bar with no teeth is an adjective). Recognize an enforcement field
+#    ('enforced-by'/'enforcement'/'verified-by'/'verification') inline or as a table column; WARN an NFR-
+#    (owned by the quality area) that names none. (ASR enforcement = its fitness function, derived later.)
+ENF_INLINE = re.compile(r"\b(?:enforced-by|enforcement|verified-by|verification|evidenced-by)\b\s*:?\s*([^|<>\n]+)", re.I)
+enforced = set()
+for p, r in cmd_files():
+    if not r.startswith("06-requirements/quality"): continue
+    lines = read(p).splitlines()
+    for l in lines:
+        idpos = [(m.start(), m.group(0)) for m in IDTOK.finditer(l)]
+        if not idpos: continue
+        for mk in ENF_INLINE.finditer(l):
+            if mk.group(1).strip(" —-–·"):
+                prior = [tok for pos, tok in idpos if pos <= mk.start()]
+                owner = prior[-1] if prior else idpos[0][1]
+                if owner.split("-")[0].upper() in ("NFR", "ASR"): enforced.add(owner)
+    for header, body in md_tables(lines):
+        ecols = [ci for ci, h in enumerate(header) if h.startswith("enforc") or h.startswith("verif") or h.startswith("evidence")]
+        if not ecols: continue
+        for row in body:
+            mk = re.match(r"^[*`_ ]*(" + IDCORE + r")", row[0]) if row else None
+            if not mk or mk.group(1).split("-")[0].upper() not in ("NFR", "ASR"): continue
+            if any(ci < len(row) and row[ci].strip().lower() not in EMPTY_CELL for ci in ecols): enforced.add(mk.group(1))
+for nid in sorted(d for d in defined if d.split("-")[0].upper() == "NFR"):
+    sites = defsites.get(nid) or def3sites.get(nid) or set()
+    if not any(s.startswith("06-requirements/quality") for s in sites): continue
+    if nid not in enforced:
+        add("WARN", sorted(sites or ["(?)"])[0], "%s names no enforcement - every NFR carries how it's verified (test · gate/fitness-function · lint · infra · SLO · review) as an 'enforced-by' field/column, not just a number" % nid)
+
+# 26 every module in the architecture module-map declares a role (the ports-&-adapters contract codegen and
+#    conformance-review check dependency direction against). Recognize a map (header has 'module' + 'role');
+#    WARN a module row whose role cell is empty.
+for p, r in cmd_files():
+    if not r.startswith("09-solution/arch"): continue
+    for header, body in md_tables(read(p).splitlines()):
+        if "module" not in header or "role" not in header: continue
+        mi, ri = header.index("module"), header.index("role")
+        for row in body:
+            name = row[mi].strip() if (row and mi < len(row)) else ""
+            if not name or name.lower() in EMPTY_CELL: continue
+            if (row[ri].strip() if ri < len(row) else "").lower() in EMPTY_CELL:
+                add("WARN", r, "module '%s' declares no role - each module names its role (domain · driving-port · driven-port · application-service · adapter) so its inward-only dependency direction is checkable" % name)
 
 order = {"ERROR": 0, "WARN": 1, "INFO": 2}
 F.sort(key=lambda x: (order[x[0]], x[1], x[2]))

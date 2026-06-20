@@ -27,7 +27,7 @@ argument-hint: a recorded spec or design docs
 - **an agent could implement ANY part with no further architectural decision**
 - the **seam contracts** (each module's public interface) are fixed here — they are what lets independent vertical slices integrate; module *internals* (algorithm, error taxonomy, concurrency) are **not** designed here — they're produced per-slice, just-in-time
 - completeness verified both directions (no silent gap, no gold-plating)
-- a trade-off's **residual risk** + any **deliberate technical debt** is recorded as the **consequence of the ADR** that makes the call (the mitigation lives in the design, not a log) — never a parking lot for unclosed spec gaps, which close upstream; the conductor reconciles the cross-area risk register from these
+- a trade-off's **residual risk** + any **deliberate technical debt** is recorded as the **consequence of the ADR** that makes the call (the mitigation lives in the design, not a log) — never a parking lot for unclosed spec gaps, which close upstream; whatever composes the areas reconciles the cross-area risk register from these
 
 ## Output
 Written under `solution/arch/`:

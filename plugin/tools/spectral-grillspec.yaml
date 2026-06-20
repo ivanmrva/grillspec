@@ -1,0 +1,55 @@
+# grillspec house ruleset for the OpenAPI / AsyncAPI contracts under spec/09-solution/api/.
+#
+# This is LAYER 1 of API checking: contract structure + house style. Run it in CI:
+#   npx @stoplight/spectral-cli lint spec/09-solution/api/openapi.yaml  --ruleset tools/spectral-grillspec.yaml
+#   npx @stoplight/spectral-cli lint spec/09-solution/api/asyncapi.yaml --ruleset tools/spectral-grillspec.yaml
+#
+# `extends: spectral:oas` brings Spectral's built-in OpenAPI rules (well-formedness, every operation has
+# responses + an operationId, $ref integrity, info completeness, unused components) — do NOT reinvent those.
+# Below are only the grillspec HOUSE rules from derive-api-contracts (RFC 9457 errors, per-op authz, traceability
+# extensions). The cross-layer ID resolution (does x-serves / SEC- point at a real spec element?) is LAYER 2 and
+# lives in tools/check_contracts.py, because only it knows the spec's defined-ID set.
+extends: ["spectral:oas"]
+rules:
+  grillspec-operation-trace-id:
+    description: "Every operation declares x-grillspec-id: API-NNN so it is traceable to the catalogue and to check_contracts."
+    message: "{{path}}: add an 'x-grillspec-id: API-NNN'"
+    severity: error
+    given: "$.paths[*][get,put,post,delete,patch]"
+    then:
+      field: x-grillspec-id
+      function: pattern
+      functionOptions:
+        match: "^API-[A-Za-z0-9._-]+$"
+  grillspec-operation-serves:
+    description: "Every operation declares x-serves: the use-case(s)/command(s) it serves (no orphan endpoint)."
+    message: "{{path}}: add 'x-serves: [UC-… / CMD-…]'"
+    severity: error
+    given: "$.paths[*][get,put,post,delete,patch]"
+    then:
+      field: x-serves
+      function: truthy
+  grillspec-serves-are-ids:
+    description: "Each x-serves entry is a UC-/CMD- id."
+    severity: warn
+    given: "$.paths[*][get,put,post,delete,patch].x-serves[*]"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^(UC|CMD)-[A-Za-z0-9._-]+$"
+  grillspec-problem-json-errors:
+    description: "Error responses carry the RFC 9457 application/problem+json media type."
+    message: "Error response should offer 'application/problem+json'"
+    severity: warn
+    given: "$.paths[*][*].responses[?(@property.match(/^(4|5)/))].content"
+    then:
+      field: "application/problem+json"
+      function: truthy
+  grillspec-mutation-security:
+    description: "A mutation declares an authorization scope (default-deny). Mark a deliberately open endpoint 'x-public: true'."
+    message: "{{path}}: a mutating operation needs a 'security' scope (or 'x-public: true')"
+    severity: warn
+    given: "$.paths[*][post,put,patch,delete]"
+    then:
+      field: security
+      function: truthy

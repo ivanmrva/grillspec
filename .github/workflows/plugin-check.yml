@@ -24,5 +24,10 @@ jobs:
       - name: dependency graph — valid + docs/DEPENDENCY-GRAPH.md in sync
         run: python3 plugin/tools/gen_depgraph.py --check
 
+      - name: spec-tools regression suite — every lint_spec/check_contracts check still fires
+        run: |
+          pip install --quiet pyyaml
+          python3 plugin/tools/test_lint_spec.py
+
       - name: build — all distribution artifacts compile
         run: python3 build/build.py

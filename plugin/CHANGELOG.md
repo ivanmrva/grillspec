@@ -4,6 +4,20 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.2.0
+
+### Added — structured-fact enforcement, contract checking, and a whole-spec audit skill
+The linter and tooling now mechanically enforce the canonical-form structures the engine already prescribed, the API/event contracts are bound to the spec ID graph, and a new judgment skill audits the whole spec.
+
+- **`lint_spec.py` — new sound checks.** State-machine integrity (unreachable / dead-end / nondeterministic transitions over a `from·trigger·to·guard` table), authorization completeness (every `CMD-` has a rule; no blank decision cell — scoped to `06-requirements/security`), typed-scalar-fact consistency (a `retention`/`residency`/`class`/`SLA`/`price` stated twice must agree; every `DATA-` carries class/retention/residency), **task-graph acyclicity** (the `depends-on` DAG — ERROR), `THR-→SEC-` coverage, task→upstream traceability, NFR `enforced-by`, module `role:`, and ADR `status:`. New checks are WARN (slot-not-value, partial specs stay legal) except the DAG cycle and the existing unresolved-gap ERRORs.
+- **`check_contracts.py` (new) + `spectral-grillspec.yaml` (new).** The `openapi.yaml`/`asyncapi.yaml` contracts are checked in two layers: Spectral (`spectral:oas` + house rules: RFC 9457 errors, per-operation authz, the `x-grillspec-id`/`x-serves` traceability extensions) for structure/style, and `check_contracts.py` for the cross-layer ID resolution no off-the-shelf tool can do (every `x-serves`/`SEC-`/`DATA-` a contract references must resolve to a real spec element). Wired into the spec-governance pre-commit hook; `lint_spec.py` now credits contract YAML toward `EVT-`/`API-` coverage.
+- **`audit-spec` (new skill).** The judgment layer above the linter — consistency (contradictions, scope adherence, decision coherence) and domain/usage completeness (what's *missing*, not just broken), with a code-gen-readiness verdict. Two depths (`consistency` / `full`); writes its report to the project root, not into `spec/`. Wired into the conductor menu and the operator-map verification surfaces.
+- **Conventions.** `grill-engine.md` invariant #9 (canonical-form facts are structured and stated once); the producing skills (`grill-ddd`, `grill-data-reqs`, `grill-security-reqs`, `grill-quality`, `derive-architecture`, `derive-api-contracts`) now prescribe the exact parseable shapes.
+- **Tooling integrity.** `test_lint_spec.py` (new regression suite, run in CI); `selfcheck.py` keeps the `TYPES` prefix vocabulary in sync across `lint_spec.py`, `check_contracts.py`, `impact.py`, and `spec_status.py`. Fixed drift in `impact.py` (missing layers + 8 ID prefixes) and `spec_status.py` (8 missing prefixes). `SPEC-CHECKS.md` (new) documents the full enforced surface.
+
+### Fixed
+Stale `requirements/functional/` paths (canonical is the top-level `functional-spec/`), stale stage numbers and skill counts across the docs, and two worker-skill self-containment slips.
+
 ## 4.1.0
 
 ### Added — workspace is the only source of truth (no git history, no out-of-folder reads)

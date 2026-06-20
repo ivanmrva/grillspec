@@ -8,7 +8,7 @@ You describe what you want to build. The system **interviews you** — or **inge
 
 ## The one thing to know
 
-You talk to a single skill: **`grill-spec-conductor`** (the conductor). It is the front door and the router. You never call the other 43 skills by hand — the conductor reads the state of the spec and tells you the next sensible move. Start every session by pointing Claude Code at the conductor.
+You talk to a single skill: **`grill-spec-conductor`** (the conductor). It is the front door and the router. You never call the other skills by hand — the conductor reads the state of the spec and tells you the next sensible move. Start every session by pointing Claude Code at the conductor.
 
 ## The shape of it
 
@@ -65,7 +65,7 @@ Each stage takes the stage(s) before it as input and produces the artifacts the 
 | 05–06 Requirements | `derive-functional` · `grill-quality` · `grill-data-reqs` · `grill-security-reqs` · `grill-compliance` · `grill-integration-reqs` · `grill-entitlements` · `grill-ml-reqs` (AI) | domain | use-cases + acceptance criteria (`UC-`/`AC-`), quality bars (`NFR-`/`ASR-`), data (`DATA-`), security (`SEC-`), obligations (`OBL-`), integration, entitlements (`ENTL-`), ML behaviour/evals (`ML-`, AI) |
 | 07 Design system | `grill-design-system` | requirements | tokens (DTCG), components, a11y, brand, voice — the `DS-` contract over the design-system asset (its **own layer**) |
 | 08 UX | `grill-ux-reqs` | design-system + requirements | user journeys, information architecture, a11y/i18n + usability targets (no ids — a **synthesis** of the design system and the requirements) |
-| 06 Commercial | `grill-monetization` | functional — real features to price | business model · pricing · plans · **entitlements → which features sit in which tier** · metering — **feeds 09 Solution** (entitlement enforcement, billing, metering become build work) |
+| 11 Commercial | `grill-monetization` | entitlements + product vision | business model · pricing · plans · **prices the `ENTL-` tiers** · metering — **feeds 09 Solution** (entitlement enforcement, billing, metering become build work) |
 | 09 Solution | `derive-architecture` · `derive-data-architecture` · `derive-api-contracts` · `derive-security-architecture` · `derive-infra-ops` · `derive-observability` · `derive-test-strategy` · `derive-ml-architecture` (AI) | requirements | architecture incl. the **module map & seam contracts** + key sequences, API / event contracts (`API-`), observability (`SLO-`), deployment & ops, the two-tier test strategy, ML serving / eval / guardrails (AI) — *module internals are designed per-slice in Build, not here* |
 | 10 Delivery | `derive-conventions` · `derive-tasks` | solution | `CLAUDE.md`, the task list (`T-`), coding conventions |
 | Build | `implement-task` · `run-tests` · `conformance-review`  (· `autorun` drives it AFK; a **design-first** slice first runs `derive-impl-design` for its module internals; a ux-heavy slice already carries its **frozen UI prototype** from task finalization) | delivery | working code, one slice at a time: (design-first → module internals) → implement → test → conformance-review |
@@ -74,8 +74,8 @@ Each stage takes the stage(s) before it as input and produces the artifacts the 
 
 **Parallel & cross-cutting:**
 
-- **Go-to-market** (`grill-go-to-market`, 07) — channels · per-channel messaging · launch · partnerships: genuinely commercial *execution*. The build-shaping decision — the **motion** (PLG vs sales-led) — was lifted up into the **product vision** (02), where it feeds onboarding (UX), auth/SSO (security), and billing (monetization). A marketplace channel or a partnership can still surface an integration requirement.
-- **Growth** (`grill-growth`, 08) — post-launch activation/retention + experiments; the **analytics events it defines become instrumentation tasks** in the build, so it loops back in.
+- **Go-to-market** (`grill-go-to-market`, 11-commercial) — channels · per-channel messaging · launch · partnerships: genuinely commercial *execution*. The build-shaping decision — the **motion** (PLG vs sales-led) — was lifted up into the **product vision** (02), where it feeds onboarding (UX), auth/SSO (security), and billing (monetization). A marketplace channel or a partnership can still surface an integration requirement.
+- **Growth** (`grill-growth`, 11-commercial) — post-launch activation/retention + experiments; the **analytics events it defines become instrumentation tasks** in the build, so it loops back in.
 - **Spikes** (`prototype`) — runnable at **any stage** to settle one empirical unknown (feasibility · perf · a UX direction), then deleted; the answer lands as a bet, a requirement, or an ADR.
 
 ## Two ways in
@@ -88,7 +88,7 @@ Each stage takes the stage(s) before it as input and produces the artifacts the 
 | Tool | What it does | When it runs | Verdict |
 |---|---|---|---|
 | `lint_spec.py` | Formal structure, consistency, and coverage: valid file paths, defined IDs, resolving references, one definition per ID, per-area ID ownership, correlated IDs (`AC-`→`UC-`, `ASR-`→`NFR-`), coverage hints, traceability currency, superseded-ADR-referenced-as-live, and blocked-task-without-a-human-ask | Every session, and on every pull request (`spec-governance.yml`) | Deterministic pass/fail — an `ERROR` blocks |
-| `guard_derived.py` | A pre-commit hook that **blocks hand-edits to generated files** (`solution/*`, `requirements/functional/`, `delivery/conventions`+`tasks/`, root `CLAUDE.md`). To change one, you edit its upstream and re-derive | Pre-commit, and in CI | Blocks the commit |
+| `guard_derived.py` | A pre-commit hook that **blocks hand-edits to generated files** (`solution/*`, `functional-spec/`, `delivery/conventions`+`tasks/`, root `CLAUDE.md`). To change one, you edit its upstream and re-derive | Pre-commit, and in CI | Blocks the commit |
 | `impact.py` | **Change propagation.** Given the IDs you changed — or `--since <gitref>` to self-detect from the git diff — it prints the minimal set of downstream artifacts and the impacted code to re-derive and re-test | Whenever you change the spec | Informational list |
 | `spec_status.py` | **Mechanical readiness rollup.** Element counts, the share of use-cases that carry an acceptance criterion, tasks (afk-eligible vs blocked), open questions, traceability presence, and a blockers verdict | Run anytime to gauge completeness | Informational only — it does **not** judge whether the content is right |
 
@@ -105,7 +105,7 @@ The tools enforce **structure**. They cannot tell you whether a requirement is *
 - **No side-ledger files** — there is no `open-questions.md`, `assumptions.md`, or `resolutions.md`. An open point is resolved into its artifact, **deferred in the artifact** with the trigger that reopens it, or — if it's a deliberate choice — captured as an ADR. `glossary.md` and `actors.md` are **per-area deliverables**; the conductor reconciles a system-wide view at the spec root.
 - `_human-input.md` (spec root) — the **one operational queue**: the batched human-in-the-loop asks `autorun` parks for you to clear in a sitting. Maintained by the orchestration loop; it's a handoff queue, not a decision ledger.
 - `src/` + `tests/` — code, and nothing else.
-- **Regenerate-only** (never hand-edited; the guard blocks it): `solution/*`, `requirements/functional/`, `delivery/conventions`+`tasks/`, and the root `CLAUDE.md`.
+- **Regenerate-only** (never hand-edited; the guard blocks it): `solution/*`, `functional-spec/`, `delivery/conventions`+`tasks/`, and the root `CLAUDE.md`.
 
 ## Driving it — the loop
 

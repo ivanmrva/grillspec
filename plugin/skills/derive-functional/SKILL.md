@@ -26,7 +26,7 @@ argument-hint: a recorded spec or design docs
 
 ## Output
 **Stable IDs** (bare type prefix, ID = the leading table column / row key): `UC-` use-case · `AC-` acceptance criterion, keyed to its use-case as `AC-<ucnum><letter>` (UC-014 → AC-014a).
-Written under `requirements/functional/`:
+Written under `functional-spec/`:
 
 | File | Captures | Format |
 |---|---|---|

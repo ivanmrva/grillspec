@@ -55,6 +55,7 @@ One guide per skill. Each is generated from the skill itself, so it always refle
 
 | Skill | Produces | Default output |
 |---|---|---|
+| [`audit-spec`](audit-spec.md) | audit-spec | `—` |
 | [`autorun`](autorun.md) | autorun | `—` |
 | [`conformance-review`](conformance-review.md) | conformance-review | `—` |
 | [`deploy-release`](deploy-release.md) | deploy-release | `—` |

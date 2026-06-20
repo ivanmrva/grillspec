@@ -18,6 +18,7 @@ argument-hint: a recorded spec or design docs
 ## Rules
 - contracts are **real machine-readable specs**, not prose: REST → `openapi.yaml`, async → `asyncapi.yaml`
 - every endpoint has an error model in **RFC 9457 `application/problem+json`**, idempotency keys, pagination/filtering, per-endpoint authz scopes (`SEC-`), and rate-limits; webhooks carry signing/HMAC + retry/dedupe
+- **every operation carries the traceability extensions** so the contract binds to the spec ID graph: `x-grillspec-id: API-NNN` (the endpoint's own id), `x-serves: [UC-… / CMD-…]` (what it serves — no orphan endpoint), and a per-operation `security` scope (mark a deliberately open endpoint `x-public: true`); async channels carry `x-grillspec-id: EVT-NNN`. These are what the contract checks resolve against the rest of the spec
 - every published event has an envelope (id·type·version·time·correlation+causation·source), declared delivery & ordering, schema-evolution rule, and dead-letter
 - versioning + compatibility-test strategy defined (additive-only, deprecation+sunset, consumer-driven contract tests)
 - non-REST styles (gRPC/GraphQL) are contracted via their own IDL, **referenced** from `index.md`, not re-specified here

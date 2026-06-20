@@ -2,7 +2,7 @@
 
 **Invoke:** `/grillspec:grill-spec-conductor` — or just describe a spec task; it is model-invocable.
 
-*The orchestrator — the one skill that knows the whole system. The 44 worker skills know nothing about it.*
+*The orchestrator — the one skill that knows the whole system. The 45 worker skills know nothing about it.*
 
 ## What it does
 START HERE to spec, design, model, plan, or build a project, product, or feature end-to-end — the single front door and orchestrator for the whole idea-to-spec-to-architecture-to-tasks-to-code-to-operate workflow. Use when starting from an idea or from scratch, when the scope is the whole project rather than one area, or when you don't know which step you need: it scans the spec, re-derives the current state, and recommends or asks which area to work next. Owns the cross-area dependency order, the readiness gates, the global glossary/actors and consistency, the discovery/validation overlay, the pivot loop, and the lite path. Prefer this over any individual grill-, derive-, or exec- skill whenever the work spans more than one area. Run this first.

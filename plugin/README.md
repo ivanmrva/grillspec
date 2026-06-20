@@ -3,7 +3,7 @@
 A Claude Code plugin for **spec-driven engineering**. It interviews an idea - or
 grills existing docs - into a complete Domain-Driven Design spec, derives the
 architecture, solution and task breakdown from that spec, and runs the build
-loop. One **conductor** orchestrates 38 grilling and derivation skills (39 components in total); bundled
+loop. One **conductor** orchestrates a family of grilling, derivation, and execution skills; bundled
 **deterministic linters** gate spec consistency and guard derived artifacts.
 
 ## Install
@@ -70,13 +70,13 @@ subset (e.g. ddd -> quality -> architecture) still works together.
 auto-update, Discover-tab visibility. Add a `.claude-plugin/plugin.json` to the
 skill folder and it loads as a single-skill plugin, or list it as another plugin
 entry in the marketplace. Trade-off: each such plugin carries its **own copy of the
-engine** (the bundle plugin shares one engine across all 39), so prefer the bundle
+engine** (the bundle plugin shares one engine across them all), so prefer the bundle
 unless someone genuinely wants just that one skill via managed install.
 
 ## What the plugin ships vs. what lives in your project
 
 **Ships in the plugin** (resolved from the install cache via `${CLAUDE_PLUGIN_ROOT}`):
-the 44 skills, the shared engines and layout map (`grill-shared/`), the spec
+the full skill set, the shared engines and layout map (`grill-shared/`), the spec
 linters and the project-local spec-governance hook (`tools/`), and the subagents
 (`agents/`). **The plugin installs no global hooks** - it acts only when you
 invoke a skill, and never touches other projects or your Claude config.

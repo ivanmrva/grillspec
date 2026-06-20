@@ -4,7 +4,7 @@ selfcheck.py - source-integrity check for the grillspec plugin.
 
 Run this after editing skills, engines, hooks, or manifests. It validates the
 *authoring* source (not a project's spec/ - that is what lint_spec.py does at
-runtime). It catches the silent breakage modes of hand-editing 44 skill files:
+runtime). It catches the silent breakage modes of hand-editing the skill files:
 malformed frontmatter, a missing/typo'd engine-load reference, a stale
 `.claude/...` path that won't resolve once installed from the plugin cache,
 broken manifest/hook JSON, a hook pointing at a missing or non-executable
@@ -139,6 +139,25 @@ if lint.exists():
             warn(f"ID-prefix '{pre}-' is declared by {sorted(declared[pre])} but is UNKNOWN to "
                  f"lint_spec.py (add it to TYPES + ID_LAYER + PREFIX_OWNER, or stop emitting it) - "
                  "the linter cannot register or check it")
+
+# --- 4b-2. secondary-tool prefix sync --------------------------------------
+# check_contracts.py, impact.py, and spec_status.py each carry their OWN copy of the linter's TYPES vocabulary
+# (they can't import lint_spec cleanly) and resolve/propagate/roll-up ids against it. If a copy drifts, that
+# tool tokenizes against a stale prefix set - silently missing ids. Keep each identical to lint_spec's TYPES.
+if lint.exists() and mt:
+    want = set(mt.group(1).split("|"))
+    for toolname in ("check_contracts.py", "impact.py", "spec_status.py"):
+        tp = ROOT / "tools" / toolname
+        if not tp.exists(): continue
+        mc = re.search(r'^TYPES\s*=\s*"([^"]+)"', tp.read_text(), re.M)
+        if not mc:
+            warn(f"{toolname}: no single-line TYPES= constant found - cannot verify it tracks lint_spec.py")
+            continue
+        got = set(mc.group(1).split("|"))
+        if got != want:
+            err(f"{toolname} TYPES is out of sync with lint_spec.py TYPES "
+                f"(only in lint_spec: {sorted(want - got) or '-'}; only in {toolname}: {sorted(got - want) or '-'}) "
+                "- copy the linter's TYPES line so it resolves ids against the same vocabulary")
 
 # --- 4c. dependency graph: valid + the rendered doc is in sync -------------
 # Runs gen_depgraph.py --check: validates dependencies.json (prefixes known to the linter and owned by

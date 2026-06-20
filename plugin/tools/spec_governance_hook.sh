@@ -33,4 +33,15 @@ if [ -f "$T/guard_derived.py" ] && ! python3 "$T/guard_derived.py" >/dev/null 2>
   exit 1
 fi
 
+# 3) API/event contracts bind to the spec ID graph — blocks a contract referencing an undefined id.
+#    No-ops cleanly without contracts or PyYAML; output is shown only on failure (no per-commit chatter).
+#    (Contract STRUCTURE/style is the Spectral step in code-ci.yml; this is the cross-layer ID resolution.)
+if [ -f "$T/check_contracts.py" ]; then
+  cc_out=$(python3 "$T/check_contracts.py" "$root/spec" 2>&1) || {
+    echo "$cc_out" >&2
+    echo "spec-governance: a contract references an undefined spec id (or failed to parse) — fix the contract or its upstream (or --no-verify)." >&2
+    exit 1
+  }
+fi
+
 exit 0

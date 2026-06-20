@@ -2,7 +2,7 @@
 
 ## Start here (the 60-second version)
 You drive this from Claude Code by talking to the **`grill-spec-conductor`** — it scans state and tells
-you the few sensible next moves. You don't memorise the 43 skills; the conductor routes. Loop:
+you the few sensible next moves. You don't memorise the skills; the conductor routes. Loop:
 **(1)** open a session → ask the conductor "what's next?"; **(2)** it hands you one area/skill; **(3)**
 answer its questions or let it derive; **(4)** it auto-propagates and updates the dashboards; repeat.
 Small project? say so — it offers the **lite path**. Just changing one thing? that's **focused-change**.
@@ -90,6 +90,7 @@ Several surfaces verify the work; they're complementary, not redundant:
 | **`run-tests`** | the slice's own suite is green; every `AC-` exercised | each task | runs |
 | **code fitness functions** (pre-commit hook + CI) | boundary/dependency rules, contract shapes | every commit | runs — this **is** conformance-review's mechanical subset, automated |
 | **`conformance-review`** | code vs **our spec** (`UC-`/`AC-`/`API-`/`SEC-`/`NFR-` + traceability) **+ design-health** | each task (`changed`) / on demand (`full`) | partly — judgment + the fitness functions above |
+| **`audit-spec`** | the **spec itself** — consistency · contradictions · domain/branch completeness · code-gen readiness (the judgment above `lint_spec.py`'s mechanical baseline) | on demand / before a build or release | partly — `lint_spec.py` + `check_contracts.py` baseline + judgment |
 | native **`/code-review`** | generic correctness · security · regressions | **ad hoc** (NOT in the pipeline; local CLI, or the hosted GitHub App on Team/Enterprise at ~$15–25/PR) | runs |
 | **Tier-B suite** (journey / fitness / NFR) | cross-feature journeys, architectural characteristics, NFR evidence | CI / post-merge pipeline | runs |
 | **release-readiness checklist** | everything above is satisfied before *you* ship | when you choose to release | advisory |

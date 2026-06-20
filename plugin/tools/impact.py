@@ -9,7 +9,9 @@
 import os, re, sys, subprocess, pathlib
 SPEC = pathlib.Path("spec")
 if not SPEC.exists(): print("run from the project root (no spec/)"); sys.exit(2)
-ID = r"(?:UC|AC|CMD|EVT|AGG|NFR|ASR|API|SEC|DATA|OBL|SLO|EXP|DS|T|ADR)-[A-Za-z0-9._-]*[A-Za-z0-9]"
+# TYPES mirrors lint_spec.py's vocabulary (selfcheck guards them in sync).
+TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|ADR|T"
+ID = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + ID + r")\b")
 DEF2 = re.compile(r"\bid:\s*(" + ID + r")\b", re.I)
 REFMARK = re.compile(r"(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|->|\u2192)\s*:?\s*([^\n]*)", re.I)
@@ -72,13 +74,15 @@ if tp.exists():
         if not l.strip().startswith("|"): continue
         if set(IDTOK.findall(l)) & impacted_ids:
             for m in re.findall(r"[\w./-]+\.(?:py|ts|tsx|js|jsx|go|java|rb|rs|cs|kt|sql)", l): code.add(m)
-def layer(r):
+def layer(r):   # mirrors lint_spec.py file_layer() — keep in sync
     if r.startswith("04-domain/ddd"): return 1
     if r.startswith("05-functional-spec") or r.startswith("06-requirements/"): return 2
     if r.startswith("11-commercial/"): return 2
-    if r.startswith("09-solution/"): return 3
-    if r.startswith("10-delivery/"): return 4
-    if r.startswith("12-operate"): return 4
+    if r.startswith("07-design-system"): return 3
+    if r.startswith("08-ux"): return 4
+    if r.startswith("09-solution/"): return 5
+    if r.startswith("10-delivery/"): return 6
+    if r.startswith("12-operate"): return 6
     return 0   # foundation (01-discovery, 02-product, 03-constraints/system-context) — upstream of ddd
 tasks = sorted(i for i in impacted_ids if i.startswith("T-"))
 print("CHANGED (seeds):", ", ".join(sorted(set(seeds))))

@@ -29,7 +29,7 @@ Written under `requirements/security/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `authorization.md` | authz matrix — rule SEC-NNN: actor × command → allow/deny/condition (DEFAULT-DENY) with ownership/tenant predicates; model shape (role/attribute/relationship-based) noted, decided in an ADR | — |
+| `authorization.md` | authorization model — one rule per row, **columns `SEC-id · actor · command · decision · condition`** (decision = allow/deny; DEFAULT-DENY, so **every command (CMD-) carries an explicit rule** and no cell is blank), condition holds the ownership/tenant predicate; model shape (role/attribute/relationship-based) noted, decided in an ADR | rule table (SEC- · actor · command · decision · condition) |
 | `threat-model.md` | security threats from the per-element grid (spoofing · tampering · repudiation · info-disclosure · DoS · elevation) → control-or-accepted-risk · privacy threats (linkability · identifiability · non-repudiation · detectability · disclosure · unawareness · non-compliance) → control-or-accepted-risk · assets · trust boundaries · threat actors (capability + motive) · abuse/misuse cases per high-value asset; ASVS target + OWASP Top-10 edition anchored | list: **`THR-` id** · asset · threat · boundary · control/accepted-risk · owner |
 | `privacy-audit.md` | privacy/compliance obligations (lawful basis · data-subject rights) + audit requirements (what's logged · append-only · retention); privacy threats may land here instead of `threat-model.md` | bullet lists |
 

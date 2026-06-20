@@ -20,7 +20,9 @@ Invoke this to begin. On invocation:
 2. **Ask which area to focus on — an option menu, never an open prompt.** Build it from the scan:
    the **recommended next area** (default), **resume** an in-progress area (with open count), **fix
    cross-area issues** (if found), **go test/clear the riskiest assumption** (from bet-health), **a
-   specific area I name**, or **migrate existing docs**. Once the implementation-readiness gate passes,
+   specific area I name**, **migrate existing docs**, or **audit the whole spec** (`audit-spec` — the
+   consistency + domain-completeness + code-gen-readiness pass above the linter, e.g. before a build or
+   release). Once the implementation-readiness gate passes,
    add **prepare delivery** (derive-conventions → derive-tasks); once delivery-readiness passes, add **work
    the next task** (implement → run-tests → conformance-review, in build-order). Show blocked areas
    as unavailable + what unblocks them. Ground every suggestion in what the scan found.
@@ -102,8 +104,8 @@ cross-cutting views (reconciled by reading outputs):  glossary, actors, bets, th
 across stages. The only cross-stage shared location is `adr/` (one file per ADR, so two skills never collide).
 
 **Key edges:** discovery → product-vision · product-vision.scope → which ddd contexts exist · product-vision.motion (PLG vs sales-led) → ux · security · monetization ·
-customer-discovery.personas → actors · constraints → bounds all · personas + neighbor-systems → system-context (the boundary) → ddd + integration + C4-L1 · ddd → all requirements · functional →
-**monetization** (no priceable features ⇒ don't ask) · ddd flows + functional → quality, ux,
+customer-discovery.personas → actors · constraints → bounds all · personas + neighbor-systems → system-context (the boundary) → ddd + integration + C4-L1 · ddd → all requirements (quality/data/security anchor on the domain — orthogonal to use-cases) · functional →
+entitlements · ml-reqs · ux (the use-case-driven requirements) · entitlements → **monetization** (no priceable features ⇒ don't ask) ·
 goals (refinement) · ALL requirements + product + monetization → solution (the gate) · derive-architecture →
 the other solution areas · functional + data → ml-reqs (AI) → derive-ml-architecture · brand seed / provided tokens → design-system (DS-) → ux journeys + ui-prototype (per ux-heavy slice, at task finalization) → tasks/build · architecture seams + a design-first slice → derive-impl-design (JIT in execution) → module internals.
 

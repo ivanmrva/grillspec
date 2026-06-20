@@ -32,7 +32,7 @@ Written under `requirements/quality/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `nfrs.md` | one row per scenario: id NFR-NNN · attribute · stimulus · measurable response (number) · enforcement category (test/gate/lint/infra/review) · ASR? (if architecturally significant, tag ASR-NNN keyed to this NFR — same number, e.g. NFR-014 → ASR-014) | — |
+| `nfrs.md` | one row per scenario: id NFR-NNN · attribute · stimulus · measurable response (number) · **`enforced-by` column** (test/gate/lint/infra/review — every NFR names one) · ASR? (if architecturally significant, tag ASR-NNN keyed to this NFR — same number, e.g. NFR-014 → ASR-014) | — |
 | `asrs.md` | architecturally-significant requirements: ASR-NNN keyed to its NFR (same number) — the full 6-part quality-attribute scenario | — |
 
 ADRs → `adr/ADR-QUAL-NNN.md`

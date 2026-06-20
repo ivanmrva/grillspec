@@ -19,6 +19,7 @@ argument-hint: an idea, existing docs, or a repo
 - **lineage/provenance per class** — origin system · derivation · downstream consumers — so a deletion cascade is answerable (delete here, what else must follow)
 - volume & growth stated per class (order-of-magnitude + rate) **+ a coarse access-pattern hint** (read/write-heavy · queried-by-what) for the data-architecture design
 - integrity stated (immutable/append-only · no-loss/durability); **pick the value-bearing subset of the data-quality dimensions** (accuracy · validity · completeness · integrity · uniqueness · timeliness · consistency · currency) — only those a use depends on
+- **`classification`, `retention`, and `residency` are their OWN columns** (headers named exactly that), one typed value per cell — every `DATA-` row carries all three (a value, or `deferred until <trigger>`); a value restated elsewhere (e.g. a retention an obligation re-asserts) must match — one canonical value per class
 
 ## Output
 **Stable IDs** (bare type prefix, ID = the leading table column / row key): `DATA-` data class.
