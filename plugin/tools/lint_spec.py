@@ -277,11 +277,15 @@ for p, r in cmd_files():
         for m in DEF3.finditer(l):
             if not in_owner_area(m.group(1), r):
                 note_ref(m.group(1), r, i, selfid)
-        # a POL- reaction line ('whenever EVT-… then CMD-…') CONSUMES every event named on it. REFMARK only
-        # captures ids AFTER the keyword, so events in a separate '·'-joined cell (or listed before the
-        # marker) are missed; credit ALL events on the line for coverage (refset only — no error path, to
-        # avoid double-reporting). This is how a reaction crediting works regardless of cell layout.
-        if REACT.search(l):
+        # a POL- reaction CONSUMES every event named on its row. Credit on EITHER an explicit reaction
+        # keyword ('whenever'/'reacts-to') OR the row simply DEFINING a POL- — a 'trigger'/'when' column that
+        # lists the policy's events, frequently with NO keyword, '·'-joined and/or parenthetically annotated
+        # ('EVT-510 CohortReleased (operator releases …)'). REFMARK only sees ids after a keyword, so credit
+        # ALL events on such a line (refset only — no error path). IDTOK extracts each EVT- id whole, so a
+        # trailing '(annotation)' or a '·'-joined sibling never hides it.
+        pol_row = (selfid or "").upper().startswith("POL-") or any(
+            in_owner_area(_mm.group(1), r) and _mm.group(1).upper().startswith("POL-") for _mm in DEF3.finditer(l))
+        if REACT.search(l) or pol_row:
             for tok in IDTOK.findall(l):
                 if tok != selfid and tok.split("-")[0].upper() == "EVT": refset.add(tok)
 # 11b illegal-downward-reference — enforced over EVERY id token, not only reference-detected ones, so a

@@ -4,6 +4,13 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.2.9
+
+### Fixed — `lint_spec.py` event-coverage missed `POL-` trigger columns with no `whenever` keyword
+4.2.8 credited events on a reaction line only when it carried a `whenever`/`reacts-to` keyword. A policy written as a table row whose `trigger`/`when` column simply lists its events — `·`-joined and/or parenthetically annotated (`EVT-510 CohortReleased (operator releases …)`) with no keyword — was not recognized, so those events false-WARNed as having no consumer.
+- A row that **defines a `POL-`** (its row-key or an inline `POL-` definition) now credits every event named on it as consumed, keyword or not. `IDTOK` extracts each `EVT-` id whole, so a trailing `(annotation)` or a `·`-joined sibling never hides it.
+- Added regression test `event-consumer-policy-trigger-column-no-keyword`.
+
 ## 4.2.8
 
 ### Fixed — `lint_spec.py` EVT sink/consumer detection only saw the first id per line

@@ -156,6 +156,16 @@ expect("event-consumer-joined-whenever-cell", run(LINT, {
     "04-domain/ddd/p.md": HDR + "\n| reaction | events | trigger |\n|---|---|---|\n| POL-704 | EVT-704 · EVT-705 | whenever the operator escalates |\n",
 }), forbid=["'EVT-704' has no downstream", "'EVT-705' has no downstream"])
 
+# a POL- row that lists its trigger events in a 'trigger'/'when' column with NO 'whenever' keyword -
+# '·'-joined and/or parenthetically annotated - still consumes every event named on it.
+expect("event-consumer-policy-trigger-column-no-keyword", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "V")),
+    "04-domain/ddd/ev.md": HDR + "\n## AGG-1 X\n- **events:** EVT-704 CreatorAccountSuspended · EVT-705 CreatorAccountClosed · EVT-510 CohortReleased\n",
+    "04-domain/ddd/pol.md": HDR + "\n| policy | trigger | command |\n|---|---|---|\n" +
+        "| POL-704 | EVT-704 CreatorAccountSuspended · EVT-705 CreatorAccountClosed | CMD-9 Notify |\n" +
+        "| POL-510 | EVT-510 CohortReleased (operator releases the cohort) | CMD-9 Notify |\n",
+}), forbid=["'EVT-704' has no downstream", "'EVT-705' has no downstream", "'EVT-510' has no downstream"])
+
 # a contract YAML credits coverage: an EVT- consumed only by asyncapi.yaml must NOT false-WARN "no consumer"
 expect("contract-coverage-credit", run(LINT, {
     "04-domain/ddd/a.md": HDR + "\n## AGG-1 X\n- **events:** EVT-9 Done\n",
