@@ -20,6 +20,7 @@ argument-hint: an idea, existing docs, or a repo
 - this captures **obligations, not legal advice** — flag anything that needs a lawyer; don't invent legal certainty
 
 ## Output
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `OBL-` a concrete compliance obligation.
 Written under `requirements/compliance/`:
 
 | File | Captures | Format |

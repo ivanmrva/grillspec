@@ -4,6 +4,22 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.2.1
+
+### Fixed — ID-tokenizer correctness
+- **`impact.py` / `spec_status.py` ID boundary.** Both tokenized IDs with a left boundary of `(?<![A-Za-z0-9])`, omitting the `-` that `lint_spec.py`/`check_contracts.py` use. A namespaced or hyphen-prefixed token (e.g. `SUR-AGG-250`) therefore leaked a phantom `AGG-250` into the change-impact graph and the status rollup. Aligned both to `(?<![A-Za-z0-9-])`, and aligned `spec_status.py`'s ID tail to `lint_spec.py`'s `IDCORE` so dotted IDs (`DATA-Customer.id`) are no longer truncated.
+
+### Added — drift guards for the duplicated lookup tables
+- `selfcheck.py` now diffs `impact.py` `layer()` against `lint_spec.py` `file_layer()` (the second hand-copied path→layer table — the first, `TYPES`, was already guarded) and errors on drift, so impact ordering can't silently diverge from the linter.
+- `gen_depgraph.py` `validate()` now errors when a `dependencies.json` stage has no `STAGE_LABEL`, turning a latent `KeyError` in `render()` into a clean validation failure.
+
+### Changed — whole-project consistency sweep
+- Corrected stale skill/area counts (root `marketplace.json` 43→45 workers; `README.md` 44/43→46/45).
+- `operator-map.md` standard flow updated to the 4.0.0 layer model: foundation lists `constraints`/`system-context`, `design-system` (L3) and `ux` (L4) are their own steps before architecture-readiness, and `entitlements`/`ml-reqs` join the requirements set. Lite-path `context`→`constraints` in `operator-map.md` and `conductor-playbook.md`.
+- `repo-layout.md` per-area `kind` description corrected (it named a nonexistent `reference` value); `dependencies.json` `_comment` aligned.
+- Unified all 45 worker descriptions to "Loads the shared … **engine**" (matching the `*-engine.md` filenames; the tagline was split "core"/"engine").
+- `audit-spec` de-skill-named for self-containment (names activities/areas, not sibling skills); added the standard `**Stable IDs**` line to `grill-compliance` (`OBL-`), `grill-ml-reqs` (`ML-`), and `grill-growth` (`EXP-`).
+
 ## 4.2.0
 
 ### Added — structured-fact enforcement, contract checking, and a whole-spec audit skill

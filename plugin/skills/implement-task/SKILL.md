@@ -1,7 +1,7 @@
 ---
 name: implement-task
 description: >-
-  Implement one prepared task as a minimal, tested vertical slice — tests first, within architecture boundaries, code in the source tree (not the spec). Use when you have a prepared task to build. Loads the shared exec core.
+  Implement one prepared task as a minimal, tested vertical slice — tests first, within architecture boundaries, code in the source tree (not the spec). Use when you have a prepared task to build. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: a prepared task (T-NNN) to implement
 ---

@@ -1,7 +1,7 @@
 ---
 name: derive-conventions
 description: >-
-  Derive the coding agent's standards and runway from the architecture — style, boundary rules as fitness checks, workflow, build/run/test/lint commands, Definition of Done — and generate the root CLAUDE.md. Use when the architecture exists and you need the coding-agent setup. Loads the shared derive core.
+  Derive the coding agent's standards and runway from the architecture — style, boundary rules as fitness checks, workflow, build/run/test/lint commands, Definition of Done — and generate the root CLAUDE.md. Use when the architecture exists and you need the coding-agent setup. Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---

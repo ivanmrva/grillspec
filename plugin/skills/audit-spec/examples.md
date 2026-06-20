@@ -29,7 +29,7 @@ active / cancelled. Diff:
 
 → `important · domain-coverage · 04-domain/ddd · Subscription has no past-due/grace/suspended/reactivated
 states — the entire failed-payment dunning branch is unmodeled (no UC, no AC, no task can exist for it) ·
-route: re-grill ddd (then derive-functional, quality, etc. propagate).`
+route: re-grill ddd (then the functional spec, quality, etc. propagate).`
 
 Edge-generator pass adds: `important · proration on mid-cycle plan change is unspecified (money/partial) —
 needs-domain-validation against the billing rules.`
@@ -41,7 +41,7 @@ CODE-GEN READINESS: NOT-READY  (2 blocking, 5 important)
 Top fixes (dependency order):
   1. reconcile DATA-014 vs OBL-003 retention            (authored: data + compliance)
   2. model the dunning lifecycle on Subscription        (re-grill ddd → propagate)
-  3. specify mid-cycle proration                        (re-grill quality/ddd; or prototype)
+  3. specify mid-cycle proration                        (re-grill quality/ddd; or a throwaway spike)
 ```
 The same spec in `--depth consistency` would have stopped at finding #1 and reported
 `CONSISTENT (domain not assessed)` — it may not issue a readiness verdict, precisely so a clean

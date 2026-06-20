@@ -1,7 +1,7 @@
 ---
 name: derive-impl-design
 description: >-
-  Low-level design of the modules a slice touches — algorithm, error handling, concurrency — produced just-in-time for a complex slice, just before it is coded (DESIGN, not code). The architecture already fixed each module's role, dependency direction, and seam interface; this designs the internals behind it. Use for a hard slice (tricky algorithm · real concurrency · cross-context saga) before implementing it. Loads the shared derive core.
+  Low-level design of the modules a slice touches — algorithm, error handling, concurrency — produced just-in-time for a complex slice, just before it is coded (DESIGN, not code). The architecture already fixed each module's role, dependency direction, and seam interface; this designs the internals behind it. Use for a hard slice (tricky algorithm · real concurrency · cross-context saga) before implementing it. Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: the slice (and the modules it touches) to design
 ---

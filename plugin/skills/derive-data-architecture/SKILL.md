@@ -1,7 +1,7 @@
 ---
 name: derive-data-architecture
 description: >-
-  Design schema, storage, consistency, partitioning and migration from the data requirements and domain model. Use when the data requirements and domain model exist and you need schema/storage/consistency/migration designed. Loads the shared derive core.
+  Design schema, storage, consistency, partitioning and migration from the data requirements and domain model. Use when the data requirements and domain model exist and you need schema/storage/consistency/migration designed. Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---

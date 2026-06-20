@@ -1,7 +1,7 @@
 ---
 name: operate-incident
 description: >-
-  Triage a production incident via runbooks, mitigate, and capture every learning as a new assumption or gap that propagates upstream. Use during or just after an incident. Loads the shared exec core.
+  Triage a production incident via runbooks, mitigate, and capture every learning as a new assumption or gap that propagates upstream. Use during or just after an incident. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: a production incident to work
 ---

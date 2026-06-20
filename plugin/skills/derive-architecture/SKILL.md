@@ -1,7 +1,7 @@
 ---
 name: derive-architecture
 description: >-
-  Derive the solution architecture — style, C4 decomposition, tech stack, contexts→services, cross-cutting concerns, the module map & seam contracts, and the key sequences — from the settled spec. Use when the requirements are settled and you need the architecture derived (not interviewed). Loads the shared derive core.
+  Derive the solution architecture — style, C4 decomposition, tech stack, contexts→services, cross-cutting concerns, the module map & seam contracts, and the key sequences — from the settled spec. Use when the requirements are settled and you need the architecture derived (not interviewed). Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---

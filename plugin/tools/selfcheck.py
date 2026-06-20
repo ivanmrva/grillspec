@@ -159,6 +159,34 @@ if lint.exists() and mt:
                 f"(only in lint_spec: {sorted(want - got) or '-'}; only in {toolname}: {sorted(got - want) or '-'}) "
                 "- copy the linter's TYPES line so it resolves ids against the same vocabulary")
 
+# --- 4b-3. layer-table sync: impact.py layer() must mirror lint_spec.py file_layer() ----------------
+# Both map a spec path -> layer number for upstream->downstream ordering. impact.py carries its own copy
+# (it can't import lint_spec cleanly); if the path->layer mapping drifts, impact output is silently
+# mis-ordered. Compare the two function bodies modulo comments/whitespace/def-name so a divergence is
+# caught here, not in production. (The TYPES sync above does NOT cover this second duplicated table.)
+def _fn_body(src, name):
+    out, grabbing = [], False
+    for ln in src.splitlines():
+        if re.match(rf"^def {re.escape(name)}\(", ln):
+            grabbing = True; continue
+        if grabbing:
+            if ln and not ln[0].isspace():   # next top-level statement ends the body
+                break
+            code = ln.split("#", 1)[0].strip()
+            if code:
+                out.append(code)
+    return out
+if lint.exists():
+    ip = ROOT / "tools" / "impact.py"
+    if ip.exists():
+        a = _fn_body(lint.read_text(), "file_layer")
+        b = _fn_body(ip.read_text(), "layer")
+        if not a:
+            warn("lint_spec.py: could not locate file_layer() body - cannot verify impact.py layer() is in sync")
+        elif a != b:
+            err("impact.py layer() is out of sync with lint_spec.py file_layer() (the path->layer mapping "
+                "drifted) - copy file_layer()'s body into impact.py layer() so impact ordering matches the linter")
+
 # --- 4c. dependency graph: valid + the rendered doc is in sync -------------
 # Runs gen_depgraph.py --check: validates dependencies.json (prefixes known to the linter and owned by
 # the right folder, edges resolve, acyclic) AND that docs/DEPENDENCY-GRAPH.md matches a fresh render.

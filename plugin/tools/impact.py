@@ -15,7 +15,7 @@ ID = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + ID + r")\b")
 DEF2 = re.compile(r"\bid:\s*(" + ID + r")\b", re.I)
 REFMARK = re.compile(r"(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|->|\u2192)\s*:?\s*([^\n]*)", re.I)
-IDTOK = re.compile(r"(?<![A-Za-z0-9])" + ID)   # left boundary: don't match T-/DS- inside words (CONTRACT-9, HOST-1)
+IDTOK = re.compile(r"(?<![A-Za-z0-9-])" + ID)   # left boundary (matches lint_spec): a preceding alnum OR '-' blocks the match, so neither CONTRACT-9 nor a namespaced SUR-AGG-250 yields a phantom id
 def read(p):
     try: return p.read_text(encoding="utf-8")
     except Exception: return ""

@@ -10,9 +10,10 @@ Want to see an artifact early? just run its skill (gates don't block — see bel
 produce is normal git content; consistency is kept by the linter + propagation.
 
 ## The standard flow (greenfield)
-`discovery` → `product-vision` → (`market` · `customer-discovery` · `goals` · `context`) → `ddd` (the hub)
-→ requirements (`derive-functional` · `quality` · `data-reqs` · `integration-reqs` · `security-reqs` ·
-`ux-reqs` · `compliance`) → [`commercial` · `gtm` · `growth` when ready] → **[architecture-readiness]**
+`discovery` → `product-vision` → (`market` · `customer-discovery` · `goals` · `constraints` · `system-context`) → `ddd` (the hub)
+→ `derive-functional` → requirements (`quality` · `data-reqs` · `integration-reqs` · `security-reqs` ·
+`compliance` · `entitlements` · `ml-reqs`) → `design-system` (L3) → `ux` (L4) →
+[`commercial` · `gtm` · `growth` when ready] → **[architecture-readiness]**
 → solution (`derive-architecture` · `-data` · `-api` · `-security` · `-infra-ops` · `-observability` ·
 `-test` · `-impl`) → **[implementation-readiness]** → delivery prep (`derive-conventions` →
 `derive-tasks`) → **[delivery-readiness]** → per task: `implement-task` → `run-tests` → `conformance-review` (or **`autorun`** for the whole AFK-eligible set, autonomously — see `WORKING.md`)
@@ -23,7 +24,7 @@ Always available: **`prototype`** (answer one empirical question) · **`generate
 ## Entry modes (you choose)
 - **greenfield** (full walk) · **focused-change** (fast path: enter at the one artifact that changes,
   auto-propagate over the minimal subgraph) · **brownfield-import** (reverse-derive from existing code)
-  · **lite path** (tiny product: `discovery` + `product-vision` + `ddd` + a merged `quality`/`context`
+  · **lite path** (tiny product: `discovery` + `product-vision` + `ddd` + a merged `quality`/`constraints`
   note + minimal `09-solution/arch`; everything else N-A until warranted).
 
 ## Gates are readiness signals, not locks

@@ -1,7 +1,7 @@
 ---
 name: migrate-data
 description: >-
-  Generate and run the schema/data migration a DATA-/AGG- change requires — forward + rollback, idempotent, online-safe, verified. Mandatory whenever the data model changes. Loads the shared exec core.
+  Generate and run the schema/data migration a DATA-/AGG- change requires — forward + rollback, idempotent, online-safe, verified. Mandatory whenever the data model changes. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: a schema or data change to migrate
 ---

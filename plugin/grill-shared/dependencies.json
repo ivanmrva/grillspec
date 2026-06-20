@@ -1,5 +1,5 @@
 {
-  "_comment": "ADVISORY dependency map. `consumes` = each area's PRIMARY/start-here inputs, NOT an exhaustive or gating list: the layer rule lets an area reference anything strictly upstream, and the conductor hands it ALL upstream layers. Authoritative change-propagation is the actual ID reference graph (tools/impact.py), not this file. `method` = skill family (grill|derive|exec); `kind` = data-flow posture (elicit|derive|model).",
+  "_comment": "ADVISORY dependency map. `consumes` = each area's PRIMARY/start-here inputs, NOT an exhaustive or gating list: the layer rule lets an area reference anything strictly upstream, and the conductor hands it ALL upstream layers. Authoritative change-propagation is the actual ID reference graph (tools/impact.py), not this file. `method` = skill family (grill|derive|exec); `kind` = data-flow posture (spec areas: elicit|derive|model; non-spec areas: exec|validate|publish).",
   "stages": [
     "0-discovery",
     "0-foundation",

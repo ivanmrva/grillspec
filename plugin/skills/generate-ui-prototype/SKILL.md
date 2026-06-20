@@ -1,7 +1,7 @@
 ---
 name: generate-ui-prototype
 description: >-
-  Generate a clickable HTML prototype of the screen(s) a UI slice implements — built from the real design-system tokens & components, with every interaction state, wired into the navigation the information architecture defines — as the precise visual + interaction reference the coding task builds against. Produced when a ux-heavy slice is finalized (the design-review window), not in the coding loop; skipped when the IA + design system already determine the screen. Loads the shared exec core.
+  Generate a clickable HTML prototype of the screen(s) a UI slice implements — built from the real design-system tokens & components, with every interaction state, wired into the navigation the information architecture defines — as the precise visual + interaction reference the coding task builds against. Produced when a ux-heavy slice is finalized (the design-review window), not in the coding loop; skipped when the IA + design system already determine the screen. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: the UI slice (its screen[s], from the UX requirements + design system)
 ---

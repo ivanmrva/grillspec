@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-The whole-spec audit — verify an EXISTING spec is complete, internally consistent, contradiction-free, covers all branches (product · domain · software), and is good enough that a coding agent can build from it WITHOUT guessing. Two depths: `consistency` (the judgment the linter can't make — semantic contradictions, scope adherence, decision coherence) and `full` (adds the domain/usage completeness pass that finds what's MISSING). Only `full` can declare code-gen readiness. The judgment layer ABOVE the mechanical tools, distinct from the per-task conformance-review.
+The whole-spec audit — verify an EXISTING spec is complete, internally consistent, contradiction-free, covers all branches (product · domain · software), and is good enough that a coding agent can build from it WITHOUT guessing. Two depths: `consistency` (the judgment the linter can't make — semantic contradictions, scope adherence, decision coherence) and `full` (adds the domain/usage completeness pass that finds what's MISSING). Only `full` can declare code-gen readiness. The judgment layer ABOVE the mechanical tools, distinct from the per-task code-vs-spec conformance review.
 
 ## What it needs (input)
 A task package and the code it touches.

@@ -1,7 +1,7 @@
 ---
 name: derive-security-architecture
 description: >-
-  Design authn/authz mechanisms, encryption, secrets and identity from the security requirements. Use when the security requirements exist and you need authn/authz, encryption and secrets mechanisms designed. Loads the shared derive core.
+  Design authn/authz mechanisms, encryption, secrets and identity from the security requirements. Use when the security requirements exist and you need authn/authz, encryption and secrets mechanisms designed. Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---

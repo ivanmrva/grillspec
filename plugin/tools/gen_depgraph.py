@@ -44,6 +44,9 @@ def validate(data, types, owner):
     areas = data["areas"]
     stages = data["stages"]
     keys = set(areas)
+    for st in stages:
+        if st not in STAGE_LABEL:
+            errs.append(f"stage '{st}' has no STAGE_LABEL entry (render() would KeyError) - add it to STAGE_LABEL")
     for a, m in areas.items():
         if m["stage"] not in stages:
             errs.append(f"{a}: unknown stage '{m['stage']}'")

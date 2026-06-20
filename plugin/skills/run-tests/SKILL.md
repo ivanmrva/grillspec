@@ -1,7 +1,7 @@
 ---
 name: run-tests
 description: >-
-  Run a task's suite and gate on it — suite green, every acceptance criterion exercised at the right level, coverage met. Use when a task's code is written and you need to verify it. Loads the shared exec core.
+  Run a task's suite and gate on it — suite green, every acceptance criterion exercised at the right level, coverage met. Use when a task's code is written and you need to verify it. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: a task's tests to run and gate
 ---

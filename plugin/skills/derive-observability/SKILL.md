@@ -1,7 +1,7 @@
 ---
 name: derive-observability
 description: >-
-  Derive the observability design — SLOs/SLIs, telemetry, alerting, dashboards, runbooks — the basis for operating a real system. Use when the NFRs and architecture exist and you need operations designed. Loads the shared derive core.
+  Derive the observability design — SLOs/SLIs, telemetry, alerting, dashboards, runbooks — the basis for operating a real system. Use when the NFRs and architecture exist and you need operations designed. Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---

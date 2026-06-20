@@ -1,7 +1,7 @@
 ---
 name: deploy-release
 description: >-
-  Promote a built increment through environments with an explicit rollout/rollback strategy and smoke-verify in the target. Use when a merged increment needs promoting to an environment. Loads the shared exec core.
+  Promote a built increment through environments with an explicit rollout/rollback strategy and smoke-verify in the target. Use when a merged increment needs promoting to an environment. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: a built increment to deploy
 ---

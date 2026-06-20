@@ -2,7 +2,7 @@
 
 This is the **single source of truth** for the Grill Spec System and the **one pipeline**
 that produces every distribution artifact. Nothing is duplicated in source: the three method
-engines and the 44 skills live once under `plugin/`, and `build/build.py` assembles every
+engines and the 46 skills live once under `plugin/`, and `build/build.py` assembles every
 output from them.
 
 ## Layout
@@ -11,7 +11,7 @@ output from them.
 grillspec/
 ├── plugin/                 # THE source of truth — also a working plugin as-is
 │   ├── .claude-plugin/plugin.json
-│   ├── skills/             # 44 skills: 1 conductor + 43 workers (SKILL.md each)
+│   ├── skills/             # 46 skills: 1 conductor + 45 workers (SKILL.md each)
 │   ├── grill-shared/       # the 3 method engines (grill/derive/exec) + shared docs  <-- reused everywhere
 │   ├── tools/              # deterministic tools (lint_spec, impact, guard_derived, plugin_feedback, spec_governance_hook, …)
 │   ├── agents/             # 2 subagents (explorer, test-runner)
@@ -37,8 +37,8 @@ Or build one target: `python build/build.py skills | full | plugins`.
 
 | `dist/` output      | What it is                                                                 | License     | Goes to                                   |
 | :------------------ | :------------------------------------------------------------------------- | :---------- | :---------------------------------------- |
-| `dist/skills/`      | **The skill database** — every worker skill as a self-contained, individually-usable plain skill (`SKILL.md` + the one engine it loads, bundled as a sibling, `${CLAUDE_PLUGIN_ROOT}` rewritten away). 43 folders. | MIT         | the public **skills repo** (overwrite its skill dir) |
-| `dist/full-system/` | **The whole system as one plugin** — `plugin/` verbatim under a marketplace wrapper (conductor + 43 workers + engines + tools + agents). | Apache-2.0  | the **marketplace/plugin repo**           |
+| `dist/skills/`      | **The skill database** — every worker skill as a self-contained, individually-usable plain skill (`SKILL.md` + the one engine it loads, bundled as a sibling, `${CLAUDE_PLUGIN_ROOT}` rewritten away). 45 folders. | MIT         | the public **skills repo** (overwrite its skill dir) |
+| `dist/full-system/` | **The whole system as one plugin** — `plugin/` verbatim under a marketplace wrapper (conductor + 45 workers + engines + tools + agents). | Apache-2.0  | the **marketplace/plugin repo**           |
 | `dist/plugins/<c>/` | **Optional per-cluster plugins** — same skills as the database, packaged as installable plugins for the managed `/plugin install` experience. Set in `CLUSTERS` in `build.py`. | MIT         | per-post repos / a shared marketplace     |
 
 The engines are **reused, not copied in source**: each skill-database folder and each cluster

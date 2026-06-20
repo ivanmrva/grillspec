@@ -1,7 +1,7 @@
 ---
 name: derive-functional
 description: >-
-  Project the domain model into use-cases (commands × actors × flows) and testable acceptance criteria (invariants/rules/specs/policies). Use when the domain model exists and you need use-cases plus acceptance criteria projected from it. Loads the shared derive core.
+  Project the domain model into use-cases (commands × actors × flows) and testable acceptance criteria (invariants/rules/specs/policies). Use when the domain model exists and you need use-cases plus acceptance criteria projected from it. Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---

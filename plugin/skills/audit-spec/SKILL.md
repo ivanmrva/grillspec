@@ -1,7 +1,7 @@
 ---
 name: audit-spec
 description: >-
-  The whole-spec audit — verify an EXISTING spec is complete, internally consistent, contradiction-free, covers all branches (product · domain · software), and is good enough that a coding agent can build from it WITHOUT guessing. Two depths: `consistency` (the judgment the linter can't make — semantic contradictions, scope adherence, decision coherence) and `full` (adds the domain/usage completeness pass that finds what's MISSING). Only `full` can declare code-gen readiness. The judgment layer ABOVE the mechanical tools, distinct from the per-task conformance-review. Loads the shared exec core.
+  The whole-spec audit — verify an EXISTING spec is complete, internally consistent, contradiction-free, covers all branches (product · domain · software), and is good enough that a coding agent can build from it WITHOUT guessing. Two depths: `consistency` (the judgment the linter can't make — semantic contradictions, scope adherence, decision coherence) and `full` (adds the domain/usage completeness pass that finds what's MISSING). Only `full` can declare code-gen readiness. The judgment layer ABOVE the mechanical tools, distinct from the per-task code-vs-spec conformance review. Loads the shared exec engine.
 argument-hint: "[--depth consistency|full] [--scope all|<area>] — default: --depth full --scope all"
 ---
 
@@ -30,7 +30,7 @@ conflate them.
   class/retention/residency)** · and the INFO heuristics for dev-trace language, skill/tool-name leaks, and
   adjective-without-a-bar. **Treat every linter ERROR as a `blocking` finding and move on** — your job
   starts where its soundness ends.
-- **Beside it — `conformance-review`.** That checks generated CODE against the spec, per task, after a
+- **Beside it — the per-task code-conformance review.** That checks generated CODE against the spec, per task, after a
   build. This checks the SPEC itself, whole, independent of any build. Complementary, not overlapping.
 
 ## Modes (depth)
@@ -132,12 +132,12 @@ model of the domain and diffing. Do it for real; this is the skill's reason to e
 
 **Know your limits — never rubber-stamp.** Where the domain is specialized and a claim can't be verified
 from first principles (clinical logic, financial/tax regulation, safety rules, niche mechanics), flag it
-`important: needs-domain-validation` and route it to a domain-expert review or a `prototype` spike — do not
+`important: needs-domain-validation` and route it to a domain-expert review or a throwaway spike — do not
 confirm a rule you can't actually check. A confident "looks complete" on an un-modeled domain is the
 failure this phase exists to prevent.
 
 ## Phase 4 — code-gen readiness & the bet axis  *(--depth full only)*
-- **Per buildable slice (`T-`):** would an `implement-task` agent have everything and guess NOTHING? All
+- **Per buildable slice (`T-`):** would the coding agent have everything and guess NOTHING? All
   referenced IDs resolve and are settled (no `UNRESOLVED` it needs — `blocking` if not); its scoped inputs
   exist (boundary contracts + architecture seam + declared `role:` + conventions + relevant glossary; a UI
   slice has its `DS-` contract + the kept prototype); the test strategy MANUFACTURES the slice's edges;

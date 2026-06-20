@@ -1,7 +1,7 @@
 ---
 name: diagnose
 description: >-
-  Disciplined diagnosis loop for hard bugs and performance regressions — build a fast deterministic feedback loop, reproduce, rank falsifiable hypotheses, instrument one variable at a time, fix with a regression test, post-mortem. Use when a hard bug or regression needs root-causing, not a quick patch. Loads the shared exec core.
+  Disciplined diagnosis loop for hard bugs and performance regressions — build a fast deterministic feedback loop, reproduce, rank falsifiable hypotheses, instrument one variable at a time, fix with a regression test, post-mortem. Use when a hard bug or regression needs root-causing, not a quick patch. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: a bug or performance regression to diagnose
 ---

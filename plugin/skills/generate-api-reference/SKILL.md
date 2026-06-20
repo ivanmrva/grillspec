@@ -1,7 +1,7 @@
 ---
 name: generate-api-reference
 description: >-
-  Generate API reference docs from the API-/EVT- contracts — endpoints, schemas, auth, errors, examples — as static HTML. Embedded in the doc-site or standalone. Loads the shared exec core.
+  Generate API reference docs from the API-/EVT- contracts — endpoints, schemas, auth, errors, examples — as static HTML. Embedded in the doc-site or standalone. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: the spec to generate an API reference from
 ---

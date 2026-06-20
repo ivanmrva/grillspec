@@ -1,7 +1,7 @@
 ---
 name: conformance-review
 description: >-
-  The post-task review of generated code against OUR spec — run after each task, before the next. Two lenses: (A) conformance vs spec/architecture/contracts/security/NFR-evidence/traceability (blocking); (B) design health (advisory). Complements the native /code-review. Loads the shared exec core.
+  The post-task review of generated code against OUR spec — run after each task, before the next. Two lenses: (A) conformance vs spec/architecture/contracts/security/NFR-evidence/traceability (blocking); (B) design health (advisory). Complements the native /code-review. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: the code and task to review against the spec
 ---

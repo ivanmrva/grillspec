@@ -25,6 +25,7 @@ argument-hint: an idea, existing docs, or a repo
 - events follow the pinned **object-action** controlled vocabulary and each carries an **owner**
 
 ## Output
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `EXP-` a growth experiment.
 Written under `commercial/growth/`:
 
 | File | Captures | Format |

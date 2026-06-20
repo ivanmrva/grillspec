@@ -1,7 +1,7 @@
 ---
 name: derive-tasks
 description: >-
-  Break a spec into minimal, vertically-sliced, build-ready tasks for a coding agent — each a complete reference manifest, phase-tagged and dependency-ordered, walking-skeleton first. Use when you need the spec turned into build-ready slices. Loads the shared derive core.
+  Break a spec into minimal, vertically-sliced, build-ready tasks for a coding agent — each a complete reference manifest, phase-tagged and dependency-ordered, walking-skeleton first. Use when you need the spec turned into build-ready slices. Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: a spec, design docs, or a feature to break into tasks
 ---

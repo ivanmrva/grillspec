@@ -1,7 +1,7 @@
 ---
 name: derive-api-contracts
 description: >-
-  Produce machine-readable API and event contracts — an `openapi.yaml` (latest-stable OpenAPI), an `asyncapi.yaml` (latest-stable AsyncAPI), schemas and versioning — from the published language and integration requirements. Use when the published language and integration requirements exist and you need the API/event contracts derived. Loads the shared derive core.
+  Produce machine-readable API and event contracts — an `openapi.yaml` (latest-stable OpenAPI), an `asyncapi.yaml` (latest-stable AsyncAPI), schemas and versioning — from the published language and integration requirements. Use when the published language and integration requirements exist and you need the API/event contracts derived. Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---

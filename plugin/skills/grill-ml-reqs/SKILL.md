@@ -17,6 +17,7 @@ argument-hint: an idea, existing docs, or a repo
 - offline eval (a fixed set) **and** online eval (production/canary) are both required
 
 ## Output
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `ML-` an ML capability (its behaviour · evals · responsible-AI duties).
 Written under `requirements/ml/`:
 
 | File | Captures | Format |

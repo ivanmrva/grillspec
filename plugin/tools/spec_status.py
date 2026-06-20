@@ -8,10 +8,10 @@ SPEC = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "spec")
 # TYPES mirrors lint_spec.py's vocabulary (selfcheck guards them in sync).
 TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|ADR|T"
 PREFIXES = TYPES.split("|")
-ID = "(?:" + TYPES + r")-[A-Za-z0-9][A-Za-z0-9-]*"
+ID = "(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"   # tail matches lint_spec's IDCORE (allows '.'/'_', e.g. DATA-Customer.id)
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + ID + r")\b")
 DEF2 = re.compile(r"^\s*id:\s*(" + ID + r")\b", re.I)
-IDTOK = re.compile(r"(?<![A-Za-z0-9])" + ID)   # left boundary: don't match T-/DS- inside words
+IDTOK = re.compile(r"(?<![A-Za-z0-9-])" + ID)   # left boundary (matches lint_spec): a preceding alnum OR '-' blocks the match, so a namespaced SUR-AGG-250 yields no phantom id
 def read(p):
     try: return p.read_text(encoding="utf-8", errors="replace")
     except Exception: return ""

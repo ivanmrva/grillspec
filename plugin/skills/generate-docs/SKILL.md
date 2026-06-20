@@ -1,7 +1,7 @@
 ---
 name: generate-docs
 description: >-
-  Generate the project's documentation — a self-contained static HTML doc-site that assembles the **full spec** (every area, discovery → delivery) plus the **implementation design** consolidated from the per-module/per-task designs — overview, domain, requirements, architecture, implementation, ADRs, traceability, glossary, dashboards. Re-runnable and CI-friendly. Loads the shared exec core.
+  Generate the project's documentation — a self-contained static HTML doc-site that assembles the **full spec** (every area, discovery → delivery) plus the **implementation design** consolidated from the per-module/per-task designs — overview, domain, requirements, architecture, implementation, ADRs, traceability, glossary, dashboards. Re-runnable and CI-friendly. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: the spec to generate a docs site from
 ---

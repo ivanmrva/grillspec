@@ -1,7 +1,7 @@
 ---
 name: prototype
 description: >-
-  Build a throwaway prototype to answer ONE open question empirically — a runnable terminal app for state/logic, or toggleable UI variations for design. Use when running code settles it better than discussing. Loads the shared exec core.
+  Build a throwaway prototype to answer ONE open question empirically — a runnable terminal app for state/logic, or toggleable UI variations for design. Use when running code settles it better than discussing. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: an open question to prototype
 ---
