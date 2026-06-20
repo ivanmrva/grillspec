@@ -4,6 +4,13 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.2.3
+
+### Changed — `audit-spec` reports fixes as dependency-ordered chains, not authored/derived buckets
+A single audit finding often spans both zones: a defect *located* in an authored artifact can be *root-caused* upstream and *propagate* into a re-derive (a wrong `06-requirements` item whose real cause is `ddd`, fixed by editing ddd → re-deriving `05-functional-spec` → re-grilling the requirement). Splitting the session summary into flat "authored zone / derived zone" lists hid this and read as a contradiction (consuming a derived artifact never makes the consumer derived; fix-zone is set by who *writes* the file, propagation by the reference graph).
+- The Output section now mandates the session summary print each finding as a dependency-ordered fix-chain (`symptom → upstream edit → re-derive → re-grill`), sequenced so every edit precedes the re-derivations that consume it.
+- The "Top fixes" report row is aligned to the same chain format, so the report table and the live summary no longer disagree. Detection logic is unchanged — this is a presentation fix.
+
 ## 4.2.2
 
 ### Fixed — `check_contracts.py` false positives against a complete spec

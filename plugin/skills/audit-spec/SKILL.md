@@ -152,6 +152,17 @@ Write **`spec-audit-report.md` at the PROJECT ROOT** (a sibling of `spec/`, like
 it is meta-commentary, not timeless project documentation, so it never goes inside the closed-world `spec/`).
 Print a summary to the session. The report contains:
 
+**Session summary = ordered fix-chains, never authored/derived buckets.** A single fix often spans both
+zones — a defect *located* in an authored artifact can be *root-caused* upstream and *propagate* into a
+re-derive (a wrong `06-requirements` item whose real cause is `ddd`, fixed by editing ddd → re-deriving
+`05-functional-spec` → re-grilling the requirement against the corrected 05). Splitting findings into a
+flat "authored zone / derived zone" list hides this and reads as a contradiction (consuming a derived
+artifact never makes the consumer derived; the fix-zone is set by who *writes* the file, propagation by the
+reference graph). So print each finding as a **dependency-ordered chain** —
+`<symptom location> → <upstream edit> → <re-derive step(s)> → <re-grill/verify>` — sequenced so every edit
+precedes the re-derivations that depend on it (fix upstream first; re-derive a hinge like 05 before
+re-grilling the authored areas that read it). The report contains:
+
 | Section | Contents |
 |---|---|
 | Verdict header | per-gate go/no-go (desirability · architecture-readiness · implementation-readiness · delivery-readiness) + overall **CODE-GEN READINESS: READY / NOT-READY** (or `CONSISTENT (domain not assessed)` in `consistency` mode) + the blocking count |
@@ -160,7 +171,7 @@ Print a summary to the session. The report contains:
 | Contradictions | each with both conflicting locations quoted |
 | Stale-derived | derived artifacts that no longer follow from upstream + the re-derive step |
 | Bet/risk snapshot | Axis 2, visibly separate from spec health |
-| Top fixes | the must-fix-before-codegen items in dependency order (fix upstream first) |
+| Top fixes | the must-fix-before-codegen items as dependency-ordered fix-chains (`symptom → upstream edit → re-derive → re-grill`), upstream edits before the re-derives that consume them — not authored/derived buckets |
 
 No code, no `spec/` edits. **Never claim "complete" on an un-re-validated artifact** — re-run the
 invariants across the content yourself; "looks complete" is never "is consistent." A defect in THIS SYSTEM
