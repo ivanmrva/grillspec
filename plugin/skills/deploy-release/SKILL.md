@@ -19,7 +19,7 @@ argument-hint: a built increment to deploy
 6. Never hand-deploy outside the IaC/CD path.
 
 ## Rules
-- The release-readiness checklist is advisory — the system never blocks a release, but shipping with it unmet is a known risk. **Never pass on:** a missing rollback path · SLOs/alerts not in place · smoke checks failing · an artifact with no verified provenance.
+- The release-readiness checklist is advisory for **pre-prod** environments — ship to dev/stage freely, an unmet item is a known risk. **A PRODUCTION promotion is a human go/no-go**, not auto-proceed: the metric gate decides canary *health*, but the business *go* to prod requires an **explicit human go — unless a once-ratified auto-promote policy exists** (recommended default to ratify: auto-promote dev→stage; require a human go for stage→prod). This is the deploy analogue of `migrate-data`'s owner-ratified cutover. **Never pass on (prod or not):** a missing rollback path · SLOs/alerts not in place · smoke checks failing · an artifact with no verified provenance.
 - Canary verdict comes from the metric gate's thresholds, never a subjective read of the dashboards.
 
 ## Output

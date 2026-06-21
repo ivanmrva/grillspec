@@ -18,7 +18,7 @@ argument-hint: an idea, existing docs, or a repo
 ## Rules
 - **GATED on the entitlement tiers existing** — the tiers (and what each unlocks) are defined in the **entitlements** area; without them there is nothing to price, so surface that gap rather than inventing tiers here
 - each plan **attaches a price to an entitlement tier** (`ENTL-`, from the entitlements area), never to aspirational or self-invented features
-- every tier price cites a **discovery basis** (corridor / elasticity point) or is marked an **`Untested`** bet — a competitor benchmark alone is not a basis
+- every tier price cites a **discovery basis** (corridor / elasticity point) or is marked an **`Untested`** bet — a competitor benchmark alone is not a basis. **Prices, the value-metric axis, the tier→plan packaging, and any customer-facing SLA are owner ratify-points, not skill picks:** propose a recommended price corridor / axis / SLA (concrete number + one-line why) for the owner to agree/override — `Untested` is a confidence tag, NOT a substitute for ratification. A customer-facing SLA flows to the availability NFRs **only once ratified**.
 - the chosen **value metric** must pass the selection screen (value-alignment · simplicity · measurability · predictability · expansion); record why it beat the alternatives
 - under usage/outcome pricing, each priced unit carries a **per-unit COGS / gross-margin-per-unit** and a **markup floor** below which the unit is never sold
 - a **customer-facing SLA** (uptime / support response) is a commitment the architecture & ops must honour — record it here so it flows to the availability NFRs

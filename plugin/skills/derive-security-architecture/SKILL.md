@@ -30,7 +30,7 @@ Written under `solution/security/`:
 | File | Captures | Format |
 |---|---|---|
 | `controls.md` | threat grid (trust-boundary crossing × category → control) + zero-trust posture (per-request default-deny · least-privilege · assume-breach · no network-location trust) — per control: mechanism · maps-to(SEC-) (abuse cases → security tests) | grid + per control: mechanism · maps-to(SEC-) |
-| `authn-authz.md` | authn + identity/IdP; authorization model (RBAC/ABAC + enforcement points + ownership/tenant predicate); token design conforming to **OAuth + OIDC (current best practice)** (PKCE · authorization-code · no implicit/password grants · lifetime · refresh · revocation · storage · CSRF) | prose |
+| `authn-authz.md` | authn + identity/IdP (**the IdP is a vendor one-way-door ratify-point — propose a recommended provider + one-line why for the human to agree/override, never silently picked**); authorization model (RBAC/ABAC + enforcement points + ownership/tenant predicate); token design conforming to **OAuth + OIDC (current best practice)** (PKCE · authorization-code · no implicit/password grants · lifetime · refresh · revocation · storage · CSRF) | prose |
 | `crypto-secrets.md` | encryption at rest/in transit + key management (KMS/rotation/envelope); secrets management (vault · rotation · no-secrets-in-code) | typed fields |
 | `supply-chain.md` | supply-chain — **build-provenance level (SLSA)** + signed-artifact attestation · SCA · SBOM · pinned deps · anti-automation (lockout/rate-limit) · multi-tenancy isolation · control mappings (OWASP Top-10 / ASVS, + national catalog e.g. NIST CSF/800-53 when jurisdiction flagged) | prose |
 

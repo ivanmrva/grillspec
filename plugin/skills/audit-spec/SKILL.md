@@ -156,7 +156,17 @@ failure this phase exists to prevent.
   referenced IDs resolve and are settled (no `UNRESOLVED` it needs — `blocking` if not); its scoped inputs
   exist (boundary contracts + architecture seam + declared `role:` + conventions + relevant glossary; a UI
   slice has its `DS-` contract + the kept prototype); the test strategy MANUFACTURES the slice's edges;
-  every decision the code needs is in the spec or an ADR. Zero load-bearing ambiguity.
+  every decision the code needs is in the spec or an ADR. Zero load-bearing ambiguity. **Any non-`N/A`
+  `human-prereq` on the slice is resolved (provisioned) or explicitly waived** — a slice that can't be built
+  without an unmet human action is not ready (`blocking`).
+- **Ratify axis — un-ratified user-owned values.** A user-owned VALUE the engines require to be ratified
+  (NFR/SLA/SLO numbers · retention/residency · jurisdiction/regimes · pricing & tier limits · environments &
+  git workflow · cloud/region/datastore/IdP commitments · a11y level · DR tier · cost ceiling · test-rigor
+  thresholds · accepted-risk · authorization allow-rules · the MVP cut) that is still a `ratify`/`unconfirmed`
+  proposed-default — i.e. a default the human never confirmed — is **not a settled requirement**. Flag every
+  load-bearing one `important` (a CRITICAL-path one — an NFR a slice builds to, a price, a residency footprint —
+  is `blocking`), routed to "surface for ratification." A green spec built on silently-picked user values is
+  exactly the failure this catches; a complete schema is never proof the numbers are the user's.
 - **Bet axis (Axis 2, kept separate):** every bet carries a validation status; every CRITICAL bet is
   Validated or Accepted-risk (an Invalidated critical bet is a high-priority open point); kill-criteria are
   present and measurable; every risk has category · probability · impact · owner · mitigation · status;

@@ -4,6 +4,20 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.4.0
+
+### Added — user-owned values must be ratified, not silently filled (+ environment/git ratify-points, human-prereq task dimension)
+The system's rule that a user-owned value is "proposed-as-default-then-ratified" lived in `decision-classes.md` but wasn't enforced at the engine level, so grill/derive skills filled the cell with a number to avoid a blank — silently baking in the user's NFR targets, retention, pricing, SLAs, environments, thresholds, etc. (A cross-skill audit found ~25 such spots.)
+- **Engine-level ratify rule.** `grill-engine.md` and `derive-engine.md` now carry an explicit rule: for any user-owned VALUE (targets/thresholds · commitments · risk/scope calls — full list enumerated), propose a profiled default but **mark it an unratified `ratify`/`unconfirmed` default and surface it for confirm/override** (ask inline when interviewing; park in `_human-input.md` when unattended). Proposing ≠ deciding; an un-ratified load-bearing value is an assumption, not a requirement. Every grill/derive skill inherits this.
+- **Environment set + git workflow are explicit ratify-points** — `derive-infra-ops` no longer silently bakes the dev/stage/prod triple (propose it + the promotion path, ratify count/purpose); `derive-conventions` no longer hard-asserts trunk-based (propose it, ratify the branching model). Parallel to the existing cloud/region ratify-point.
+- **New `human-prereq` task dimension** (`derive-tasks`) — every slice declares the human actions it can't proceed without (account/credential/enabled-API/OAuth/DNS/secret), as step-by-step actions referencing `prerequisites.md` by name+location (never the value), front-loaded to `_human-input.md` before dispatch so the build never stalls mid-slice.
+- **Detailed human-input instructions** — `prerequisites.md` and the `_human-input.md` queue now require per-item step-by-step provisioning actions (what to create, where to inject — never the secret value), actionable by a non-expert.
+- **Audit enforces it** — `audit-spec` Phase 4 now flags an un-ratified load-bearing user-owned value (`blocking` on a critical-path one) and an unmet `human-prereq`.
+- **Always recommend, for fast-agree.** Every ratify-point must arrive with a concrete recommended value + one-line why, framed as a scannable `<value> — <why> · agree?/override` batch — never a blank or open question. The human confirms fast, doesn't author.
+- **Production go-gates.** `deploy-release` no longer "never blocks a release": a PROD promotion is a human go/no-go (recommended default: auto dev→stage, human go for stage→prod); the metric gate still owns canary *health*. `migrate-data` adds the same for a non-destructive prod cutover, mirroring its irreversible-deletion gate.
+- **Fixed the auto-merge contradiction.** `afk: eligible` (agent self-merges) collided with the conventions' ≥2-person-review / branch-protection mandate. `eligible` now auto-merges only where the review policy permits solo-merge; otherwise the agent opens a green PR and parks the merge as a HITL gate (a new closed-list HITL trigger). `derive-tasks` + `exec-engine` aligned.
+- **Explicit per-skill ratify-points** (higher-signal than the generic engine rule, each carrying a recommended default): NFR target numbers (`grill-quality`), prices + value-metric + customer SLA (`grill-monetization`), the Core/Supporting/Generic subdomain split (`grill-ddd`), authorization *allow* rules + accepted-risk (`grill-security-reqs`), the IdP commitment (`derive-security-architecture`), residency-consumes-confirmed-footprint + retention (`grill-data-reqs`), coverage % + mutation score bars (`derive-test-strategy`).
+
 ## 4.3.0
 
 ### Added — universal upstream-only for ALL id-shapes (registered or not), + 6 newly-registered types

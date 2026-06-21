@@ -16,7 +16,7 @@ argument-hint: an idea, existing docs, or a repo
 3. **Privacy-threat pass** — walk the data-flows and personal-data assets against the seven privacy-threat categories (linkability · identifiability · non-repudiation · detectability · information disclosure · unawareness · non-compliance) → emit privacy threats with the **same id + owner discipline** as security threats.
 
 ## Rules
-- **authorization is DEFAULT-DENY** — every command has an explicit who-may rule; an unspecified cell is forbidden, not allowed; carry ownership/tenant predicates in the condition cell (a user may act only on their own / their tenant's data)
+- **authorization is DEFAULT-DENY** — every command has an explicit who-may rule; an unspecified cell is forbidden, not allowed; carry ownership/tenant predicates in the condition cell (a user may act only on their own / their tenant's data). Deny-by-default is a decide; **each *allow* rule (who-may-do-what) and every *accepted-risk* are org policy/risk-appetite ratify-points** — propose the recommended allow matrix + each accepted-risk (with a one-line why) for the human to agree/override. **Never silently mark a threat accepted-risk** — risk acceptance is the human's call.
 - the **authorization model shape** (role- / attribute- / relationship-based + why) is recorded as an ADR — the ownership/tenant predicates already imply attribute/relationship-based
 - every sensitive asset is in the threat model with **CIA emphasis** (sourced from the data classification + core-output integrity + audit trail + identities/secrets)
 - threat actors named with **capability + motive** (external · malicious/negligent insider · domain-named adversary) **+ abuse/misuse cases per high-value asset**

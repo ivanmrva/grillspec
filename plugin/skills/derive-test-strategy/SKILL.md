@@ -24,7 +24,7 @@ A test's **source** is what it verifies; its **timing** is when its subject exis
 - this layer is *discovery* as much as verification — treat a surprising property/fitness failure with no governing rule as a **gap to resolve upstream**, not just a bug to patch
 - every cross-feature journey has a system acceptance test; every load-bearing `ASR-`/boundary has a fitness function; every `NFR-`/`ASR-`/`SLO-` has an evidence test (not an assertion); contract suite covers every `API-`/`EVT-`
 - **the test-distribution shape is chosen from the architecture**, not mandated: logic-heavy → a pyramid (many fast unit, fewer integration, a thin e2e top); integration-heavy / microservice / serverless → an integration-weighted shape (the middle tier carries the weight); either way avoid an e2e-top-heavy distribution; contract tests are **CDC** with provider verification
-- **mutation testing gates test quality** — coverage % is gameable; a surviving mutant is a missing assertion
+- **mutation testing gates test quality** — coverage % is gameable; a surviving mutant is a missing assertion. The technique is decided; **the passing bars (coverage % and mutation score) are rigor thresholds the org owns → a ratify-point:** propose recommended bars (concrete numbers + one-line why — e.g. "≥80% line coverage, ≥70% mutation score on changed domain logic") for the human to agree/override, never silently set.
 - tests are **deterministic** (control time/randomness/external deps); a flake is a bug, quarantine is not delete
 
 ## Output

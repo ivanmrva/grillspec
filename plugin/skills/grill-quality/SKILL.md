@@ -22,7 +22,7 @@ argument-hint: an idea, existing docs, or a repo
   - **Flexibility** — adaptability · installability · replaceability · **Scalability** (now a sub-characteristic here, to N)
   - **Functional-suitability** — completeness · correctness · appropriateness: **correctness rates** (accuracy/recall/determinism) where value rests on processing quality
   - plus **observability** (golden signals, MTTD)
-- each NFR = **a number + measurement point + enforcement category** (test/gate/lint/infra/review) — no adjectives
+- each NFR = **a number + measurement point + enforcement category** (test/gate/lint/infra/review) — no adjectives. **The number is a user-owned target → a ratify-point, never silently filled to avoid a blank:** propose a profiled default (a concrete recommended value + one-line why — e.g. "p95 < 200 ms at peak; typical for an interactive web app") for the human to agree/override per the engine's user-owned-values rule. Costliest under-ask if assumed.
 - tag the **architecturally-significant** ones as ASRs — each a **full 6-part quality-attribute scenario** (source · stimulus · artifact · environment · response · response-measure) keyed to a real flow/use-case
 - **surface NFR conflicts** (e.g. security↔usability, consistency↔availability)
 
