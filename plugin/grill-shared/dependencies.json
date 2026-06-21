@@ -32,7 +32,9 @@
       "consumes": [
         "problem-validation"
       ],
-      "produces_ids": [],
+      "produces_ids": [
+        "CA"
+      ],
       "method": "grill"
     },
     "customer-discovery": {
@@ -86,7 +88,9 @@
         "customer-discovery",
         "constraints"
       ],
-      "produces_ids": [],
+      "produces_ids": [
+        "IF"
+      ],
       "method": "grill"
     },
     "ddd": {
@@ -107,7 +111,10 @@
         "ENT",
         "POL",
         "RM",
-        "HOT"
+        "HOT",
+        "SVC",
+        "REPO",
+        "FAC"
       ],
       "method": "grill"
     },
@@ -306,7 +313,9 @@
         "constraints",
         "entitlements"
       ],
-      "produces_ids": [],
+      "produces_ids": [
+        "MOD"
+      ],
       "method": "derive"
     },
     "derive-data-architecture": {

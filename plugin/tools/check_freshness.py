@@ -20,7 +20,7 @@ SPEC = pathlib.Path("spec")
 LOCK = os.path.join(".claude", "freshness.lock")
 
 # TYPES mirrors lint_spec.py's vocabulary (selfcheck guards them in sync) - resolve ids against the same set.
-TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|ADR|T"
+TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
 ID = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + ID + r")\b")        # id as first token of a line/cell
 DEF2 = re.compile(r"^\s*id:\s*(" + ID + r")\b", re.I)             # id: <ID>

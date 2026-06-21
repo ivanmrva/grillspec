@@ -39,7 +39,9 @@ PREFIX_OWNER = {"UC":"05-functional-spec","AC":"05-functional-spec",
     "NFR":"06-requirements/quality","ASR":"06-requirements/quality","DATA":"06-requirements/data",
     "SEC":"06-requirements/security","THR":"06-requirements/security","OBL":"06-requirements/compliance","API":"09-solution/api","ML":"06-requirements/ml",
     "ENTL":"06-requirements/entitlements",
-    "SLO":"09-solution/observability","EXP":"11-commercial/growth","T":"10-delivery/tasks","DS":"07-design-system"}
+    "SLO":"09-solution/observability","EXP":"11-commercial/growth","T":"10-delivery/tasks","DS":"07-design-system",
+    "FAC":"04-domain/ddd","REPO":"04-domain/ddd","SVC":"04-domain/ddd",
+    "IF":"03-system-context","MOD":"09-solution/arch","CA":"02-product"}
 def file_layer(r):
     if r.startswith("04-domain/ddd"): return 1
     if r.startswith("05-functional-spec") or r.startswith("06-requirements/"): return 2
@@ -50,7 +52,7 @@ def file_layer(r):
     if r.startswith("10-delivery/"): return 6
     if r.startswith("12-operate"): return 6
     return 0  # constraints, 02-product/*, discovery, singletons
-ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"VO":1,"HOT":1,"POL":1,"RM":1,"ENT":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"THR":2,"DATA":2,"OBL":2,"ENTL":2,"EXP":2,"ML":2,"DS":3,"API":5,"SLO":5,"T":6,"ADR":0}
+ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"VO":1,"HOT":1,"POL":1,"RM":1,"ENT":1,"FAC":1,"REPO":1,"SVC":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"THR":2,"DATA":2,"OBL":2,"ENTL":2,"EXP":2,"ML":2,"DS":3,"MOD":5,"API":5,"SLO":5,"T":6,"ADR":0,"IF":0,"CA":0}
 def id_layer(tok): return ID_LAYER.get(tok.split("-")[0].upper(), 0)
 PROSE_WORDS = 40
 
@@ -169,7 +171,7 @@ for p, r in cmd_files():
 # 11 stable-ID references resolve (the traceability spine)
 # TYPES = the SINGLE source of truth for type-prefixes (selfcheck.py reads this line to detect drift
 #         against the prefixes the skills declare). Keep it one flat alternation on one line.
-TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|ADR|T"
+TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
 # IDCORE = the type-prefixed token, no boundary (used in ANCHORED definition matches).
 # ID = IDCORE behind a left boundary that also excludes '-' so a known prefix is NOT mined out of a
 #      longer token: 'HOT-005' no longer yields 'T-005', 'SUR-AGG-250' no longer yields 'AGG-250'.
@@ -311,6 +313,51 @@ for p, r in cmd_files():
 if absent_refs:
     shown = ", ".join(sorted(absent_refs)[:10]) + (" …" if len(absent_refs) > 10 else "")
     add("INFO", "(partial)", "%d reference(s) to areas not present in this spec were not error-checked (partial spec — derived/downstream areas absent): %s" % (len(absent_refs), shown))
+
+# 11c universal upstream-only — definition-anchored, for UNREGISTERED id-shapes. Registered types are governed
+# by 11b above (ID_LAYER, ERROR). Anything else shaped like an id (ALL-CAPS 2-5 char PREFIX + '-…') that is
+# DEFINED somewhere (row-key / 'id:' / inline '<ID> <Name>') takes its LAYER from the most-upstream file it is
+# defined in; a reference to it from a strictly-lower layer is a downward violation → WARN. The layer is
+# inferred and the prefix is deliberately un-blessed, so a free LOCAL id stays free — only a DOWNWARD use
+# warns. Only DEFINED shapes get a layer, so a standard cited in prose ('RFC-7231', 'WCAG-2.1') has none and is
+# ignored. This is the safety net that keeps EVERY id upstream-only; registration (11b) is then only about the
+# EXTRA governance (coverage · define-once · owning-area), never about direction safety — and it is how a
+# downstream 'BR-' boundary-rule cited UPWARD by requirements/architecture is caught with no BR- registration.
+GDEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**([A-Z][A-Z0-9]{1,4}-[A-Za-z0-9._-]*[A-Za-z0-9])\b")
+GDEF2 = re.compile(r"\bid:\s*([A-Z][A-Z0-9]{1,4}-[A-Za-z0-9._-]*[A-Za-z0-9])\b", re.I)
+GDEF3 = re.compile(r"(?:^|[·;:,|←→⟵⟶])\s*[*`_]*\s*([A-Z][A-Z0-9]{1,4}-[A-Za-z0-9._-]*[A-Za-z0-9])\s+[A-Z]")
+GTOK = re.compile(r"(?<![A-Za-z0-9-])[A-Z][A-Z0-9]{1,4}-[A-Za-z0-9._-]*[A-Za-z0-9]")
+def _gpre(t): return t.split("-")[0].upper()
+gen_layer = {}                                              # unregistered id-shape token -> most-upstream layer it is DEFINED at
+for p, r in cmd_files():
+    if is_adr_file(r) or os.path.basename(r) == "traceability.md": continue
+    fl = file_layer(r); fence = False
+    for l in read(p).splitlines():
+        s = l.lstrip()
+        if s.startswith("```"): fence = not fence; continue
+        if fence or s.startswith("<!--"): continue
+        _ll = RANGE.sub(" ", l)
+        _ds = []
+        _m = GDEF1.match(_ll)
+        if _m: _ds.append(_m.group(1))
+        _ds += [mm.group(1) for mm in GDEF2.finditer(_ll)]
+        _ds += [mm.group(1) for mm in GDEF3.finditer(l)]
+        for _t in _ds:
+            if _gpre(_t) not in TYPESET: gen_layer[_t] = min(fl, gen_layer.get(_t, fl))
+gdn_seen = set()
+for p, r in cmd_files():
+    if is_adr_file(r) or os.path.basename(r) == "traceability.md" or ("/" not in r and r.startswith("_")): continue
+    fl = file_layer(r); fence = False
+    for i, l in enumerate(read(p).splitlines(), 1):
+        s = l.lstrip()
+        if s.startswith("```"): fence = not fence; continue
+        if fence or s.startswith("<!--"): continue
+        for _t in GTOK.findall(RANGE.sub(" ", l)):
+            if _gpre(_t) in TYPESET: continue                # registered → 11b governs it (ERROR)
+            _dl = gen_layer.get(_t)
+            if _dl is not None and _dl > fl and (r, _t) not in gdn_seen:
+                gdn_seen.add((r, _t))
+                add("WARN", r, "illegal downward reference: L%d file -> %s (defined at L%d); references must be upstream-only. '%s-' is not a registered type, so this is the definition-anchored check — register '%s' (TYPES + ID_LAYER + PREFIX_OWNER) for full governance, or keep it local but reference it only from its own layer or below" % (fl, _t, _dl, _gpre(_t), _gpre(_t)), i)
 
 # 12 no duplicate ID definition (an ID is defined in exactly one place)
 for tok, files in defsites.items():

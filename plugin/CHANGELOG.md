@@ -4,6 +4,15 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.3.0
+
+### Added — universal upstream-only for ALL id-shapes (registered or not), + 6 newly-registered types
+The illegal-downward-reference check walked `IDTOK`, which only tokenizes registered `TYPES` prefixes — so a token shaped like a spec id with an *unregistered* prefix was invisible and escaped the upstream-only invariant entirely. That is how a downstream `BR-` (boundary rule, an L6 delivery-conventions construct) cited *upward* from requirements/architecture slipped governance. The fix decouples direction-safety from registration.
+- **New check `11c` — definition-anchored universal direction.** Any id-shape (ALL-CAPS 2–5 char prefix + `-…`) that is *defined* somewhere takes its layer from the most-upstream file it's defined in; a reference from a strictly-lower layer is a downward violation (WARN). Only *defined* shapes get a layer, so a standard cited in prose (`RFC-7231`, `WCAG-2.1`) is ignored, and a free *local* id stays free — only a downward use warns. Registration is now about *extra* governance (coverage · define-once · owning-area), never about direction safety. This supersedes the unreleased 4.2.x "register-or-deidify" blanket warn, which would have nagged every free local label.
+- **Registered 6 element types** the skills already produce but left untyped: `FAC-`/`REPO-`/`SVC-` (factories · repositories · domain services, L1 ddd), `IF-` (boundary interfaces, L0 system-context), `MOD-` (architecture modules, L5), `CA-` (capability/scope areas, L0 product). Added to `TYPES` (mirrored across `impact`/`spec_status`/`check_contracts`/`check_freshness`), `ID_LAYER`, `PREFIX_OWNER`; declared in their producing skills and `dependencies.json`. They now get the full ERROR-level direction + define-once + owning-area treatment.
+- **`ACT-` (actors) intentionally left to the universal rule, not registered.** Actors are legitimately rostered in *both* `grill-system-context` (the C4 boundary roster, upstream) and `grill-ddd` (discovered during event-storming) — a real dual roster. Registration's define-once would flag that as a duplicate, and forcing a single owner breaks one skill's role. The universal rule enforces upstream-only on `ACT-` while *tolerating* the dual roster (it anchors to the most-upstream definition), which fits the actor model better than registration would.
+- Added regression tests `unregistered-id-downward`, `unregistered-id-local-ok`, `registered-newtype-direction`.
+
 ## 4.2.9
 
 ### Fixed — `lint_spec.py` event-coverage missed `POL-` trigger columns with no `whenever` keyword

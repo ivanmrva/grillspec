@@ -10,7 +10,7 @@ import os, re, sys, subprocess, pathlib
 SPEC = pathlib.Path("spec")
 if not SPEC.exists(): print("run from the project root (no spec/)"); sys.exit(2)
 # TYPES mirrors lint_spec.py's vocabulary (selfcheck guards them in sync).
-TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|ADR|T"
+TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
 ID = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + ID + r")\b")
 DEF2 = re.compile(r"\bid:\s*(" + ID + r")\b", re.I)

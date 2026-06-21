@@ -25,7 +25,7 @@ Written under `system-context/`:
 |---|---|---|
 | `scope.md` | the system as a black box: name · one-line purpose · what's IN vs OUT of the system boundary (system scope, NOT the product's feature scope) | two lists in/out · one-line purpose |
 | `actors.md` | external actors (human roles at the boundary) + neighbor/external systems — the C4 System Context roster | actor · type human/system · role at the boundary |
-| `interfaces.md` | per neighbor: direction (in/out/bi) · **business context** — what's exchanged in domain terms · **technical context** — channel/protocol/hardware · trigger  (the INVENTORY; volumes/SLAs/failure behaviour are out of scope) | table: neighbor · direction · what-flows (business) · channel (technical) · trigger |
+| `interfaces.md` | per boundary interface (`IF-`): neighbor · direction (in/out/bi) · **business context** — what's exchanged in domain terms · **technical context** — channel/protocol/hardware · trigger  (the INVENTORY; volumes/SLAs/failure behaviour are out of scope) | table keyed on `IF-`: neighbor · direction · what-flows (business) · channel (technical) · trigger |
 | `context-diagram.md` | the C4 Level-1 System Context diagram (Mermaid): the system + its actors + neighbor systems + the boundary line | Mermaid |
 
 ADRs → `adr/ADR-CTX-NNN.md`

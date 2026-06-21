@@ -25,7 +25,7 @@ Written under `product/vision/`:
 |---|---|---|
 | `vision.md` | vision + value proposition (the prop line traces to the top-ranked job/pain/gain) | vision: 1–2 lines · value prop: 1 line + the job/pain/gain it relieves |
 | `positioning.md` | the bottom-up fields that feed the one-liner, then the statement | competitive-alternatives → unique-attributes → differentiated-value → best-fit-segment → market-category (derived) → one-line statement |
-| `scope.md` | coarse scope — named capability areas in/out (seed candidate domain contexts) + phasing | in / out lists · MVP / near / deferred |
+| `scope.md` | coarse scope — named capability areas (`CA-`) in/out (seed candidate domain contexts) + phasing | in / out lists keyed on `CA-` · MVP / near / deferred |
 | `motion.md` | the go-to-market motion / sales model: PLG · self-serve · sales-led · hybrid — the early fork that drives onboarding, in-app billing & auth/SSO | motion · rationale |
 
 ADRs → `adr/ADR-VIS-NNN.md`

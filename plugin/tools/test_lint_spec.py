@@ -44,6 +44,25 @@ def idtable(*rows):
 expect("clean-baseline", run(LINT, {"04-domain/ddd/a.md": idtable(("AGG-1", "Order"))}),
        must=["0 error(s)"])
 
+# universal upstream-only (definition-anchored): an UNREGISTERED id-shape defined downstream (a 'BR-' boundary
+# rule in L6 conventions) and cited UPWARD from L2 requirements is a downward violation — WARN, no registration
+# needed. This is the BR- bug the IDTOK-only direction check missed.
+expect("unregistered-id-downward", run(LINT, {
+    "10-delivery/conventions/boundary-rules.md": HDR + "\n| rule | constraint |\n|---|---|\n| BR-16 | Scheduling must not import FieldWork |\n",
+    "06-requirements/quality/q.md": HDR + "\n- this is enforced-by BR-16\n" + idtable(("NFR-1", "X")),
+}), must=["illegal downward reference", "BR-16"])
+# a free LOCAL id used within/above its own layer, and a standard cited in prose, must NOT warn
+expect("unregistered-id-local-ok", run(LINT, {
+    "04-domain/ddd/a.md": idtable(("AGG-1", "Order")),
+    "01-discovery/d.md": HDR + "\n| id | pain |\n|---|---|\n| PN-1 | slow onboarding |\n",
+    "02-product/vision/v.md": HDR + "\n- addresses PN-1; transport follows RFC-7231\n",
+}), forbid=["illegal downward reference"])
+# a newly-REGISTERED type obeys the ERROR-level direction check: an L5 module cited from L1 ddd is downward
+expect("registered-newtype-direction", run(LINT, {
+    "09-solution/arch/a.md": HDR + "\n| id | module |\n|---|---|\n| MOD-1 | UI |\n",
+    "04-domain/ddd/d.md": idtable(("AGG-1", "Order")) + "- AGG-1 is realized in MOD-1\n",
+}), must=["illegal downward reference", "MOD-1"])
+
 expect("dangling-ref", run(LINT, {
     "04-domain/ddd/a.md": idtable(("CMD-1", "Create")),
     "05-functional-spec/uc.md": idtable(("UC-1", "Place")) + "\nUC-1 implements CMD-99\n",

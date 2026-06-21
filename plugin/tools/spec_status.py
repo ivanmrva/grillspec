@@ -6,7 +6,7 @@
 import sys, re, pathlib
 SPEC = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "spec")
 # TYPES mirrors lint_spec.py's vocabulary (selfcheck guards them in sync).
-TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|ADR|T"
+TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
 PREFIXES = TYPES.split("|")
 ID = "(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"   # tail matches lint_spec's IDCORE (allows '.'/'_', e.g. DATA-Customer.id)
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + ID + r")\b")

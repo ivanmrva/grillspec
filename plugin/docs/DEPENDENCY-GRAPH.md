@@ -13,10 +13,10 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `customer-discovery` | grill-customer-discovery | elicit | product-vision | — |
 | `goals` | grill-goals | elicit | product-vision | — |
 | `market` | grill-market | elicit | product-vision | — |
-| `product-vision` | grill-product-vision | elicit | problem-validation | — |
-| `system-context` | grill-system-context | elicit | customer-discovery, constraints | — |
+| `product-vision` | grill-product-vision | elicit | problem-validation | CA- |
+| `system-context` | grill-system-context | elicit | customer-discovery, constraints | IF- |
 | **1 · Domain** | | | | |
-| `ddd` | grill-ddd | model | product-vision, constraints, system-context | CMD-, EVT-, AGG-, VO-, ENT-, POL-, RM-, HOT- |
+| `ddd` | grill-ddd | model | product-vision, constraints, system-context | CMD-, EVT-, AGG-, VO-, ENT-, POL-, RM-, HOT-, SVC-, REPO-, FAC- |
 | **2 · Requirements** | | | | |
 | `compliance` | grill-compliance | elicit | constraints | OBL- |
 | `data-reqs` | grill-data-reqs | derive | ddd | DATA- |
@@ -32,7 +32,7 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `ux-reqs` | grill-ux-reqs | derive | derive-functional, ddd, design-system, quality, product-vision | — |
 | **5 · Solution** | | | | |
 | `derive-api-contracts` | derive-api-contracts | derive | ddd, integration-reqs, security-reqs, derive-architecture | API- |
-| `derive-architecture` | derive-architecture | derive | derive-functional, ddd, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, entitlements | — |
+| `derive-architecture` | derive-architecture | derive | derive-functional, ddd, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, entitlements | MOD- |
 | `derive-data-architecture` | derive-data-architecture | derive | data-reqs, ddd, derive-functional, derive-architecture | — |
 | `derive-infra-ops` | derive-infra-ops | derive | quality, constraints, derive-architecture | — |
 | `derive-ml-architecture` | derive-ml-architecture | derive | ml-reqs, derive-architecture, derive-data-architecture | — |
@@ -75,11 +75,11 @@ flowchart TD
     customer_discovery["customer-discovery"]
     goals["goals"]
     market["market"]
-    product_vision["product-vision"]
-    system_context["system-context"]
+    product_vision["product-vision<br/>CA-"]
+    system_context["system-context<br/>IF-"]
   end
   subgraph stage_1_domain["1 · Domain"]
-    ddd["ddd<br/>CMD- EVT- AGG- VO- ENT- POL- RM- HOT-"]
+    ddd["ddd<br/>CMD- EVT- AGG- VO- ENT- POL- RM- HOT- SVC- REPO- FAC-"]
   end
   subgraph stage_2_requirements["2 · Requirements"]
     compliance["compliance<br/>OBL-"]
@@ -99,7 +99,7 @@ flowchart TD
   end
   subgraph stage_5_solution["5 · Solution"]
     derive_api_contracts["derive-api-contracts<br/>API-"]
-    derive_architecture["derive-architecture"]
+    derive_architecture["derive-architecture<br/>MOD-"]
     derive_data_architecture["derive-data-architecture"]
     derive_infra_ops["derive-infra-ops"]
     derive_ml_architecture["derive-ml-architecture"]
