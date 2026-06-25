@@ -45,8 +45,16 @@ an allowed prefix · scope adherence · whether a mitigation actually mitigates 
 branch nobody modelled) · whether the model's *shape* fits the business. These are the `audit-spec` skill's job
 (`--depth consistency` for the judgment-but-decidable layer, `--depth full` adds the domain pass).
 
+## Beyond the spec — the build-accountability checks
+
+Distinct from these spec-structure tools, a second set governs that **generated code is built as the spec demands** (documented in `HOW-IT-WORKS.md`): `check_task_record.py` (the per-task Verification Record — every obligation evidenced, independent verdict on disk, tests-first via `@covers` tags), `check_no_fakes.py` (no test doubles in `src/`), and `check_config_drift.py` (code-read env vars ⊆ the declared `environments.md` matrix). They run in the code pre-commit + `code-ci.yml`, not the spec governance pipeline.
+
 ## Keeping the checks honest
 
-`tools/test_lint_spec.py` is a regression suite: each check has a fixture that must fire and a clean fixture that
-must not. `selfcheck.py` keeps the `TYPES` prefix vocabulary in sync across `lint_spec.py` and `check_contracts.py`
-and against what the skills declare. Both run in CI (`.github/workflows/plugin-check.yml`).
+Every check carries a regression suite — each check has a fixture that must fire and a clean fixture that must
+not: `tools/test_lint_spec.py` (spec tools), and `test_check_task_record.py` · `test_check_no_fakes.py` ·
+`test_check_config_drift.py` for the accountability tools, plus `test_e2e_gates.py` which proves the three
+compose on one realistic project (a clean task passes all three; each cheat trips exactly the gate that owns it).
+`selfcheck.py` keeps the `TYPES` prefix vocabulary in sync across `lint_spec.py`, `check_contracts.py`,
+`impact.py`, `spec_status.py`, `check_freshness.py`, and `check_task_record.py`, and against what the skills
+declare. All run in CI (`.github/workflows/plugin-check.yml`).

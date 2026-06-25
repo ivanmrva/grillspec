@@ -44,4 +44,16 @@ if [ -f "$T/check_contracts.py" ]; then
   }
 fi
 
+# 4) per-task accountability — a task's verification record that CLAIMS done must back every obligation its
+#    own (frozen) spec references demand: tests-first traced, independent conformance VERDICT: PASS, no fakes,
+#    no dropped/under-bar obligation. An in-progress record never blocks; only an unbacked done-claim does.
+#    No-ops cleanly when there are no per-task records yet.
+if [ -f "$T/check_task_record.py" ]; then
+  tr_out=$(python3 "$T/check_task_record.py" "$root/spec" 2>&1) || {
+    echo "$tr_out" >&2
+    echo "spec-governance: a task is marked done without the evidence its obligations demand — fill the verification record (or --no-verify)." >&2
+    exit 1
+  }
+fi
+
 exit 0

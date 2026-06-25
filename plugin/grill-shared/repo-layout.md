@@ -77,16 +77,16 @@ spec/
 │   ├── data/            derive-data-architecture      schema·storage·migration                            DERIVE
 │   ├── api/             derive-api-contracts          OpenAPI/AsyncAPI·versioning  (API-)                 DERIVE
 │   ├── security/        derive-security-architecture  authn/authz·encryption·secrets                      DERIVE
-│   ├── infra-ops/       derive-infra-ops              topology·IaC·CICD·deploy/rollback·DR                DERIVE
+│   ├── infra-ops/       derive-infra-ops              topology·IaC·CICD·deploy/rollback·DR·environments(config matrix)·prerequisites  DERIVE
 │   ├── observability/   derive-observability          SLOs(SLO-)·telemetry·alerts·runbooks                DERIVE
-│   ├── test/            derive-test-strategy          levels·edge-discovery·NFR evidence                  DERIVE
+│   ├── test/            derive-test-strategy          levels·edge-discovery·NFR evidence·traceability·test-data  DERIVE
 │   └── ml/             derive-ml-architecture        serving·eval-harness·pipeline·monitoring  (AI only)  DERIVE
 │   ───────────────── IMPLEMENTATION-READINESS GATE ─────────────────
 ├── 10-delivery/            (DERIVED + execution records)
 │   ├── conventions/     derive-conventions            standards·dep/boundary rules·DoD·cmds (+ root CLAUDE.md)  DERIVE
 │   ├── tasks/           derive-tasks         T-NNN.md vertical slices + build-order.md (DAG)               DERIVE
 │   ├── impl-design/     derive-impl-design   per-SLICE module internals · derived JIT in execution (downstream of tasks)  DERIVE
-│   └── verification/    conformance-review           traceability.md (spec ID↔task↔code) + the post-task review report  exec
+│   └── verification/    conformance-review           traceability.md (spec ID↔task↔code) + review report + tasks/T-NNN.md per-task Verification Records  exec
 │   ───────────────── DELIVERY-READINESS GATE ─────────────────
 │   (execution writes CODE, not spec/:)  implement-task → src/, tests/  ·  run-tests → result
 │
@@ -95,7 +95,7 @@ spec/
 │   ├── go-to-market/    grill-go-to-market   channels·launch·partnerships  (motion lives in 02-product/vision)   grill
 │   ├── monetization/    grill-monetization   pricing·plans·unit-econ — prices the ENTL- tiers              grill
 │   └── growth/          grill-growth         activation/retention·experiments (EXP-)·analytics events       grill
-└── 12-operate/            deploy-release·migrate-data·operate-incident·diagnose   deploy/migration/incident/diagnosis records + bootstrap.md   exec
+└── 12-operate/            deploy-release·migrate-data·operate-incident·diagnose   deploy/migration/incident/diagnosis records + bootstrap.md (phased per-platform/per-env setup runbook) + production-readiness.md (PRR gate)   exec
 ```
 
 ## Within-stage partial order (the tier diagrams — what the numbers can't show)

@@ -141,13 +141,13 @@ if lint.exists():
                  "the linter cannot register or check it")
 
 # --- 4b-2. secondary-tool prefix sync --------------------------------------
-# check_contracts.py, impact.py, spec_status.py, and check_freshness.py each carry their OWN copy of the
-# linter's TYPES vocabulary (they can't import lint_spec cleanly) and resolve/propagate/roll-up ids against
-# it. If a copy drifts, that tool tokenizes against a stale prefix set - silently missing ids. Keep each
-# identical to lint_spec's TYPES.
+# check_contracts.py, impact.py, spec_status.py, check_freshness.py, and check_task_record.py each carry their
+# OWN copy of the linter's TYPES vocabulary (they can't import lint_spec cleanly) and resolve/propagate/roll-up
+# ids against it. If a copy drifts, that tool tokenizes against a stale prefix set - silently missing ids. Keep
+# each identical to lint_spec's TYPES.
 if lint.exists() and mt:
     want = set(mt.group(1).split("|"))
-    for toolname in ("check_contracts.py", "impact.py", "spec_status.py", "check_freshness.py"):
+    for toolname in ("check_contracts.py", "impact.py", "spec_status.py", "check_freshness.py", "check_task_record.py"):
         tp = ROOT / "tools" / toolname
         if not tp.exists(): continue
         mc = re.search(r'^TYPES\s*=\s*"([^"]+)"', tp.read_text(), re.M)

@@ -29,5 +29,17 @@ jobs:
           pip install --quiet pyyaml
           python3 plugin/tools/test_lint_spec.py
 
+      - name: task-record regression suite — every accountability check still fires
+        run: python3 plugin/tools/test_check_task_record.py
+
+      - name: no-fakes regression suite — the production-tree tripwire still fires
+        run: python3 plugin/tools/test_check_no_fakes.py
+
+      - name: config-drift regression suite — code-vs-declared env reconciliation still fires
+        run: python3 plugin/tools/test_check_config_drift.py
+
+      - name: e2e gate-chain — the three accountability gates compose on a realistic project
+        run: python3 plugin/tools/test_e2e_gates.py
+
       - name: build — all distribution artifacts compile
         run: python3 build/build.py
