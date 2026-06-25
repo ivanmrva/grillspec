@@ -108,13 +108,20 @@ for p, r in cmd_files():
             elif "\u2026" in v: add("WARN", r, "file header '" + k + "' looks unfilled")
 
 # 4 placeholder / stale tokens (template.md may keep them)
+# Literal content inside a fenced block or an inline `code` span is exempt: a vendor that uses {{ }} templating
+# (Clerk session-token claims, Handlebars configs) must be documentable verbatim. INLINE_CODE blanks `...` spans
+# so the check sees only prose; the fence toggle skips fenced blocks, mirroring the ref checks below.
+INLINE_CODE = re.compile(r"`[^`]*`")
 TOK = re.compile(r"\{\{|\}\}|\bTODO\b|\bTKTK\b|\bFIXME\b|\bNNNN\b")
 for p, r in cmd_files():
     if os.path.basename(r) == "template.md" and "adr/" in r: continue
     if "NNNN" in os.path.basename(r):
         add("ERROR", r, "unfilled ADR filename (NNNN) - use the real number")
+    fence = False
     for i, l in enumerate(read(p).splitlines(), 1):
-        if TOK.search(l): add("ERROR", r, "placeholder/stale token: " + l.strip()[:60], i)
+        if l.lstrip().startswith("```"): fence = not fence; continue
+        if fence: continue
+        if TOK.search(INLINE_CODE.sub(" ", l)): add("ERROR", r, "placeholder/stale token: " + l.strip()[:60], i)
 
 # 5 dangling local links
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
@@ -381,8 +388,14 @@ NS = re.compile(r"(?<![A-Za-z0-9-])([A-Za-z][A-Za-z0-9]*)-(" + TYPES + r")-[A-Za
 TYPESET = set(TYPES.split("|"))
 for p, r in cmd_files():
     if os.path.basename(r) == "traceability.md": continue
+    fence = False
     for i, l in enumerate(read(p).splitlines(), 1):
-        for m in NS.finditer(l):
+        # skip fenced blocks + inline `code` spans: a real external-vendor identifier shaped like an ID
+        # (Alpaca's APCA-API-KEY-ID header → lead APCA, type API) is literal content, not a context-namespaced
+        # spec ID — the grammar must not claim it inside code. Mirrors the undefined/downward-ref skips above.
+        if l.lstrip().startswith("```"): fence = not fence; continue
+        if fence or l.lstrip().startswith("<!--"): continue
+        for m in NS.finditer(INLINE_CODE.sub(" ", l)):
             if m.group(1).upper() in TYPESET: continue   # e.g. AC-014a's own 'AC' lead — already a real ID
             add("ERROR", r, "context-namespaced ID '" + m.group(0) + "' - IDs must lead with a bare type prefix (" + m.group(2) + "-NNN, never " + m.group(1) + "-" + m.group(2) + "-NNN); namespace inside the suffix or use disjoint numeric bands for parallel work", i)
 

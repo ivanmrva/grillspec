@@ -198,6 +198,25 @@ expect("task-traceability", run(LINT, {"10-delivery/tasks/T-9.md": idtable(("T-9
 expect("adr-status", run(LINT, {"adr/ADR-DDD-1.md": "# ADR-DDD-1 thing\nDecision: do it.\n"}),
        must=["no recognized 'status:'"])
 
+# ── 13b context-namespaced IDs: literal external-vendor identifiers shaped like <lead>-<TYPE>-… (Alpaca's
+#    APCA-API-KEY-ID header: lead APCA, type API) are flagged in PROSE but must be writable verbatim inside a
+#    code fence or an inline `code` span — the ID grammar must not claim literal code content. ──────────────
+expect("ns-vendor-id-bare-fires", run(LINT, {"12-operate/rb.md": HDR + "\nSet the APCA-API-KEY-ID header.\n"}),
+       must=["context-namespaced ID", "APCA-API-KEY-ID"])
+expect("ns-vendor-id-fenced-ok", run(LINT, {"12-operate/rb.md": HDR + "\n```\nAPCA-API-KEY-ID: <key>\n```\n"}),
+       forbid=["context-namespaced ID"])
+expect("ns-vendor-id-inline-ok", run(LINT, {"12-operate/rb.md": HDR + "\nSet the `APCA-API-KEY-ID` header.\n"}),
+       forbid=["context-namespaced ID"])
+
+# ── placeholder {{ }}: a real vendor template ({{user.public_metadata.role}} — Clerk session-token claims) is
+#    flagged in prose but exempt inside a fence or inline `code`. ─────────────────────────────────────────
+expect("tok-curly-bare-fires", run(LINT, {"12-operate/rb.md": HDR + "\nrole is {{user.role}} here\n"}),
+       must=["placeholder/stale token"])
+expect("tok-curly-fenced-ok", run(LINT, {"12-operate/rb.md": HDR + "\n```\n{{user.public_metadata.role}}\n```\n"}),
+       forbid=["placeholder/stale token"])
+expect("tok-curly-inline-ok", run(LINT, {"12-operate/rb.md": HDR + "\nclaim `{{user.role}}` in config\n"}),
+       forbid=["placeholder/stale token"])
+
 # ── check_contracts (needs PyYAML) ─────────────────────────────────────────
 if HAVE_YAML:
     OAPI = ("openapi: 3.1.0\ninfo: {title: T, version: 1.0.0}\n"

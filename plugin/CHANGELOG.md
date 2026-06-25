@@ -4,6 +4,14 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.5.1
+
+### Fixed — `lint_spec.py` flagged literal external-vendor strings as spec violations inside code
+Two checks scanned every line with no fenced-code/inline-code skip — unlike the undefined/downward-ref checks, which already do (`:297`). An operate-stage runbook documenting real third-party identifiers had no legitimate way to write them.
+- **Rule 13b (context-namespaced IDs)** now skips fenced blocks and inline `code` spans. A vendor identifier shaped like `<lead>-<TYPE>-…` (Alpaca's `APCA-API-KEY-ID` header → lead `APCA`, type `API`) is literal content, not a banned `<CTX>-TYPE-NNN` spec ID, when it sits in code. (13b's own INFO-level sibling `CTXID` already skipped fences; this removes that inconsistency too.)
+- **Placeholder check (`{{`/`}}`)** now skips fenced blocks and inline `code` spans, so a vendor template (`{{user.public_metadata.role}}` — Clerk session-token claims, Handlebars configs) is documentable verbatim instead of forcing "double-curly braces" prose.
+- Both gain regression fixtures (a bare occurrence still fires; the same inside a fence or inline code does not).
+
 ## 4.5.0
 
 ### Added — build-accountability layer: production-only code, enforced TDD bookends, and a per-task Verification Record
