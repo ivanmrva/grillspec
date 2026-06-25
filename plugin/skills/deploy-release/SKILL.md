@@ -16,7 +16,7 @@ argument-hint: a built increment to deploy
 3. For canary/progressive rollout, gate promotion on a **metric gate** — explicit queries · thresholds · auto-promote/abort — not a prose "healthy signals" judgment.
 4. Keep deploy decoupled from release via feature flags — ship dark, enable separately.
 5. **Run `preflight` in the target environment before serving traffic** (required env vars present · dependencies reachable/authenticating · migrations applied · readiness `/readyz` green) — a failed preflight aborts the promotion; never deploy past a red preflight. Then post-deploy smoke checks + watch the relevant `SLO-`/alerts during rollout; roll back on breach per the defined procedure.
-6. Never hand-deploy outside the IaC/CD path.
+6. Never hand-deploy outside the IaC/CD path. **The deploy artifact is real or the promotion doesn't happen** — an `echo`/`exit 0`/`# TODO`/`if: false` deploy is a fake (`check_deploy_real.py` catches it), never a stand-in. If the target environment can't be reached yet (unprovisioned account, missing credential/DNS), that is a **blocking prerequisite to escalate** (`_human-input.md` + `bootstrap.md` Phase B/C) — **never** silently skip the environment or report a deploy that didn't run.
 7. **Extend the setup runbook for this environment** — promoting to a *new* environment (esp. the first production push) fills `12-operate/bootstrap.md` Phases B/C from `infra-ops/environments.md` + `prerequisites.md`: this environment's distinct config keys, the prod-only prerequisites (DNS · certs · scale/residency · prod credentials), the go-live checklist, and day-2 (rotation/scale/new-env). The runbook stays a complete, current step-by-step an operator can follow without guessing — never a value, always where-to-set-it.
 
 ## Rules

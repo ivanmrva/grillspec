@@ -41,6 +41,14 @@ Deferred/N-A until warranted. A whole area may be **N/A** — record it.
 artifact** (regenerate-only); but you can **skip the two-tier test rig, the fitness-function suite, and
 the full `code-ci.yml` pipeline** (keep one plain test job) until the project grows into them. Lite means
 fewer areas and lighter ceremony — not a different system.
+**The no-fakes bar never relaxes; only the deploy ceremony scales.** Even on the lite path the **release path is
+real** — a single-environment deploy / `npm publish` / a `Dockerfile` + one `deploy` job that actually ships,
+never a faked `echo`/`exit 0`/`# TODO` deploy, and any schema change ships a real migration (`check_no_fakes` ·
+`check_deploy_real` · `check_migration_real` still apply). What **scales down** is the *promotion apparatus*, not
+its honesty: a lite project may run a **single environment** (e2e then runs against that one deployed env, not a
+per-PR preview fleet) and **skip multi-hop promotion + the PRR** until it grows a stage/prod split. The `deploy`
+row stays required — it just references the single real environment, or `N/A — no deployable surface` for a pure
+library/spec project.
 
 ## Progressive elaboration, the per-layer ratchet, and where edge cases are actually found
 Upfront completeness is neither achievable nor desirable — edge cases surface late, and some areas

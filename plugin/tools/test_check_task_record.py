@@ -34,7 +34,14 @@ def record(status="done", rows=None, drop=()):
         ("SEC-03", "tests/e2e/pay.js", "PASS"),
         ("ASR-002", "—", "N/A — Tier-B"),
         ("tests-first", "—", "PASS"),
+        ("tests:layers", "tests/e2e/pay.js · tests/contract/pay.json", "PASS"),
         ("coverage", "84% (bar 80%)", "PASS"),
+        ("mutation", "—", "N/A — no domain-logic change"),
+        ("fitness:no-fakes", "check_no_fakes clean", "PASS"),
+        ("fitness:architecture", "—", "PASS"),
+        ("spec-lint", "—", "PASS"),
+        ("deploy", ".github/workflows/deploy.yml", "PASS"),
+        ("traceability", "—", "PASS"),
         ("conformance", "review-report.md", "PASS"),
     ]
     over = dict(rows or {})
@@ -50,7 +57,8 @@ def record(status="done", rows=None, drop=()):
 
 # test files carry the @covers tags (the AC ids literally appear in the test tree) so the source-coverage
 # check passes by default; a scenario that wants the hole drops the tag via `covers=`.
-def run(files, args=("--task", "T-014"), evidence=("tests/e2e/pay.js", "tests/contract/pay.json", "src/billing.js"),
+def run(files, args=("--task", "T-014"),
+        evidence=("tests/e2e/pay.js", "tests/contract/pay.json", "src/billing.js", ".github/workflows/deploy.yml"),
         covers="@covers AC-014a AC-014b API-Pay"):
     d = pathlib.Path(tempfile.mkdtemp(prefix="trectest_"))
     try:
@@ -121,6 +129,30 @@ expect("fabricated-evidence", run(proj(record(rows={"AC-014a": ("tests/e2e/GHOST
 # ── coverage below the stated bar ──────────────────────────────────────────
 expect("coverage-below-bar", run(proj(record(rows={"coverage": ("61% (bar 80%)", "PASS")}))),
        must=["ERROR", "coverage 61 is below its bar 80"])
+
+# ── a done-claim that OMITS the deploy row fails (silent scope reduction) ───
+expect("missing-deploy-row", run(proj(record(drop=("deploy",)))),
+       must=["ERROR", "deploy", "cannot be omitted"], forbid=["0 error(s)"])
+
+# ── a done-claim that OMITS the tests:layers row fails ─────────────────────
+expect("missing-tests-layers-row", run(proj(record(drop=("tests:layers",)))),
+       must=["ERROR", "tests:layers", "cannot be omitted"], forbid=["0 error(s)"])
+
+# ── omitting ANY standard gate row (here: traceability) fails the same way ──
+expect("missing-traceability-row", run(proj(record(drop=("traceability",)))),
+       must=["ERROR", "traceability", "cannot be omitted"], forbid=["0 error(s)"])
+
+# ── a gate row may be N/A with a reason (here: mutation, no domain change) ──
+expect("gate-row-na-ok", run(proj(record(rows={"mutation": ("—", "N/A — no domain-logic change")}))),
+       must=["0 error(s)"], forbid=["ERROR"])
+
+# ── deploy may be N/A with a reason (slice adds no deployable surface) ──────
+expect("deploy-na-ok", run(proj(record(rows={"deploy": ("—", "N/A — no new deployable surface")}))),
+       must=["0 error(s)"], forbid=["ERROR"])
+
+# ── a deploy row citing a CI artifact that isn't on disk = fabricated ───────
+expect("deploy-fabricated-artifact", run(proj(record(rows={"deploy": (".github/workflows/GHOST.yml", "PASS")}))),
+       must=["ERROR", "GHOST", "does not exist"])
 
 # ── matrix claims a test the SOURCE tree doesn't contain (the @covers hole) ──
 expect("ac-claimed-not-in-source", run(proj(record()), covers="@covers AC-014a API-Pay"),

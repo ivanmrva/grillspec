@@ -4,6 +4,20 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.7.0
+
+### Added — deploy/CI + schema migrations are production too: realness gates that close the "silently skipped deploy" hole
+A task could generate code and *quietly omit the deploy script / CI stage / migration* — "deduce the infra isn't ready" — and report done with a green suite, because nothing made the delivery artifacts an accountable obligation. Production-only/no-fakes was enforced for `src/` but not for the artifacts that actually ship it.
+- **`check_deploy_real.py`** — a high-precision tripwire against a faked/skipped deploy across the CI/deploy surface: GitHub/GitLab/Circle/Azure/Bitbucket/Drone/Cloud-Build/Jenkins configs, shell deploy scripts, Dockerfiles, and `package.json`/`Makefile` deploy targets. A `# TODO`/placeholder is an ERROR; a disabled (`if: false`) or command-less ("echo-only") deploy is a WARN. Recognition is project-extensible via `.claude/deploy-real-commands.txt`; inline `deploy-real: allow` + `.claude/deploy-real-allow.txt` waive. By design it confirms a real deploy *command* runs, not that it targets the *ratified* env — that's the behavioural check's job (below).
+- **`check_migration_real.py`** — the same tripwire for schema/data migrations (files under a migration home): a placeholder is an ERROR; a DDL-less `.sql`, an empty `operations = []`, or a `pass`-only migration is a WARN. An empty *down/rollback* migration is treated as a legitimate no-op. Non-standard homes extend via `.claude/migration-real-dirs.txt`.
+- Both ship regression suites; the e2e gate-chain now proves **five** accountability gates compose on one realistic project (a clean task passes all five; each cheat trips exactly the gate that owns it). Both run in the project's code pre-commit + CI (wired by `derive-conventions`).
+
+### Changed — deployment + the full test set are first-class checked obligations; the bar can't be shrunk by omission
+- **Per-task Verification Record carries `deploy` + `tests:layers` rows**, and **every standard gate row must now be present** in a `status: done` record (`check_task_record.py`). Omitting a row — the exact "silently dropped artifact" cheat — is an ERROR, not a silent pass. `deploy` evidence is the green e2e/smoke against the deployed env (or `blocked — <env> not provisioned`); `tests:layers` evidences every test level the slice touches.
+- **e2e/journey/smoke/NFR-evidence run against a REAL deployed environment** (an ephemeral per-PR preview env by default, or a reserved e2e/staging env named in `test/levels.md`), never a local `docker-compose`/testcontainers stack (that's the *integration* tier mislabelled). A green e2e against the deployed env is therefore the *authoritative* deploy proof; the static tripwires are the backstop for the pre-provision window.
+- **The first deploy target is the first env of the ratified promotion path** (per `infra-ops/topology.md`), no longer hardcoded "dev"; `cicd.md` now owns the explicit end-to-end promotion workflow (ordered hops + per-hop gate), and the build skills consume it rather than re-deriving.
+- **Propagated across the family** (one stance, every skill): the exec-engine done-gate/DoD/anti-cheat invariants, `conformance-review` (deploy + migration lenses, confirm e2e hit the deployed env), `derive-tasks` (`deploy` dimension), `implement-task`, `derive-infra-ops`, `derive-test-strategy`, `derive-conventions` (project hooks/CI), `migrate-data`, `deploy-release`, the conductor **lite path** (the no-fakes bar never relaxes; only the promotion ceremony scales down), and `audit-spec` (delivery-readiness now requires the promotion path + named e2e target env to exist). Docs (`HOW-IT-WORKS`, `SPEC-CHECKS`) updated.
+
 ## 4.6.0
 
 ### Added — check 11d: illegal downward *path* references (closing the upstream-only blind spot)

@@ -101,7 +101,12 @@ The predicates here are about MEANING, so no script is sound on them. Walk each:
 ## Phase 2 — structural verdicts (read the tool output, decide the gates)
 - **Gate readiness** — architecture-readiness (requirements + design-system + ux carry no `UNRESOLVED`
   gap) before `09-solution/*` is trusted; implementation-readiness before `10-delivery`; delivery-readiness
-  before code. Report each gate met / not-met with its blocking items.
+  before code. Report each gate met / not-met with its blocking items. **Delivery-readiness explicitly requires
+  the deploy spine the tasks/build will reference to exist**: `infra-ops/topology.md` names the **ratified
+  environment set + promotion path**, `infra-ops/cicd.md` defines the **end-to-end promotion workflow** (ordered
+  hops + per-hop gate), and `test/levels.md` names the **e2e target environment** (the preview/e2e/staging env
+  e2e runs against) — a task that deploys to "the first env of the promotion path" or runs e2e "against the
+  deployed env" is dangling if these aren't pinned. Missing any is a delivery-readiness blocker.
 - **Artifact-staleness (grilled AND derived)** — does each artifact's content still follow from the CURRENT
   upstream? `guard_derived.py` proves a derived file wasn't hand-edited; it cannot prove it was re-derived
   after upstream moved, and it says nothing about a grilled artifact going stale. `check_freshness.py`

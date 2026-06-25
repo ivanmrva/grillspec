@@ -38,7 +38,13 @@ jobs:
       - name: config-drift regression suite — code-vs-declared env reconciliation still fires
         run: python3 plugin/tools/test_check_config_drift.py
 
-      - name: e2e gate-chain — the three accountability gates compose on a realistic project
+      - name: deploy-real regression suite — the fake-deploy tripwire still fires
+        run: python3 plugin/tools/test_check_deploy_real.py
+
+      - name: migration-real regression suite — the fake/empty-migration tripwire still fires
+        run: python3 plugin/tools/test_check_migration_real.py
+
+      - name: e2e gate-chain — the five accountability gates compose on a realistic project
         run: python3 plugin/tools/test_e2e_gates.py
 
       - name: build — all distribution artifacts compile

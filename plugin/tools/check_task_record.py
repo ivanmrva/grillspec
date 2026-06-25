@@ -8,6 +8,8 @@
 # reconciles the on-disk RECORDS against the task's frozen obligation set and fails the gate when:
 #   - a record CLAIMS done (`status: done`) but an obligation row is PENDING/FAIL/blank;
 #   - the record dropped an obligation the task references (you cannot shrink the bar by editing the record);
+#   - the record OMITS any standard gate row (tests-first/tests:layers/coverage/mutation/fitness*/spec-lint/
+#     deploy/traceability) — a required artifact or check silently dropped rather than shipped real or `N/A — why`;
 #   - the conformance row is not PASS, or no independent `VERDICT: PASS` for this T- exists on disk;
 #   - an AC-/API-/EVT- obligation has no passing row in the traceability matrix (tests-first, evidenced);
 #   - an evidence cell points at a path that does not exist (fabricated evidence);
@@ -66,14 +68,25 @@ OBLIGATION_DIMS = ("behavior", "domain", "data", "api", "security", "nfr", "inte
 # standard gate rows every task carries, beyond its referenced IDs (from the engine's done-gate).
 GATE_ROWS = [
     ("tests-first", "done-gate", "every AC- has a failing-capable test that drove the code"),
+    ("tests:layers", "test-strategy", "every test level the slice touches per the test strategy exists & passes (unit/integration/contract/e2e/NFR-evidence as applicable)"),
     ("coverage", "test-strategy", ">= ratified coverage bar"),
     ("mutation", "test-strategy", ">= ratified mutation bar on changed logic"),
     ("fitness:no-fakes", "done-gate", "no stub/mock/double/canned-response/unwired-fallback in src/"),
     ("fitness:architecture", "done-gate", "architecture fitness functions green"),
     ("spec-lint", "done-gate", "spec-lint clean"),
+    ("deploy", "infra-ops", "the slice deploys to the first env of the ratified promotion path and a green e2e/smoke ran AGAINST that deployed env (the behavioural proof — evidence is the run, not just that the deploy file exists); or 'N/A — no new deployable surface'. If the env can't run yet, 'blocked — <env> not provisioned' (escalated), never PASS and never silently skipped"),
     ("conformance", "review", "independent VERDICT: PASS for this T-"),
     ("traceability", "done-gate", "traceability matrix updated"),
 ]
+# every standard gate row must be CARRIED by a done-claim (present + PASS/'N/A — why') - omitting a row is the
+# silent scope reduction this gate exists to stop (the deploy script, the e2e layer, the traceability update, the
+# fitness run quietly dropped). The bar can't be shrunk by leaving a row out of the record. `conformance` is
+# excluded here only because it has its own richer check below (it needs an independent VERDICT on disk too).
+REQUIRED_GATE_ROW_KEYS = [k for (k, _src, _req) in GATE_ROWS if k != "conformance"]
+# evidence paths that must EXIST on disk when cited (a fabricated-evidence guard). Code/spec/test trees plus the
+# deploy-artifact homes, so a deploy row can't cite a CI/IaC file that isn't there.
+EVIDENCE_PREFIXES = ("src/", "tests/", "test/", "evidence/", "spec/",
+                     ".github/", "deploy/", "ops/", "infra/", "iac/", "k8s/", "helm/", "charts/", "terraform/")
 
 F = []
 def add(sev, where, msg): F.append((sev, where, msg))
@@ -258,6 +271,13 @@ for p in records:
     elif not review_pass_for(tid):
         add("ERROR", where, "conformance row says PASS but no independent 'VERDICT: PASS' for %s found on disk (review-report.md / %s/%s.md)." % (tid, VERIF.name, tid))
 
+    # 3b. no silent omission - a done-claim must CARRY every standard gate row. Omitting a row (rather than
+    #     marking it 'N/A — why') is the exact cheat where a required artifact/check is quietly dropped; the row
+    #     must be present and either PASS or an explained N/A (its value is then held by checks #2/#5/#6).
+    for needed in REQUIRED_GATE_ROW_KEYS:
+        if needed not in rows:
+            add("ERROR", where, "a done-claim must carry the '%s' gate row (present + PASS or 'N/A — why') — it cannot be omitted." % needed)
+
     # 4. tests-first evidence - each AC-/API-/EVT- obligation traced to a passing row in the matrix, AND each
     #    AC- actually present in the TEST SOURCE (the `@covers AC-NNN` tag) so the matrix can't claim a test the
     #    tree doesn't contain.
@@ -279,7 +299,7 @@ for p in records:
     for key, (st, ev) in rows.items():
         for tok in re.findall(r"[\w./-]+/[\w./-]+", ev):
             tok = tok.rstrip(".,;:")
-            if tok.startswith(("src/", "tests/", "test/", "evidence/", "spec/")) and not (ROOT / tok).exists():
+            if tok.startswith(EVIDENCE_PREFIXES) and not (ROOT / tok).exists():
                 add("ERROR", where, "row '%s' cites evidence '%s' which does not exist on disk." % (key, tok))
 
     # 6. numeric bars - coverage/mutation measured >= stated bar.

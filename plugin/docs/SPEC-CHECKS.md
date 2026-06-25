@@ -47,14 +47,15 @@ branch nobody modelled) · whether the model's *shape* fits the business. These 
 
 ## Beyond the spec — the build-accountability checks
 
-Distinct from these spec-structure tools, a second set governs that **generated code is built as the spec demands** (documented in `HOW-IT-WORKS.md`): `check_task_record.py` (the per-task Verification Record — every obligation evidenced, independent verdict on disk, tests-first via `@covers` tags), `check_no_fakes.py` (no test doubles in `src/`), and `check_config_drift.py` (code-read env vars ⊆ the declared `environments.md` matrix). They run in the code pre-commit + `code-ci.yml`, not the spec governance pipeline.
+Distinct from these spec-structure tools, a second set governs that **generated code is built as the spec demands** (documented in `HOW-IT-WORKS.md`): `check_task_record.py` (the per-task Verification Record — every obligation evidenced and **every standard gate row carried**, incl. `deploy` + `tests:layers`, independent verdict on disk, tests-first via `@covers` tags), `check_no_fakes.py` (no test doubles in `src/`), `check_deploy_real.py` (no faked/skipped deploy in the CI/deploy artifacts — GitHub/GitLab/Circle/Azure/Bitbucket/Drone/Cloud-Build/Jenkins configs, shell scripts, Dockerfiles, and `package.json`/`Makefile` deploy targets), `check_migration_real.py` (no faked/empty schema migration), and `check_config_drift.py` (code-read env vars ⊆ the declared `environments.md` matrix). They run in the code pre-commit + `code-ci.yml`, not the spec governance pipeline.
 
 ## Keeping the checks honest
 
 Every check carries a regression suite — each check has a fixture that must fire and a clean fixture that must
 not: `tools/test_lint_spec.py` (spec tools), and `test_check_task_record.py` · `test_check_no_fakes.py` ·
-`test_check_config_drift.py` for the accountability tools, plus `test_e2e_gates.py` which proves the three
-compose on one realistic project (a clean task passes all three; each cheat trips exactly the gate that owns it).
+`test_check_deploy_real.py` · `test_check_migration_real.py` · `test_check_config_drift.py` for the accountability
+tools, plus `test_e2e_gates.py` which proves the five compose on one realistic project (a clean task passes all
+five; each cheat trips exactly the gate that owns it).
 `selfcheck.py` keeps the `TYPES` prefix vocabulary in sync across `lint_spec.py`, `check_contracts.py`,
 `impact.py`, `spec_status.py`, `check_freshness.py`, and `check_task_record.py`, and against what the skills
 declare. All run in CI (`.github/workflows/plugin-check.yml`).
