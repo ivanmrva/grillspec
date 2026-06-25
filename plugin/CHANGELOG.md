@@ -4,6 +4,13 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.6.0
+
+### Added — check 11d: illegal downward *path* references (closing the upstream-only blind spot)
+The direction invariant (upstream-only references) was enforced only on ID *tokens* (11b/11c). A forward pointer written as a **file path or markdown link** carried no ID, so it slipped governance entirely — an L2 requirement could cite `infra-ops/prerequisites.md`, or an NFR could say "RPO target owned by infra-ops/test", and nothing flagged it. (How `06-requirements` artifacts ended up pointing down at `09-solution` in practice.)
+- **New check 11d.** Resolves a referenced path's first segment to its area layer (numbered stage prefix, or an unambiguous bare leaf like `infra-ops`/`arch`/`api`/`tasks`) and WARNs when it is strictly downstream of the citing file. Skips fenced code; exempts ADR sources (cite drivers by design), `traceability.md`, and spec-root orchestration files — same as the ID checks. `data`/`security`/`ml` (which live at both L2 and L5) only resolve via a numbered-prefix path, never the bare name, to avoid false positives. The message points at the fix: invert the reference (the downstream artifact cites the requirement) and a requirement states its own value rather than deferring it downstream.
+- **Audit.** A full per-layer sweep of all skill definitions + the three shared engines confirmed no skill *instructs* this defect: the upstream-only + own-your-value rules already exist and are strongly worded (grill-engine §user-owned-values names RTO/RPO; derive-engine "never invent a value the upstream should have carried"; audit-spec Phase 4 detects un-ratified values). The gap was purely mechanical enforcement of the path/link form, now closed.
+
 ## 4.5.1
 
 ### Fixed — `lint_spec.py` flagged literal external-vendor strings as spec violations inside code

@@ -366,6 +366,44 @@ for p, r in cmd_files():
                 gdn_seen.add((r, _t))
                 add("WARN", r, "illegal downward reference: L%d file -> %s (defined at L%d); references must be upstream-only. '%s-' is not a registered type, so this is the definition-anchored check — register '%s' (TYPES + ID_LAYER + PREFIX_OWNER) for full governance, or keep it local but reference it only from its own layer or below" % (fl, _t, _dl, _gpre(_t), _gpre(_t)), i)
 
+# 11d illegal downward PATH reference — the ID-direction checks (11b/11c) only see ID *tokens*. A forward
+# pointer written as a FILE PATH or markdown link into a downstream area ('infra-ops/prerequisites.md' cited
+# from an L2 requirement; 'RPO target owned by infra-ops/test') carries no id, so it slips the upstream-only
+# invariant entirely — exactly how a requirement/ADR ends up pointing down at the solution layer. This resolves
+# a path's first segment to its area layer and WARNs when it is strictly downstream of the citing file. Same
+# exemptions as the ID checks (ADR sources cite drivers by design · traceability is the trace spine · spec-root
+# orchestration files span layers) + the fenced-code skip. The fix is always to invert: the downstream artifact
+# references the requirement, and a requirement STATES its own value rather than deferring it downstream.
+STAGE_LAYER = {"04-domain":1,"05-functional-spec":2,"06-requirements":2,"11-commercial":2,
+    "07-design-system":3,"08-ux":4,"09-solution":5,"10-delivery":6,"12-operate":6,
+    "01-discovery":0,"02-product":0,"03-constraints":0,"03-system-context":0}
+# unambiguous bare leaf-area names — those living at exactly one layer. 'data'/'security'/'ml' exist at BOTH
+# L2 (06-requirements) and L5 (09-solution), so they are omitted: only a numbered-prefix path resolves them.
+BARE_AREA_LAYER = {"infra-ops":5,"arch":5,"api":5,"observability":5,"test":5,
+    "impl-design":6,"conventions":6,"tasks":6,"verification":6,
+    "quality":2,"integration":2,"entitlements":2,"compliance":2,
+    "monetization":2,"go-to-market":2,"growth":2,"design-system":3,"ux":4,"ddd":1}
+PATHTOK = re.compile(r"(?<![\w./-])((?:\.\.?/)*[\w][\w.-]*(?:/[\w.-]+)+)")
+def path_layer(pth):
+    p = pth
+    while p.startswith(("./", "../")): p = p.split("/", 1)[1]
+    if p.startswith("spec/"): p = p[5:]
+    seg0 = p.split("/", 1)[0]
+    return STAGE_LAYER[seg0] if seg0 in STAGE_LAYER else BARE_AREA_LAYER.get(seg0)
+pdn_seen = set()
+for p, r in cmd_files():
+    if is_adr_file(r) or os.path.basename(r) == "traceability.md" or ("/" not in r and r.startswith("_")): continue
+    fl = file_layer(r); fence = False
+    for i, l in enumerate(read(p).splitlines(), 1):
+        s = l.lstrip()
+        if s.startswith("```"): fence = not fence; continue
+        if fence or s.startswith("<!--"): continue
+        for mp in PATHTOK.finditer(l):
+            pth = mp.group(1); tl = path_layer(pth)
+            if tl is not None and tl > fl and (r, pth) not in pdn_seen:
+                pdn_seen.add((r, pth))
+                add("WARN", r, "illegal downward path reference: L%d file -> '%s' (L%d area); references must be upstream-only — invert it (the downstream artifact references this one), and a requirement STATES its own value, never defers it downstream" % (fl, pth, tl), i)
+
 # 12 no duplicate ID definition (an ID is defined in exactly one place)
 for tok, files in defsites.items():
     if len(files) > 1:

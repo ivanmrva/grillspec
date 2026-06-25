@@ -217,6 +217,21 @@ expect("tok-curly-fenced-ok", run(LINT, {"12-operate/rb.md": HDR + "\n```\n{{use
 expect("tok-curly-inline-ok", run(LINT, {"12-operate/rb.md": HDR + "\nclaim `{{user.role}}` in config\n"}),
        forbid=["placeholder/stale token"])
 
+# ── 11d illegal downward PATH reference: an upstream file pointing at a downstream area by path/link (the ID
+#    direction checks only see id tokens; this catches 'infra-ops/prerequisites.md' cited from a requirement). ──
+expect("path-downward-bare-warns", run(LINT, {"06-requirements/quality/nfrs.md": HDR + "\nRPO target owned by infra-ops/test.\n" + idtable(("NFR-1", "x"))}),
+       must=["illegal downward path reference", "infra-ops/test"])
+expect("path-downward-link-warns", run(LINT, {"06-requirements/security/authz.md": HDR + "\nSee [creds](09-solution/infra-ops/prerequisites.md).\n" + idtable(("SEC-1", "x"))}),
+       must=["illegal downward path reference"])
+expect("path-upstream-ok", run(LINT, {"09-solution/infra-ops/topology.md": HDR + "\nRealises 06-requirements/quality/nfrs.md.\n" + idtable(("MOD-1", "x"))}),
+       forbid=["illegal downward path reference"])
+expect("path-downward-fenced-ok", run(LINT, {"06-requirements/quality/nfrs.md": HDR + "\n```\ninfra-ops/prerequisites.md\n```\n" + idtable(("NFR-1", "x"))}),
+       forbid=["illegal downward path reference"])
+expect("path-adr-exempt", run(LINT, {"adr/ADR-SEC-4.md": "# ADR-SEC-4 thing\nStatus: accepted\nSee 09-solution/infra-ops/cicd.md.\n"}),
+       forbid=["illegal downward path reference"])
+expect("path-nonspec-ignored", run(LINT, {"06-requirements/quality/nfrs.md": HDR + "\nCode in src/billing/charge.py, docs at https://stripe.com/api/keys.\n" + idtable(("NFR-1", "x"))}),
+       forbid=["illegal downward path reference"])
+
 # ── check_contracts (needs PyYAML) ─────────────────────────────────────────
 if HAVE_YAML:
     OAPI = ("openapi: 3.1.0\ninfo: {title: T, version: 1.0.0}\n"
