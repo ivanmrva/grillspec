@@ -216,6 +216,13 @@ SEP = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
 def in_owner_area(tok, r):
     owner = PREFIX_OWNER.get(tok.split("-")[0].upper())
     return bool(owner) and (r == owner or r.startswith(owner + "/"))
+# Files under .../verification/ (the per-task Verification Records, review reports, the traceability matrix)
+# RECORD results ABOUT ids — they reference them (the record's H1 leads with its T-, every obligation row keys
+# on an AC-/API-/… it verifies), they never DEFINE one. So they are exempt from the definition-site scan, the
+# same reference-only nature as the traceability.md exemption (which lives in this directory). Without this, a
+# record's leading-ID lines register as out-of-area duplicate definitions of ids owned elsewhere.
+def is_verification_file(r):
+    return "/verification/" in "/" + r
 # An authorization matrix (header first-cell command/cmd/operation, other cols = actors) keys its rows by
 # CMD- as a ROW-KEY REFERENCE, not a definition (the command is defined in ddd). Precompute those body-row
 # line numbers so the definition scan skips them — same spirit as the traceability.md exemption.
@@ -233,7 +240,7 @@ for p, r in cmd_files():
         else:
             i += 1
 for p, r in cmd_files():
-    if os.path.basename(r) == "traceability.md": continue   # the traceability matrix references IDs (ID->task->code); it never defines them
+    if os.path.basename(r) == "traceability.md" or is_verification_file(r): continue   # verification records (incl. the traceability matrix) reference IDs; they never define them
     lines = read(p).splitlines()
     arows = authz_rows.get(r, ())
     for i, l in enumerate(lines):

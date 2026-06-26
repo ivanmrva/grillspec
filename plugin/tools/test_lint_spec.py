@@ -78,6 +78,18 @@ expect("duplicate-id", run(LINT, {
     "04-domain/ddd/b.md": idtable(("AGG-1", "Order2")),
 }), must=["defined in multiple files"])
 
+# a per-task Verification Record REFERENCES ids (its H1 leads with the T-, obligation rows key on the AC-/… it
+# verifies); it never DEFINES them, so it must NOT register as a duplicate / out-of-area definition.
+expect("verification-record-not-a-defsite", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-001", "Login"), ("AC-001a", "Valid login")),
+    "10-delivery/tasks/T-001.md": HDR + "\n# T-001 — Walking skeleton\nbehavior: AC-001a\n",
+    "10-delivery/verification/tasks/T-001.md":
+        HDR + "\n# T-001 — Verification Record\n\nstatus: in-progress\ntask: T-001\n\n"
+        "| Obligation | Source | Required | Evidence | Status |\n|---|---|---|---|---|\n"
+        "| AC-001a | behavior | test | tests/e2e/login.test.js | PASS |\n"
+        "| deploy | infra-ops | real | .github/workflows/deploy.yml | PASS |\n",
+}), must=["0 error(s)"], forbid=["defined in multiple files", "outside its owning area"])
+
 # ── structured-fact checks (this session) ──────────────────────────────────
 SM_BAD = HDR + "\n| ID | N |\n|---|---|\n| AGG-1 | Sub |\n\n### states\n" + \
     "| from | trigger | to | guard |\n|---|---|---|---|\n" + \

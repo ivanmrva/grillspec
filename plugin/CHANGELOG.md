@@ -4,6 +4,13 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.7.1
+
+### Fixed — `lint_spec.py` read per-task Verification Records as illegal ID *definitions*
+The definition-site scan (`DEF1` = an ID as the first token of a line/cell) matched a Verification Record's leading-ID lines — its `# T-NNN — Verification Record` H1, and (for a feature task) every obligation row keyed on the `AC-`/`API-`/… it verifies — so the record registered as *defining* ids it merely *references*. Result: a duplicate-ID error (#12) plus a defined-outside-owning-area error (#13) on every record, e.g. the freshly `--init`-ed `spec/10-delivery/verification/tasks/T-001.md`.
+- **Fix.** Files under `…/verification/` are now exempt from the definition-site scan — they record results *about* ids and never define one, the same reference-only nature as the existing `traceability.md` exemption (which lives in that directory). One exemption at the single `defsites`-population point clears both checks, for the H1 **and** the obligation rows, and validates **existing** on-disk records without regeneration (a title-only change couldn't, without `--force`-overwriting a filled-in record).
+- Regression test `verification-record-not-a-defsite` (H1 + an `AC-` obligation row); the `duplicate-id` test still fires, so the real define-once / owning-area checks aren't blunted.
+
 ## 4.7.0
 
 ### Added — deploy/CI + schema migrations are production too: realness gates that close the "silently skipped deploy" hole
