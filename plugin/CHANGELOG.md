@@ -4,6 +4,13 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.8.3
+
+### Fixed — two false-positive/over-strict findings surfaced by real derive-tasks output
+- **`lint_spec.py` false-fired `defined in multiple files` on the natural derive-tasks output.** `build-order.md` (the task register, whose rows key on `T-` ids) and each `T-NNN.md` (whose H1 leads with the same `T-` id) both live in `10-delivery/tasks/`, so the define-once scan counted every `T-` twice (68× on a real 68-task project). `build-order.md` is a register that *references* the per-file definitions — exactly like `traceability.md` and the verification records, which were already exempt. **Fix:** exempt `build-order.md` from the definition-site scan; its `T-` row-keys now resolve as references. Removes the backtick-the-register workaround.
+- **16b `JRN→UC` had no `N/A` escape, but Generic/unmodeled-subdomain journeys legitimately have no `UC-`.** A journey rendering a deliberately-unmodeled **Generic** subdomain (passwordless auth, tier/billing — identity/billing kept Generic, not modelled as use-cases) had no `UC-` to cite and no escape, forcing a mis-citation. **Fix:** `JRN→UC` now allows `N/A — why` (matching its sibling `ML→UC`); a journey declares `N/A — renders <Generic subdomain>, unmodeled`. `SLO→NFR` stays strict **by design** — an SLO operationalises an NFR by definition (a missing NFR is the gap to catch, not an escapable case), so the `N/A` allowance is set per-edge by whether a legitimate no-driver case exists. `grill-ux-reqs` rule + `SPEC-CHECKS.md` updated; the per-edge rationale is documented at the `BACKREF` table.
+- Regression tests `build-order-register-not-a-defsite` and `backref-jrn-na-ok`.
+
 ## 4.8.2
 
 ### Changed — `derive-tasks` manifest is one uniform two-column `field | value` table (refines the 4.8.1 split-fix)

@@ -240,7 +240,7 @@ for p, r in cmd_files():
         else:
             i += 1
 for p, r in cmd_files():
-    if os.path.basename(r) == "traceability.md" or is_verification_file(r): continue   # verification records (incl. the traceability matrix) reference IDs; they never define them
+    if os.path.basename(r) in ("traceability.md", "build-order.md") or is_verification_file(r): continue   # registers/records key rows on IDs as REFERENCES to the per-item definitions, never define one: the traceability matrix, the task build-order register (rows key on T- → the per-task T-NNN.md), and the verification records
     lines = read(p).splitlines()
     arows = authz_rows.get(r, ())
     for i, l in enumerate(lines):
@@ -659,8 +659,13 @@ for cpre, ppre, keyed, pname, conv in CHILD_PARENT:
 #     'where-modelled' is author judgment (DATA->AGG) stay a FORMAT mandate - not mechanically decidable, so
 #     enforcing them would false-fire. Suppressed when the parent's whole type is absent (a partial spec
 #     mid-derivation isn't penalised), mirroring the coverage check's premature-warning guard.
+# allow_na (3rd field) = may declare 'N/A - why' instead of citing a driver, set PER-EDGE by whether a
+# LEGITIMATE no-driver case exists: a JRN- can render a Generic/deliberately-unmodeled subdomain (passwordless
+# auth, tier/billing) the functional spec has no UC- for; an ML- capability can be internal with no user-facing
+# UC-. SLO- is withheld (strict) - it operationalises an NFR BY DEFINITION (observability: 'an SLO can't float
+# free of a requirement'), so a missing NFR is the gap to catch, not an escapable case.
 BACKREF = [
-    ("JRN", ("UC",),  False, "the use-case (UC-) it renders"),
+    ("JRN", ("UC",),  True,  "the use-case (UC-) it renders"),
     ("SLO", ("NFR",), False, "the NFR (NFR-) it operationalises"),
     ("ML",  ("UC",),  True,  "the use-case (UC-) it serves"),
 ]

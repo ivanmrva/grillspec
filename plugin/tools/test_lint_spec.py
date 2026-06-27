@@ -264,6 +264,22 @@ expect("impl-design-trace-ok", run(LINT, {
     "10-delivery/impl-design/reschedule.md": HDR + "\nimplements MOD-7 · serves T-31\nalgorithm: load, mutate, persist.\n",
 }), forbid=["impl-design doc names no"])
 
+# build-order.md is a task REGISTER (rows key on T- as REFERENCES to the per-file defs) — not a defsite, so a
+# T- leading both build-order.md and its own T-NNN.md must NOT fire 'defined in multiple files' (same exemption
+# class as traceability.md / verification records)
+expect("build-order-register-not-a-defsite", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "x")),
+    "10-delivery/tasks/T-001.md": idtable(("T-001", "Walking skeleton")) + "\nimplements UC-1\n",
+    "10-delivery/tasks/T-002.md": idtable(("T-002", "Pay")) + "\nimplements UC-1\n",
+    "10-delivery/tasks/build-order.md": HDR + "\n| task | depends | phase |\n|---|---|---|\n| T-001 | — | MVP |\n| T-002 | T-001 | MVP |\n",
+}), forbid=["defined in multiple files"])
+
+# 16b JRN->UC now allows the 'N/A — why' escape (a journey rendering a Generic/unmodeled subdomain with no UC-)
+expect("backref-jrn-na-ok", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "x")),
+    "08-ux/journeys.md": HDR + "\n**JRN-9 · Passwordless auth (N/A — renders Generic identity, unmodeled)**\n1. enter email\n",
+}), forbid=["JRN-9 must cite"])
+
 # INV- is a registered domain id-type: an aggregate invariant carries an INV- id an AC can trace to
 expect("invariant-id-registered", run(LINT, {
     "04-domain/ddd/tactical/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-201 OwningBranchFixed — branch set at creation\n",
