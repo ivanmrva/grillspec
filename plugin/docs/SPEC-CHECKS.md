@@ -16,6 +16,7 @@ judgment skill, not a check.
 | **Structure & closed world** | files only at allowed paths · every file has a `scope/excludes/format` header · no placeholder/stale tokens · no dangling local links · ADR filename `ADR-<AREA>-NNN.md` | ERROR |
 | **Stable-ID spine** | every referenced ID resolves · defined exactly once · defined only in its owning area (stage purity) · bare type-prefix only (no `<CTX>-AGG-1`) · **references are upstream-only** (no layer points down) | ERROR |
 | **Child→parent keying** | every `AC-` keys to a real `UC-`; every `ASR-` to a real `NFR-` | ERROR |
+| **Derived→driver backref** | a derived id cites its driver, co-located on its own definition row/block: `JRN-`→`UC-`, `SLO-`→`NFR-`; `ML-`→`UC-` (or `N/A — why`); an impl-design `<module>.md` names its `MOD-` + `T-` | ERROR (impl-design WARN) |
 | **Structural coverage** (gap surface) | every `CMD-`→`UC-`→`AC-`→`T-` · `EVT-` has a consumer · `OBL-`→control · **`THR-`→`SEC-`** · `NFR-`→`ASR-`/`SLO-` · `API-`→consumer | WARN |
 | **State machines** (ddd) | a `from·trigger·to·guard` table has no **unreachable** state, no **dead-end** (non-terminal with no exit), no **nondeterministic** transition (same from+trigger, no guard) | WARN |
 | **Authorization** | every command has a rule (default-deny) · no blank decision cell — in either the command×actor matrix or the `SEC-` long-form | WARN |

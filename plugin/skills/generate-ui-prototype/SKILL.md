@@ -18,7 +18,7 @@ argument-hint: the UI slice (its screen[s], from the UX requirements + design sy
 ## Process
 1. **Take the slice's screen(s)** from the UX requirements — the journey step, its place in the information architecture, and its required interaction states.
 2. **Render each screen** from the **real design-system tokens & components** (semantic/component tokens, the actual component variants/states — never ad-hoc styling), covering every interaction state (empty · loading · success · error · permission-denied).
-3. **Wire it into the navigation** the IA defines (so it clicks through in context); cross-link the screen to its `UC-`/`DS-` IDs.
+3. **Wire it into the navigation** the IA defines (so it clicks through in context); cross-link the screen to its `JRN-` journey + `UC-`/`DS-` IDs (the journey **by `JRN-` id**, never by its prose name — the same id the slice's `ux` dimension references).
 4. **Freeze it into the task** as the `ux` resolution; **regenerate** on a UX/design-system change (propagation re-flags it) — it's a projection, not hand-maintained.
 
 ## Rules
@@ -33,8 +33,8 @@ Written under `prototypes/ui/` (repo root, a non-spec zone):
 
 | File | Captures | Format |
 |---|---|---|
-| `<screen>.html` | the slice's screen: real components + tokens · all interaction states · wired into the IA's navigation · linked to `UC-`/`DS-` IDs | self-contained HTML |
-| `flows.md` | per journey: the screen → screen path, mapped to its `UC-` IDs | journey · screens · UC- |
+| `<screen>.html` | the slice's screen: real components + tokens · all interaction states · wired into the IA's navigation · linked to `JRN-`/`UC-`/`DS-` IDs | self-contained HTML |
+| `flows.md` | per journey (keyed by its `JRN-` id): the screen → screen path, mapped to its `UC-` IDs | journey (`JRN-`) · screens · UC- |
 
 (generated per ux-heavy UI slice at its finalization; the screens accrete as UI slices are finalized — the global structure is the UX-requirements IA + the design system, not a separate pass; no spec changes)
 Consumes: the UX requirements (the slice's journey · its IA placement · interaction states), the design system (tokens · components), and the slice's use-cases.

@@ -22,8 +22,11 @@ conflate them.
 ## The two boundaries this skill lives between
 - **Below it — the linter.** Already enforces (don't repeat): closed-world & paths · file headers ·
   placeholders · dangling links · stable-ID resolution · **upstream-only reference direction** ·
-  define-once · stage-purity · namespaced-ID ban · the `CMD-→UC-→AC-→T-` coverage chain · `THR-→SEC-` ·
-  child→parent keying (`AC-`→`UC-`, `ASR-`→`NFR-`) · per-`T-` unresolved-gap (ERROR) · task-graph
+  define-once · stage-purity · namespaced-ID ban · the downstream-coverage map (`CMD-→UC-→AC-→T-`,
+  `AGG-→DATA-`, `NFR-→ASR-/SLO-`, `OBL-→control`, `EVT-→consumer`, …) · `THR-→SEC-` ·
+  child→parent keying (`AC-`→`UC-`, `ASR-`→`NFR-`) · **derived→driver backref presence** (`JRN-`→`UC-`,
+  `SLO-`→`NFR-`, `ML-`→`UC-`, each cited co-located on the child's own definition; an impl-design
+  `<module>.md` names its `MOD-` + `T-`) · per-`T-` unresolved-gap (ERROR) · task-graph
   acyclicity (the `depends-on` DAG, ERROR) · task→upstream traceability · NFR `enforced-by` · module `role:` ·
   ADR status · **state-machine integrity (unreachable / dead-end / nondeterministic states)** ·
   **authorization completeness (every command has a rule; no blank decision cell)** · **typed-field
@@ -160,7 +163,7 @@ failure this phase exists to prevent.
 - **Per buildable slice (`T-`):** would the coding agent have everything and guess NOTHING? All
   referenced IDs resolve and are settled (no `UNRESOLVED` it needs — `blocking` if not); its scoped inputs
   exist (boundary contracts + architecture seam + declared `role:` + conventions + relevant glossary; a UI
-  slice has its `DS-` contract + the kept prototype); the test strategy MANUFACTURES the slice's edges;
+  slice has its `DS-` contract + its `JRN-` journey reference (+ the interaction-states it realises) + the kept prototype, and its `prototype-review` gate is settled — auto-AFK passed, or any HITL `visual/UX decision` escalation resolved (an open prototype-review HITL is `blocking`)); the test strategy MANUFACTURES the slice's edges;
   every decision the code needs is in the spec or an ADR. Zero load-bearing ambiguity. **Any non-`N/A`
   `human-prereq` on the slice is resolved (provisioned) or explicitly waived** — a slice that can't be built
   without an unmet human action is not ready (`blocking`).

@@ -70,7 +70,7 @@ spec/
 │
 ├── 07-design-system/      grill-design-system          tokens(DTCG)·components·a11y·brand·voice  (DS-)      grill
 │                           └─ its OWN layer (L3 · the visual + interaction contract; consumes requirements). The token ASSET lives in the non-spec `design-system/` zone; this area is its `DS-` contract over it.
-├── 08-ux/                  grill-ux-reqs                journeys·info-needs·IA·a11y·i18n (L4 · no ids — a synthesis of the design system + requirements)   grill
+├── 08-ux/                  grill-ux-reqs                journeys·info-needs·IA·a11y·i18n (L4 · `JRN-` journeys — a synthesis of the design system + requirements)   grill
 │   ───────────────── ARCHITECTURE-READINESS GATE ─────────────────
 ├── 09-solution/            (DERIVED — the how)
 │   ├── arch/            derive-architecture  style·C4·stack·contexts→services·module map+seam contracts  DERIVE  [GATE]
@@ -110,7 +110,7 @@ tier 1  (each depends on a tier-0 sibling):
 
 **`07-design-system/` (L3) → `08-ux/` (L4)** — their own layers, above requirements and below the solution:
 `design-system ─▶ quality` (the visual + interaction contract), then `ux ─▶ design-system, quality` (journeys
-synthesise both; mint no ids). The split into two numbered layers is deliberate — they are *experience design*,
+synthesise both; mint `JRN-` ids). The split into two numbered layers is deliberate — they are *experience design*,
 not constraint-requirements, and the upstream-only rule now enforces the direction (requirements can't reference
 the design system; the design system can't reference ux).
 

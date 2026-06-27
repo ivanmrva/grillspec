@@ -71,7 +71,7 @@ STAGE 2 · REQUIREMENTS (derive[domain] + reference[product,constraints] + elici
 STAGE 3 · DESIGN SYSTEM (the visual + interaction contract — its own layer; consumes requirements)
         design-system        tokens(DTCG) · components · a11y · brand · voice  (DS-)                 → 07-design-system/   (grilled; a provided export as base, or generated)
 STAGE 4 · UX (the experience — journeys synthesise the design system + the requirements)
-        ux-reqs              journeys · info-needs · IA · a11y · i18n  (no ids — a synthesis)         → 08-ux/   (grilled)
+        ux-reqs              journeys · info-needs · IA · a11y · i18n  (`JRN-` journeys — a synthesis)  → 08-ux/   (grilled)
         ───────────────── ARCHITECTURE-READINESS GATE ─────────────────
 STAGE 5 · SOLUTION (the how)
         derive-architecture · derive-data-architecture · derive-api-contracts ·

@@ -4,6 +4,20 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.8.2
+
+### Changed — `derive-tasks` manifest is one uniform two-column `field | value` table (refines the 4.8.1 split-fix)
+4.8.1 killed the "see table below" split by going to a field list. This refines that: the manifest is a **single `field | value` table** — one row per dimension (title/phase/afk/outcome on their own rows), no dimension escaping to a side block — and the two sub-structured fields render their structure **inside their own cell** with `<br>` line-breaks (a markdown cell can't hold a nested pipe-table). `behavior` is one `<br>`-line per `UC-` with its `AC-`s on following lines; `tests` is one `<br>`-line per AC inside the `tests` cell (`AC-id — tiers — test intent`), never a "table below" pointer and never a re-echoed `@covers` tag. Keeps the uniform table operators preferred while eliminating the split. SKILL.md + Output table + worked example all updated.
+
+### Fixed — propagated 4.8.0/4.8.1 into the human-facing enumerations + freshened `audit-spec` (a consistency sweep found the doc-drift the tools couldn't)
+The 4.8.0/4.8.1 changes (the `JRN-`/`INV-` id types, the 16b/16c backref-presence checks, the task-manifest format) were live in the tools but several authoritative *descriptions* of the system still predated them. A full-project sweep fixed all of them:
+- **`dependencies.json`** — `ddd.produces_ids` now lists `INV` and `ux-reqs.produces_ids` now lists `JRN` (both owned per `lint_spec.py PREFIX_OWNER` but previously unclaimed); `docs/DEPENDENCY-GRAPH.md` regenerated to match.
+- **`audit-spec`** — its "Below it — the linter (don't repeat)" enumeration now names the **16b/16c derived→driver backref-presence checks** (`JRN-`→`UC-`, `SLO-`→`NFR-`, `ML-`→`UC-`; impl-design `<module>.md`→`MOD-`/`T-`) and the fuller downstream-coverage map, so an auditor doesn't redundantly hand-judge them; **Phase 4 per-`T-` readiness** now checks the UI slice's `JRN-` journey reference and that its **`prototype-review` gate is settled** (an open HITL `visual/UX decision` escalation is `blocking`).
+- **`generate-ui-prototype`** — `flows.md` is now keyed by the journey's `JRN-` id (it was keyed on the journey but carried only `UC-`/`DS-`, the anchorless pattern `JRN-` exists to kill); SKILL + worked example updated.
+- **`docs/SPEC-CHECKS.md`** (map of every check) gains a **Derived→driver backref** row; **`docs/HOW-IT-WORKS.md`** and **`repo-layout.md` / conductor** corrected (08-ux now mints `JRN-`, no longer "no ids — a synthesis").
+
+No tool/behaviour change — documentation and the dependency-graph data only.
+
 ## 4.8.1
 
 ### Changed — `derive-tasks`: the task manifest is a field list with the tests table inline, and `@covers` is no longer echoed in the manifest

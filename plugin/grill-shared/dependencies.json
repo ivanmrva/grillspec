@@ -108,6 +108,7 @@
         "EVT",
         "AGG",
         "VO",
+        "INV",
         "ENT",
         "POL",
         "RM",
@@ -199,7 +200,9 @@
         "quality",
         "product-vision"
       ],
-      "produces_ids": [],
+      "produces_ids": [
+        "JRN"
+      ],
       "method": "grill"
     },
     "design-system": {

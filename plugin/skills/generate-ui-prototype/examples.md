@@ -13,12 +13,12 @@ A clickable, high-fidelity reference for **one UI slice** — the *customer-deta
 
 **Wired into the IA:** clicks in from *branch/slot* and out to *confirm & pay* — that nav comes from the UX-requirements information architecture, not a generated index gallery.
 
-**IDs this screen carries:** `UC-BookRepair` (step 2 of the flow) · `DS-Input`, `DS-Button`, `DS-Banner` (the components instantiated).
+**IDs this screen carries:** `JRN-07` (the book-a-repair journey it sits in) · `UC-BookRepair` (step 2 of the flow) · `DS-Input`, `DS-Button`, `DS-Banner` (the components instantiated).
 
 `prototypes/ui/flows.md` (accretes as UI slices are built):
 
-| journey | screens | UC- |
+| journey (`JRN-`) | screens | UC- |
 |---|---|---|
-| Book a repair | branch/slot → **customer-details** → confirm-pay → confirmed | UC-BookRepair |
+| `JRN-07` Book a repair | branch/slot → **customer-details** → confirm-pay → confirmed | UC-BookRepair |
 
 (self-contained HTML, click-through with no build step; **regenerated for this slice's screen** on any UX-requirement or design-system change — a pure projection, never hand-maintained. No spec changes.)

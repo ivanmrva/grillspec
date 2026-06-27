@@ -16,7 +16,7 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `product-vision` | grill-product-vision | elicit | problem-validation | CA- |
 | `system-context` | grill-system-context | elicit | customer-discovery, constraints | IF- |
 | **1 · Domain** | | | | |
-| `ddd` | grill-ddd | model | product-vision, constraints, system-context | CMD-, EVT-, AGG-, VO-, ENT-, POL-, RM-, HOT-, SVC-, REPO-, FAC- |
+| `ddd` | grill-ddd | model | product-vision, constraints, system-context | CMD-, EVT-, AGG-, VO-, INV-, ENT-, POL-, RM-, HOT-, SVC-, REPO-, FAC- |
 | **2 · Requirements** | | | | |
 | `compliance` | grill-compliance | elicit | constraints | OBL- |
 | `data-reqs` | grill-data-reqs | derive | ddd | DATA- |
@@ -29,7 +29,7 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | **3 · Design system** | | | | |
 | `design-system` | grill-design-system | elicit | quality | DS- |
 | **4 · UX** | | | | |
-| `ux-reqs` | grill-ux-reqs | derive | derive-functional, ddd, design-system, quality, product-vision | — |
+| `ux-reqs` | grill-ux-reqs | derive | derive-functional, ddd, design-system, quality, product-vision | JRN- |
 | **5 · Solution** | | | | |
 | `derive-api-contracts` | derive-api-contracts | derive | ddd, integration-reqs, security-reqs, derive-architecture | API- |
 | `derive-architecture` | derive-architecture | derive | derive-functional, ddd, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, entitlements | MOD- |
@@ -79,7 +79,7 @@ flowchart TD
     system_context["system-context<br/>IF-"]
   end
   subgraph stage_1_domain["1 · Domain"]
-    ddd["ddd<br/>CMD- EVT- AGG- VO- ENT- POL- RM- HOT- SVC- REPO- FAC-"]
+    ddd["ddd<br/>CMD- EVT- AGG- VO- INV- ENT- POL- RM- HOT- SVC- REPO- FAC-"]
   end
   subgraph stage_2_requirements["2 · Requirements"]
     compliance["compliance<br/>OBL-"]
@@ -95,7 +95,7 @@ flowchart TD
     design_system["design-system<br/>DS-"]
   end
   subgraph stage_4_ux["4 · UX"]
-    ux_reqs["ux-reqs"]
+    ux_reqs["ux-reqs<br/>JRN-"]
   end
   subgraph stage_5_solution["5 · Solution"]
     derive_api_contracts["derive-api-contracts<br/>API-"]
