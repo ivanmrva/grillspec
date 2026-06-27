@@ -4,6 +4,16 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.7.2
+
+### Fixed — `lint_spec.py` read a downstream *trace table* keyed on an upstream ID as an illegal re-definition
+The definition-site scan (`DEF1` = an ID as the first token of a line/cell) registered a leading-cell ID as a *definition* regardless of area, while the inline-pair scan (`DEF3` = `<ID> <Name>`) already treated a leading ID as a definition only *inside its owning area* and as a reference elsewhere. So any downstream trace/evidence table keyed on the upstream ID it traces — exactly what `derive-architecture`'s `09-solution/arch/quality.md` does, one `ASR-` per row — false-fired both a duplicate-ID error (#12) and a defined-outside-owning-area error (#13). The skill's own worked example produced a guaranteed-non-clean spec, and the same false positive recurred across every derive worker that keys a trace/evidence table on an upstream ID.
+- **Fix.** A leading-cell ID now registers as a *definition* only inside its owning area, mirroring `DEF3`. A **foreign** leading ID is a trace-table **row-key reference** — credited as a reference (so it resolves to its upstream definition and gives the upstream ID downstream-coverage credit), skipping table-header and authz-matrix rows. The misplaced-definition hole stays closed: a foreign leading ID that resolves to nothing upstream still errors, now as the more accurate `reference to undefined ID` rather than `outside its owning area`. General, not a per-file exemption — it clears the same class of false positive across all derive workers, so the `quality.md` example needs no change.
+- Regression tests `foreign-leading-id-is-a-reference` (clean) and `foreign-leading-id-undefined-still-errors` (hole stays closed); the `duplicate-id` / owning-area checks still fire for real in-area collisions.
+
+### Changed — `derive-engine` house style: linter-safe ID forms
+Added a "Linter-safe ID forms" block to the shared derivation house style (applies to every derive worker), folding in the surface forms that the traceability tokenizer mis-reads and that cost recurring remediation rounds: cite an ADR by its **bare ID**, never as a link to its file; an ID is `PREFIX-NUMBER`/`PREFIX-CODE-NUMBER`, never `PREFIX-word`; no `area/word` slashes in prose; dot a suffix only for a real field ID; a YAML contract's `x-grillspec-id` is reference-only. It also records that keying a trace/evidence table on the upstream ID is now legitimate (the fix above).
+
 ## 4.7.1
 
 ### Fixed — `lint_spec.py` read per-task Verification Records as illegal ID *definitions*

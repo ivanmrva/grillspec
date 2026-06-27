@@ -250,7 +250,12 @@ for p, r in cmd_files():
             continue                                         # authz-matrix body row — leading CMD- is a row-key reference, not a definition
         l = RANGE.sub(" ", l)                                # drop numeric range/list shorthand before tokenizing
         m = DEF1.match(l)
-        if m: defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
+        # A leading-cell id is a DEFINITION only INSIDE its owning area (same structural rule DEF3 uses for
+        # inline '<ID> <Name>'). A FOREIGN id leading a row is a trace/evidence-table ROW KEY — a reference to
+        # an id defined upstream (an ASR keyed in 09-solution/arch/quality.md, a CMD keyed in an authz matrix),
+        # not a re-definition. Crediting it as a definition here is what false-fired 'defined in multiple files'
+        # + 'defined outside its owning area' on every such trace table; it is picked up as a reference below.
+        if m and in_owner_area(m.group(1), r): defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
         for m in DEF2.finditer(l): defined.add(m.group(1)); defsites.setdefault(m.group(1), set()).add(r)
         for m in DEF3.finditer(l):                           # inline '<ID> <Name>' is a definition ONLY in the id's owning area; elsewhere it's a reference
             if in_owner_area(m.group(1), r):
@@ -281,10 +286,18 @@ def note_ref(tok, r, i, selfid):
     # (the illegal-downward-reference check is NOT here — it runs comprehensively over every id token below,
     #  not only reference-detected ones, so a downward id in plain prose can't evade the upstream-only invariant.)
 for p, r in cmd_files():
-    for i, l in enumerate(read(p).splitlines(), 1):
+    rlines = read(p).splitlines()
+    arows = authz_rows.get(r, ())
+    for i, l in enumerate(rlines, 1):
+        is_header = ("|" in l and i < len(rlines) and SEP.match(rlines[i]))   # the row whose NEXT line is the |---| separator
         l = RANGE.sub(" ", l)                                # drop numeric range/list shorthand before tokenizing
         m = DEF1.match(l)
         selfid = m.group(1) if m else None      # the ID this row defines - don't count it as a self-reference
+        # a FOREIGN id leading a body row is a trace/evidence-table ROW KEY → a REFERENCE to its upstream
+        # definition (the mirror of the owning-area guard in the definition pass). Skip table headers (first
+        # cell is a column label) and authz-matrix rows (credited via their own CMD- handling elsewhere).
+        if m and not in_owner_area(m.group(1), r) and not is_header and i not in arows:
+            note_ref(m.group(1), r, i, None); selfid = None
         for mk in REFMARK.finditer(l):
             for tok in IDTOK.findall(mk.group(1)):
                 note_ref(tok, r, i, selfid)

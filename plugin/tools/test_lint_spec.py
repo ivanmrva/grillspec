@@ -90,6 +90,23 @@ expect("verification-record-not-a-defsite", run(LINT, {
         "| deploy | infra-ops | real | .github/workflows/deploy.yml | PASS |\n",
 }), must=["0 error(s)"], forbid=["defined in multiple files", "outside its owning area"])
 
+# a downstream TRACE/EVIDENCE table keyed on an UPSTREAM id (09-solution/arch/quality.md keying its rows on the
+# ASR- it realizes, the same shape traceability.md uses) is a row-key REFERENCE, not a re-definition — it must
+# NOT false-fire 'defined in multiple files' / 'outside its owning area'. The id resolves to its upstream def.
+expect("foreign-leading-id-is-a-reference", run(LINT, {
+    "06-requirements/quality/q.md": HDR + "\n| ID | attr | response | enforced-by |\n|---|---|---|---|\n"
+        "| NFR-3 | scale | 10x | load test |\n| ASR-3 | scale | 10x | load test |\n",
+    "09-solution/arch/quality.md": HDR + "\n| ASR | Tactic | C4 location | Fitness function |\n|---|---|---|---|\n"
+        "| ASR-3 | bulkhead | service X | p95<200ms load test |\n",
+    "10-delivery/tasks/T-1.md": HDR + "\n# T-1\nverifies ASR-3 and NFR-3\n",
+}), must=["0 error(s)"], forbid=["defined in multiple files", "outside its owning area", "undefined ID"])
+# but a foreign id leading a row that resolves to NOTHING upstream is still caught — now as a precise
+# 'undefined ID' (the misplaced-definition hole stays closed).
+expect("foreign-leading-id-undefined-still-errors", run(LINT, {
+    "06-requirements/quality/q.md": idtable(("NFR-1", "lat")),
+    "09-solution/arch/quality.md": HDR + "\n| ASR | Tactic | Fitness function |\n|---|---|---|\n| ASR-77 | bulkhead | load test |\n",
+}), must=["undefined ID 'ASR-77'"])
+
 # ── structured-fact checks (this session) ──────────────────────────────────
 SM_BAD = HDR + "\n| ID | N |\n|---|---|\n| AGG-1 | Sub |\n\n### states\n" + \
     "| from | trigger | to | guard |\n|---|---|---|---|\n" + \
