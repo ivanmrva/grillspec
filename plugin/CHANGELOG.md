@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.8.1
+
+### Changed — `derive-tasks`: the task manifest is a field list with the tests table inline, and `@covers` is no longer echoed in the manifest
+The 4.8.0 AC-keyed tests table could get exiled to a "see table below" pointer when a task was rendered as a two-column `Dimension | Reference` table — a markdown cell can't hold a sub-table. The format now states explicitly: the manifest is a **field list** (`field: value` lines), and the **`AC-`-keyed tests table sits inline directly under `tests:`**, never a pointer to a table elsewhere. The table's third column is the **test intent** (the behaviour that pins the AC), not a re-echoed `@covers AC-` tag — tagging the actual test with the AC id is a test-file convention owned by `derive-conventions`, and the gate (`check_task_record.py`) only greps for the AC *id* in `tests/`, never the literal `@covers` string, so the manifest has no reason to restate it. Guidance + worked example updated; affects newly-generated tasks.
+
 ## 4.8.0
 
 ### Added — `JRN-` (journeys) and `INV-` (invariants) as first-class IDs, so downstream artifacts trace to them by id
