@@ -16,11 +16,11 @@ C4Container
 
 Module map (`modules.md`) — the **seam contracts** independent slices integrate against (internals are **not** designed here):
 
-| Module | Role | Dep direction | Seam interface |
-|---|---|---|---|
-| Ordering | domain | inward only (no infra deps) | `placeOrder(cmd) → OrderId` · emits `OrderPlaced` |
-| PaymentsGateway | driven-port | domain depends on the port, not the adapter | `authorize(orderId, amount) → AuthResult` |
-| OrderEventsPublisher | adapter | implements a driven-port | publishes to `order.events` (keyed by orderId) |
+| Module | Role | Realises | Dep direction | Seam interface |
+|---|---|---|---|---|
+| Ordering | domain | `AGG-Order` · `UC-014` (capture) | inward only (no infra deps) | `placeOrder(cmd) → OrderId` · emits `OrderPlaced` |
+| PaymentsGateway | driven-port | `AGG-Order` (authorize step) | domain depends on the port, not the adapter | `authorize(orderId, amount) → AuthResult` |
+| OrderEventsPublisher | adapter | N/A — technical (event transport) | implements a driven-port | publishes to `order.events` (keyed by orderId) |
 
 ASR → tactic → location → fitness function (`quality.md`):
 
@@ -30,4 +30,4 @@ ASR → tactic → location → fitness function (`quality.md`):
 
 Key sequence (`sequences.md`) — the critical-failure path: Payments down at capture time → order is still placed, `OrderPlaced` is queued, authorization is retried on recovery (idempotent by `orderId`).
 
-Recorded: style (event-driven + per-context services), the async ADR **with its double-charge risk as the ADR consequence**, the module map + seam contracts (what slices build against), the tactic + fitness function for `ASR-003`, the critical-failure sequence. Every context placed; the seams are fixed — an agent could build the capture path with no further architectural decision, and **module internals are left to per-slice JIT design**.
+Recorded: style (event-driven + per-context services), the async ADR **with its double-charge risk as the ADR consequence**, the module map + seam contracts (what slices build against, each module recording the `AGG-`/`UC-` it realises or `N/A — why`), the tactic + fitness function for `ASR-003`, the critical-failure sequence. Every context placed; the seams are fixed — an agent could build the capture path with no further architectural decision, and **module internals are left to per-slice JIT design**.

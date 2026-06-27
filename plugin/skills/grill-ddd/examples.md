@@ -21,8 +21,8 @@ flowchart LR
 ```
 AGG-Job   (root: Job)
   invariants:
-    - the owning branch is fixed at creation (never reassigned)
-    - one Technician holds at most one Job per time-slot   (cross-aggregate → policy below)
+    - INV-201 OwningBranchFixed — the owning branch is fixed at creation (never reassigned)
+    - INV-202 NoDoubleBookedTech — one Technician holds at most one Job per time-slot   (cross-aggregate → policy below)
   state model:  Requested → Scheduled → CheckedIn → Completed
                 guards: CheckIn only from Scheduled · Complete only from CheckedIn · no Reschedule after CheckedIn
   transaction boundary: the Job only — Technician availability is a separate aggregate
@@ -42,4 +42,4 @@ AGG-Job   (root: Job)
 ## Output — `strategic/hotspots.md`
 `HOT-001 · Scheduling · can one Job be split across two technicians (parallel parts)? — open; blocks the reschedule rule`
 
-Recorded: two contexts seamed at the pivotal check-in; **one typed, directed relationship** (Customer-Supplier, Scheduling upstream); **AGG-Job as a single block** — root · invariants · **state model with transition guards** · tx-boundary · commands · events · size — its cross-aggregate invariant naming a **`whenever EVT-… then CMD-…`** policy; **value objects made first-class** (Slot/Money/typed-Id carry their own rules); a hotspot left open, not papered over. Every command produces an event; the double-book rule holds **eventually** via the reservation policy, not inside the Job transaction.
+Recorded: two contexts seamed at the pivotal check-in; **one typed, directed relationship** (Customer-Supplier, Scheduling upstream); **AGG-Job as a single block** — root · `INV-`-id'd invariants (so an `AC-` can trace to the exact rule) · **state model with transition guards** · tx-boundary · commands · events · size — its cross-aggregate invariant naming a **`whenever EVT-… then CMD-…`** policy; **value objects made first-class** (Slot/Money/typed-Id carry their own rules); a hotspot left open, not papered over. Every command produces an event; the double-book rule holds **eventually** via the reservation policy, not inside the Job transaction.

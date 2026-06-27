@@ -20,7 +20,7 @@ Recorded: one governed data-class, personal, with split residency/sovereignty an
 - retention: TTL 24 months · deletion trigger = job closed → purge (warranty window)
 - residency: eu-central-1 (Frankfurt)
 - sovereignty: US — parent company US-incorporated, subject to lawful compulsion (flag: needs counsel)
-- lineage: origin = booking flow (Scheduling) · derivation = none · downstream = dispatch SMS, invoicing
+- lineage: origin = `AGG-Booking` (booking flow, Scheduling) · derivation = none · downstream = `DATA-021` (invoicing), dispatch SMS (transient, not a modelled class)
 - volume/growth: ~250k records, +8k/mo · access = read-heavy, queried by phone + job-id
 - integrity: mutable; durability no-loss
 - data-quality (value-bearing): accuracy, validity (phone format), completeness

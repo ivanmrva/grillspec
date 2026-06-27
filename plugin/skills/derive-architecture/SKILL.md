@@ -23,6 +23,7 @@ argument-hint: a recorded spec or design docs
 - choose **latest-stable + idiomatic** by default — for the tech stack **and any standard/format/protocol it adopts**; a named stack or standard implies its current stable release unless a user/constraint pins one. Never bake a historical version into the design
 - **decide the stack, but surface each one-way door as a ratify-point** — the lock-in choices (primary cloud · core datastore · primary language/runtime) reverse only at great cost and often turn on an org commitment; propose the merit pick, but flag it for ratification rather than silently baking it in
 - every context placed; every ASR addressed by a **named tactic** realised at a specific point in the C4 (trade-off recorded)
+- **every module records the `AGG-`/`UC-` it realises, by id** (`realises:` — the domain aggregate or use-case this module exists for; `N/A — why` for a purely technical/infra module) — no module exists without a traceable reason, so a changed aggregate graphs to its modules
 - style/stack choices checked against the cloud **well-architected pillars** (reliability · security · cost · performance · operability · sustainability); a significant component records a **build-vs-buy** ADR
 - **an agent could implement ANY part with no further architectural decision**
 - the **seam contracts** (each module's public interface) are fixed here — they are what lets independent vertical slices integrate; module *internals* (algorithm, error taxonomy, concurrency) are **not** designed here — they're produced per-slice, just-in-time
@@ -39,7 +40,7 @@ Written under `solution/arch/`:
 | `c4.md` | C4 decomposition in Mermaid: containers (L2) · components (L3, typed) — refining the System Context (L1) taken from the system context | Mermaid · C4 context/container/component · typed component list |
 | `stack.md` | technology stack table: concern · choice · ADR (latest-stable/idiomatic by default) | table: concern · choice · ADR |
 | `services.md` | bounded contexts → services/deployable units + inter-context comms & consistency (sync/async · choreography vs saga · failure handling · data ownership) | — |
-| `modules.md` | the module/component map — per module (`MOD-`): `role:` (domain · driving-port · driven-port · adapter · application-service) · allowed dependency direction (inward only) · **the public interface it exposes at its seam** (the stable contract slices build against) | table keyed on `MOD-`: module · role · direction · seam interface |
+| `modules.md` | the module/component map — per module (`MOD-`): `role:` (domain · driving-port · driven-port · adapter · application-service) · **`realises:` the `AGG-`/`UC-` this module exists for** (or `N/A — why` for a technical/infra module) · allowed dependency direction (inward only) · **the public interface it exposes at its seam** (the stable contract slices build against) | table keyed on `MOD-`: module · role · realises(`AGG-`/`UC-`) · direction · seam interface |
 | `quality.md` | each `ASR-` → mitigating tactic → its C4 location → the **fitness function** that guards it | table: ASR · tactic · C4 location · fitness function |
 | `sequences.md` | the key cross-module interactions in Mermaid — the golden-path end-to-end trace **+ ≥1 critical-failure/compensation path** per transactional or cross-context interaction | Mermaid |
 

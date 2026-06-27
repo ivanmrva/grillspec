@@ -7,9 +7,9 @@ ML requirements for auto-categorizing uploaded receipts in an expense app.
 > **User:** 0.80 sounds right; auto-apply above, suggest below.
 
 ## Output — `capabilities.md`
-| id | task | I/O | decision it drives | HITL |
-|---|---|---|---|---|
-| ML-002 | classify | in: receipt image + OCR text · out: expense category + confidence | which GL category the expense posts to | below threshold → user picks from top-3; finance approves any >$2k regardless |
+| id | task | I/O | decision it drives | HITL | serves (UC-) |
+|---|---|---|---|---|---|
+| ML-002 | classify | in: receipt image + OCR text · out: expense category + confidence | which GL category the expense posts to | below threshold → user picks from top-3; finance approves any >$2k regardless | `UC-022` (auto-categorize an uploaded receipt) |
 
 ## Output — `evals.md`
 | metric | target | eval-set | offline + online bar |
@@ -18,9 +18,9 @@ ML requirements for auto-categorizing uploaded receipts in an expense app.
 | top-3 recall | ≥ 0.97 | same held-out set | offline gate (the suggest-list must contain the truth) |
 
 ## Output — `data-needs.md`
-| source | labelling | volume | refresh |
-|---|---|---|---|
-| historical user-confirmed receipts | the user's accepted/edited category = label | ~120k seed, +8k/wk | monthly retrain; drift check weekly (PSI on category mix) |
+| data-class (DATA-) | source | labelling | volume | refresh |
+|---|---|---|---|---|
+| `DATA-009` (training/feedback receipts) | historical user-confirmed receipts | the user's accepted/edited category = label | ~120k seed, +8k/wk | monthly retrain; drift check weekly (PSI on category mix) |
 
 ## Output — `quality-bars.md`
 - **Error cost:** false category is recoverable (user edits) but erodes trust → cap auto-apply error ≤ 8%; never auto-apply a *tax-deductible* flag.
@@ -34,4 +34,4 @@ ML requirements for auto-categorizing uploaded receipts in an expense app.
 | transparency | show "suggested" badge + why (top merchant signal); user can always override |
 | misuse | block using category data to infer protected attributes; audit-log overrides |
 
-Recorded: ML-002 anchored on macro-F1 with a baseline to beat; mandatory 0.80 threshold + top-3 fallback; HITL at low-confidence and >$2k; offline gate AND online canary both defined; fairness sliced by locale. Serving architecture and eval-harness code excluded — that's the ML architecture.
+Recorded: ML-002 (serving `UC-022`, drawing on `DATA-009`) anchored on macro-F1 with a baseline to beat; mandatory 0.80 threshold + top-3 fallback; HITL at low-confidence and >$2k; offline gate AND online canary both defined; fairness sliced by locale. Serving architecture and eval-harness code excluded — that's the ML architecture.

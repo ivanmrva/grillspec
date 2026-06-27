@@ -11,6 +11,8 @@ argument-hint: an idea, existing docs, or a repo
 **Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/grill-engine.md` first and follow it.** This skill applies that method to **UX requirements** — journeys, per-role information needs, the information architecture, and accessibility/i18n. The design system (tokens · components · brand · voice) is a **separate area**; journeys reference it as a given input.
 
 ## Rules
+- **every journey carries a stable `JRN-` id** (e.g. `JRN-07`) — so downstream (tasks, tests, traceability) references the journey **by id**, never by a fragile heading anchor; the id is the first token of the journey's heading/row
+- **every journey cites the `UC-` use-case(s) it renders, by id** — the journey is the rendering of a use case; one with no use-case basis is a gap, never a requirement invented here (mirrors how an `AC-` keys to its `UC-`)
 - every journey carries its **interaction states** (empty · loading · success · error · permission-denied) — this is where the functional spec's "what does the user see on rejection" gaps land
 - **every journey clears the journey-level accessibility bars** (current success-criteria): **accessible authentication** — no cognitive-function test (memorizing, transcribing, puzzle-solving) on any auth/critical step; an accessible alternative always exists · **consistent help** — help/support access in the same relative place across the journey · **dragging-movements** — any drag interaction has a single-pointer (non-drag) alternative
 - **inclusivity** note per journey, **distinct from the WCAG conformance level** — cognitive load kept low · plain language · tolerant of situational/temporary impairment (one-handed, bright sun, noisy room); broader than conformance, not a substitute for it
@@ -22,7 +24,7 @@ Written under `ux/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `journeys.md` | per role: user journeys with required interaction states (empty/loading/success/error/permission-denied) | role · numbered steps · states |
+| `journeys.md` | per role: `JRN-`-id'd user journeys with required interaction states (empty/loading/success/error/permission-denied) | **`JRN-` id** · role · serves(`UC-`) · numbered steps · states |
 | `information-needs.md` | per-role information needs + information architecture (screen inventory + navigation map) | role · bullets |
 | `accessibility.md` | accessibility (concrete WCAG level, incl. target-size/focus-appearance/accessible-auth/consistent-help/dragging-alternative bars) + an **inclusivity** target distinct from the conformance level (cognitive load · plain language · situational impairment) + i18n/l10n targets + per-critical-journey usability targets framed as **effectiveness · efficiency · satisfaction**, each with a **named measurement instrument** (e.g. task-completion rate · time-on-task/SEQ · SUS), tied to the quality usability NFRs | target · instrument · list |
 

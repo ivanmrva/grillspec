@@ -1,12 +1,12 @@
 # derive-observability — worked example
 
-From the NFR: *"booking confirmation returns in ≤ 800 ms for 99% of requests."* That recorded input drives the observability design below.
+From `NFR-007` *"booking confirmation returns in ≤ 800 ms for 99% of requests."* That recorded input drives the observability design below, and the SLO records the NFR it operationalises by id.
 
 **SLO** (`slos.md`):
 
-| id | objective | SLI | error budget |
-|---|---|---|---|
-| SLO-001 | 99% of `POST /bookings` complete in ≤ 800 ms over 30 days | good = (latency ≤ 800 ms ∧ status < 500) ÷ valid requests | 1% = ~7h18m / 30d |
+| id | maps-to | objective | SLI | error budget |
+|---|---|---|---|---|
+| SLO-001 | `NFR-007` (booking latency) | 99% of `POST /bookings` complete in ≤ 800 ms over 30 days | good = (latency ≤ 800 ms ∧ status < 500) ÷ valid requests | 1% = ~7h18m / 30d |
 
 **Telemetry** (`telemetry.md`) — one wide structured event per request, emitted over OTLP through the collector with semantic-convention names:
 ```

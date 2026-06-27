@@ -25,7 +25,7 @@ if not API.exists():
     sys.exit(0)
 
 # Mirror lint_spec's type-prefix vocabulary (kept in sync via selfcheck).
-TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
+TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|JRN|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
 IDCORE = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"   # mirrors lint_spec's IDCORE: a trailing '.'/',' from prose ('Realizes RM-601.') is NOT captured
 IDTOK = re.compile(r"(?<![A-Za-z0-9-])" + IDCORE)
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + IDCORE + r")\b")        # ID as the first token of a line/cell (after leading -, *, #, |, or bold)

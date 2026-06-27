@@ -35,11 +35,11 @@ AREA_DIR = {"problem-validation":"01-discovery","product-vision":"02-product/vis
 # the skills declare, so adding a prefix to a skill without registering it here is caught.
 PREFIX_OWNER = {"UC":"05-functional-spec","AC":"05-functional-spec",
     "CMD":"04-domain/ddd","EVT":"04-domain/ddd","AGG":"04-domain/ddd",
-    "VO":"04-domain/ddd","HOT":"04-domain/ddd","POL":"04-domain/ddd","RM":"04-domain/ddd","ENT":"04-domain/ddd",
+    "VO":"04-domain/ddd","INV":"04-domain/ddd","HOT":"04-domain/ddd","POL":"04-domain/ddd","RM":"04-domain/ddd","ENT":"04-domain/ddd",
     "NFR":"06-requirements/quality","ASR":"06-requirements/quality","DATA":"06-requirements/data",
     "SEC":"06-requirements/security","THR":"06-requirements/security","OBL":"06-requirements/compliance","API":"09-solution/api","ML":"06-requirements/ml",
     "ENTL":"06-requirements/entitlements",
-    "SLO":"09-solution/observability","EXP":"11-commercial/growth","T":"10-delivery/tasks","DS":"07-design-system",
+    "SLO":"09-solution/observability","EXP":"11-commercial/growth","T":"10-delivery/tasks","DS":"07-design-system","JRN":"08-ux",
     "FAC":"04-domain/ddd","REPO":"04-domain/ddd","SVC":"04-domain/ddd",
     "IF":"03-system-context","MOD":"09-solution/arch","CA":"02-product"}
 def file_layer(r):
@@ -52,7 +52,7 @@ def file_layer(r):
     if r.startswith("10-delivery/"): return 6
     if r.startswith("12-operate"): return 6
     return 0  # constraints, 02-product/*, discovery, singletons
-ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"VO":1,"HOT":1,"POL":1,"RM":1,"ENT":1,"FAC":1,"REPO":1,"SVC":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"THR":2,"DATA":2,"OBL":2,"ENTL":2,"EXP":2,"ML":2,"DS":3,"MOD":5,"API":5,"SLO":5,"T":6,"ADR":0,"IF":0,"CA":0}
+ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"VO":1,"INV":1,"HOT":1,"POL":1,"RM":1,"ENT":1,"FAC":1,"REPO":1,"SVC":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"THR":2,"DATA":2,"OBL":2,"ENTL":2,"EXP":2,"ML":2,"DS":3,"JRN":4,"MOD":5,"API":5,"SLO":5,"T":6,"ADR":0,"IF":0,"CA":0}
 def id_layer(tok): return ID_LAYER.get(tok.split("-")[0].upper(), 0)
 PROSE_WORDS = 40
 
@@ -178,7 +178,7 @@ for p, r in cmd_files():
 # 11 stable-ID references resolve (the traceability spine)
 # TYPES = the SINGLE source of truth for type-prefixes (selfcheck.py reads this line to detect drift
 #         against the prefixes the skills declare). Keep it one flat alternation on one line.
-TYPES = "UC|AC|CMD|EVT|AGG|VO|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
+TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|JRN|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
 # IDCORE = the type-prefixed token, no boundary (used in ANCHORED definition matches).
 # ID = IDCORE behind a left boundary that also excludes '-' so a known prefix is NOT mined out of a
 #      longer token: 'HOT-005' no longer yields 'T-005', 'SUR-AGG-250' no longer yields 'AGG-250'.
@@ -650,6 +650,63 @@ for cpre, ppre, keyed, pname, conv in CHILD_PARENT:
                 add("ERROR", loc, cid + " keys to " + parent + ", which is not defined - every " + cpre + " must map to a real " + pname + " (" + ppre + ")")
         else:
             add("ERROR", loc, cid + " is not keyed to a " + pname + " - use " + conv)
+
+# 16b derived->driver backref PRESENCE: a derived id must CITE its upstream driver by id, co-located on its
+#     own definition row/block (or, where allowed, an 'N/A - why'). Generalizes #16's correlated keying to the
+#     named maps-to/serves edges - a journey renders a UC, an SLO operationalises an NFR, an ML capability
+#     serves a UC. ONLY edges whose driver is GUARANTEED co-located with the child's definition are enforced
+#     here; edges where the id and its backref live in different files/columns (MOD->AGG/UC, ML->DATA) or where
+#     'where-modelled' is author judgment (DATA->AGG) stay a FORMAT mandate - not mechanically decidable, so
+#     enforcing them would false-fire. Suppressed when the parent's whole type is absent (a partial spec
+#     mid-derivation isn't penalised), mirroring the coverage check's premature-warning guard.
+BACKREF = [
+    ("JRN", ("UC",),  False, "the use-case (UC-) it renders"),
+    ("SLO", ("NFR",), False, "the NFR (NFR-) it operationalises"),
+    ("ML",  ("UC",),  True,  "the use-case (UC-) it serves"),
+]
+BACKREF_BY_CHILD = {c: (par, na, what) for (c, par, na, what) in BACKREF}
+NA_ESC = re.compile(r"\bN/?A\b", re.I)
+def backref_window(lines, i):
+    """The text a child id's backref may sit in: its own table row, else its heading/block down to the next
+    blank line or heading (capped) - so a backref in a sub-bullet under a heading still counts."""
+    if lines[i].lstrip().startswith("|"):
+        return lines[i]                                        # table row - the backref is a sibling cell
+    win = [lines[i]]
+    for j in range(i + 1, min(i + 9, len(lines))):
+        s = lines[j].lstrip()
+        if not s.strip() or s.startswith("#"): break
+        win.append(lines[j])
+    return "\n".join(win)
+for p, r in cmd_files():
+    lines = read(p).splitlines()
+    fence = False
+    for i, l in enumerate(lines):
+        if l.lstrip().startswith("```"): fence = not fence; continue
+        if fence: continue
+        m = DEF1.match(l)
+        if not m: continue
+        cid = m.group(1); cpre = cid.split("-")[0].upper()
+        if cpre not in BACKREF_BY_CHILD or not in_owner_area(cid, r): continue
+        parents, allow_na, what = BACKREF_BY_CHILD[cpre]
+        if all(pp in ABSENT_TYPES for pp in parents): continue
+        win = backref_window(lines, i)
+        if any(t.split("-")[0].upper() in parents for t in IDTOK.findall(win)): continue
+        if allow_na and NA_ESC.search(win): continue
+        add("ERROR", r, cid + " must cite " + what + " by id, co-located on its definition" +
+            (" (or 'N/A - why')" if allow_na else "") + " - traceability can't be inferred from prose", i + 1)
+
+# 16c impl-design docs trace to what they detail: each <module>.md under impl-design must name the MOD- it
+#     implements and the T- slice it serves (lead with 'implements MOD-NNN . serves T-NNN'), so the design
+#     traces by id, not by filename. WARN - the doc is per-slice and filled mid-build.
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/impl-design/"): continue
+    b = os.path.basename(r)
+    if b == "template.md" or "/_archive/" in r or b in AREA_FILES: continue
+    toks = set(IDTOK.findall(read(p)))
+    miss = [lbl for lbl, ok in (("MOD- (the module it implements)", any(t.split("-")[0].upper() == "MOD" for t in toks)),
+                                 ("T- (the slice it serves)",       any(t.split("-")[0].upper() == "T"   for t in toks))) if not ok]
+    if miss:
+        add("WARN", r, "impl-design doc names no " + " and no ".join(miss) + " - lead with 'implements MOD-NNN . serves T-NNN' so the design traces to what it details by id")
 
 # 17 an obsolete ADR (in _archive/, or status superseded/deprecated) must not be referenced as live
 superseded = set()

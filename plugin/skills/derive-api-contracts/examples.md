@@ -8,6 +8,7 @@ paths:
   /orders:
     post:
       operationId: placeOrder          # API-007
+      x-serves: [UC-014]               # the use-case this endpoint fulfils — no orphan endpoint
       security: [{ oauth2: [orders:write] }]
       parameters:
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid } }

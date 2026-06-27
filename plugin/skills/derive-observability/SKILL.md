@@ -18,7 +18,7 @@ argument-hint: a recorded spec or design docs
 5. add the day-2 monitoring — incl. a named **security-relevant-events** telemetry class (authz failures · privilege changes) and **model-quality / drift** signals for ML features — the **on-call / escalation / severity** model + blameless postmortem, and the DR-drill / game-day plan
 
 ## Rules
-- every availability/latency NFR maps to an `SLO-`; golden signals + resource method (utilization · saturation · errors) + service method (rate · errors · duration) instrumented
+- every availability/latency NFR maps to an `SLO-`, and **each `SLO-` records the `NFR-` it operationalises by id** (`maps-to(NFR-)`) — so an NFR can't silently lose its SLO and an SLO can't float free of a requirement; golden signals + resource method (utilization · saturation · errors) + service method (rate · errors · duration) instrumented
 - instrumentation contract: **vendor-neutral telemetry over OTLP**, **semantic-convention** attribute names, a **collector** pipeline boundary; **wide structured events** are the primitive (the three pillars are views over them)
 - each alert links an SLO + a runbook; prefer symptom / SLO-burn-rate alerts; burn-rate alerting is **multi-window multi-burn-rate** (fast + slow window tiers)
 - **security-relevant events** (authz failures · privilege changes) are a named telemetry class; **model-quality / drift** signals present for ML features
@@ -32,7 +32,7 @@ Written under `solution/observability/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `slos.md` | SLOs/SLIs — id SLO-NNN: objective + its SLI + error budget | field · field · field |
+| `slos.md` | SLOs/SLIs — id SLO-NNN: the `NFR-` it operationalises (`maps-to(NFR-)`) + objective + its SLI + error budget | maps-to(`NFR-`) · objective · SLI · error budget |
 | `telemetry.md` | telemetry plan: wide structured events (the primitive) · golden-signal + resource-method + service-method metrics · traces · security-relevant-events class · model-quality/drift signals · continuous profiling — emitted over OTLP w/ semantic-convention names through a collector boundary (within a cost/cardinality/sampling budget) | tight structured fields/tables/bullets |
 | `alerting.md` | alerting (alert ⇄ SLO/runbook · symptom · multi-window multi-burn-rate) + error-budget policy + dashboards | tight structured |
 | `runbooks.md` | per alert/failure mode: detect → mitigate → recover (+ security monitoring · on-call/escalation/severity + blameless postmortem · DR-drill / game-day plan) | per-mode steps |

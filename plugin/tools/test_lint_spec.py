@@ -227,6 +227,49 @@ expect("task-traceability", run(LINT, {"10-delivery/tasks/T-9.md": idtable(("T-9
 expect("adr-status", run(LINT, {"adr/ADR-DDD-1.md": "# ADR-DDD-1 thing\nDecision: do it.\n"}),
        must=["no recognized 'status:'"])
 
+# ── 16b derived->driver backref presence + 16c impl-design trace (this session) ──
+# a journey must cite the UC- it renders, co-located on its heading; missing -> ERROR (UC area present, so not premature)
+expect("backref-jrn-missing-uc", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Book")),
+    "08-ux/journeys.md": HDR + "\n**JRN-7 · Freelancer — send invoice**\n1. pick client\n",
+}), must=["JRN-7 must cite"])
+# present (UC-1 on the heading) -> no backref error
+expect("backref-jrn-has-uc-ok", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Book")),
+    "08-ux/journeys.md": HDR + "\n**JRN-7 · Freelancer — send invoice (UC-1)**\n1. pick client\n",
+}), forbid=["JRN-7 must cite"])
+# an SLO row must carry the NFR- it operationalises in a sibling cell
+expect("backref-slo-missing-nfr", run(LINT, {
+    "06-requirements/quality/q.md": idtable(("NFR-1", "lat")),
+    "09-solution/observability/slos.md": HDR + "\n| id | objective | SLI | budget |\n|---|---|---|---|\n| SLO-1 | p99<800ms | latency | 1% |\n",
+}), must=["SLO-1 must cite"])
+expect("backref-slo-has-nfr-ok", run(LINT, {
+    "06-requirements/quality/q.md": idtable(("NFR-1", "lat")),
+    "09-solution/observability/slos.md": HDR + "\n| id | maps-to | objective | SLI | budget |\n|---|---|---|---|---|\n| SLO-1 | NFR-1 | p99<800ms | latency | 1% |\n",
+}), forbid=["SLO-1 must cite"])
+# premature suppression: an SLO defined with NO NFR area present must NOT fire (partial spec mid-derivation)
+expect("backref-slo-premature-suppressed", run(LINT, {
+    "09-solution/observability/slos.md": HDR + "\n| id | objective | SLI | budget |\n|---|---|---|---|\n| SLO-1 | p99<800ms | latency | 1% |\n",
+}), forbid=["SLO-1 must cite"])
+# ML capability allows an N/A escape (an internal capability with no user-facing UC)
+expect("backref-ml-na-ok", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "x")),
+    "06-requirements/ml/capabilities.md": HDR + "\n| id | task | serves |\n|---|---|---|\n| ML-1 | rank | N/A - internal reranker |\n",
+}), forbid=["ML-1 must cite"])
+# 16c impl-design doc missing its MOD-/T- backref -> WARN; with both -> clean
+expect("impl-design-missing-trace", run(LINT, {
+    "10-delivery/impl-design/reschedule.md": HDR + "\nalgorithm: load, mutate, persist.\n",
+}), must=["names no MOD-"])
+expect("impl-design-trace-ok", run(LINT, {
+    "10-delivery/impl-design/reschedule.md": HDR + "\nimplements MOD-7 · serves T-31\nalgorithm: load, mutate, persist.\n",
+}), forbid=["impl-design doc names no"])
+
+# INV- is a registered domain id-type: an aggregate invariant carries an INV- id an AC can trace to
+expect("invariant-id-registered", run(LINT, {
+    "04-domain/ddd/tactical/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-201 OwningBranchFixed — branch set at creation\n",
+    "05-functional-spec/uc.md": idtable(("UC-1", "Book"), ("AC-1a", "rejects late reschedule")) + "\nAC-1a asserts INV-201\n",
+}), must=["0 error(s)"], forbid=["undefined ID 'INV-201'"])
+
 # ── 13b context-namespaced IDs: literal external-vendor identifiers shaped like <lead>-<TYPE>-… (Alpaca's
 #    APCA-API-KEY-ID header: lead APCA, type API) are flagged in PROSE but must be writable verbatim inside a
 #    code fence or an inline `code` span — the ID grammar must not claim literal code content. ──────────────

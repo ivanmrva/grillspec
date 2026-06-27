@@ -17,6 +17,7 @@ This slice is flagged `design-first` (real concurrency + a cross-system notifica
 `delivery/impl-design/reschedule-job-service.md`
 
 ```
+implements MOD-07 (reschedule-job-service) · serves T-031 (reschedule a job)
 algorithm (sketch)
   1. load Job via JobRepository (driven-port)         5. publish EVT-JobRescheduled
   2. job.reschedule(newSlot, actor)  ← aggregate rule     (outbox, same tx as persist)

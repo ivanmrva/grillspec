@@ -19,6 +19,7 @@ argument-hint: the slice (and the modules it touches) to design
 ## Rules
 - **per-slice & risk-gated** — produced only for a **complex** slice (a hard algorithm · real concurrency · a cross-context saga); a simple/CRUD slice is designed as it is TDD'd, with no design step
 - **internals only** — the seam interface, role, and dependency direction belong to the architecture; never re-open them here (a needed interface change is a **gap raised to the architecture**, not a local override)
+- **each `<module>.md` names the `MOD-` it implements and the `T-` slice it serves, by id** (`implements MOD- · serves T-`) — the doc's reason to exist is traceable, not inferred from the filename
 - **design DEEP modules** — a lot of behaviour behind the *small* interface the architecture fixed; the interface stays the test surface
 - **don't introduce a seam until a second concrete implementation needs it** — exactly why this is JIT: the second consumer reveals the real seam
 - DESIGN fidelity — no code, no heavy pseudocode
@@ -28,7 +29,7 @@ Written under `delivery/impl-design/` — **filled incrementally**, one file per
 
 | File | Captures | Format |
 |---|---|---|
-| `<module>.md` | the module's internal design: algorithm (steps / short pseudocode-sketch) · concurrency model (incl. cancellation · timeout/deadline · partial-failure atomicity) · errors (taxonomy + retryable + each `designed-out\|masked\|propagated` w/ rationale) — behind the architecture's fixed seam interface | algorithm · concurrency · errors |
+| `<module>.md` | **leads with `implements MOD-NNN · serves T-NNN`** (the module it details + the slice it serves, by id), then the module's internal design: algorithm (steps / short pseudocode-sketch) · concurrency model (incl. cancellation · timeout/deadline · partial-failure atomicity) · errors (taxonomy + retryable + each `designed-out\|masked\|propagated` w/ rationale) — behind the architecture's fixed seam interface | implements(`MOD-`) · serves(`T-`) · algorithm · concurrency · errors |
 
 (+ ADRs → `adr/ADR-IMPL-NNN.md`)
 *(DERIVED & regenerate-only)*
