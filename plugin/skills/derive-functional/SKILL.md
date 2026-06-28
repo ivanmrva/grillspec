@@ -21,6 +21,7 @@ argument-hint: a recorded spec or design docs
 - **every user-facing read-model/read-surface (`RM-`) projects to ≥1 view use-case** — or is marked **N/A** as an internal projection (one only other model elements or the architecture consume); a read surface no use-case surfaces is an under-projected functional spec, not a silent pass
 - **every use-case projects its happy path PLUS the alternate/exception flows entailed by its command's invariants and policies NOW** — invalid-input · permission-denied · timeout · conflict (and any other rejection the model's rules imply); these are not deferrable, they fall straight out of the projection
 - every use-case has acceptance criteria traceable to a domain-model rule (or a logged gap); **each acceptance criterion is singular and verifiable** — one Given/When/Then asserting one outcome (the test oracle), never a compound clause
+- **every domain invariant (`INV-`) is asserted by ≥1 acceptance criterion** — or, where the model enforces it structurally (by construction / a `DATA-` constraint), noted as such on its definition; an invariant no AC asserts is an unenforced rule, not a silent pass
 - this is a projection — if you find yourself *inventing* a rule, it belongs in the domain model: raise it there, don't author it here. This area carries almost no primary facts of its own
 - only a **genuinely model-absent** edge (no invariant/policy in the model speaks to it yet) → record a **Deferred** gap (`at-task`), not a blocker now — but an edge the model *already* entails is projected now, not deferred
 

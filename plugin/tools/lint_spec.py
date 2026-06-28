@@ -194,7 +194,7 @@ RANGE = re.compile(r"(?<![A-Za-z0-9-])(?:" + TYPES + r")-\d+(?:(?:\.\.|/)\d+)+")
 # Reference markers — used to find ID *references* in the resolution pass below. Word markers are
 # \b-anchored so they match only as whole words: 'invalidates' must not match 'validates', etc. The
 # symbols (->, →) sit outside \b.
-REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|surfaces?|renders?|displays?|mitigat(?:es|ed-by)|prices?|priced-by|gates?|gated-by|enforces?|enforced-by|evidences?|evidenced-by|whenever|reacts?-to|consumed-by|consumes)\b|->|→)\s*:?\s*([^\n]*)", re.I)
+REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|asserts?|upholds?|addresses|supersedes|surfaces?|renders?|displays?|mitigat(?:es|ed-by)|prices?|priced-by|gates?|gated-by|enforces?|enforced-by|evidences?|evidenced-by|whenever|reacts?-to|consumed-by|consumes)\b|->|→)\s*:?\s*([^\n]*)", re.I)
 REACT = re.compile(r"\bwhenever\b|\breacts?-to\b", re.I)     # a POL- reaction line consumes every event named on it (any cell)
 defined = set()
 defsites = {}                                                # id -> files that AUTHORITATIVELY define it (row-key / heading / id:) — drives define-once + owning-area checks
@@ -476,7 +476,7 @@ for p, r in cmd_files():
 # 14 structural coverage = the GAP-DETECTION surface (WARN: every X should have its downstream Y)
 COV_HINT = {"CMD":"expected a use-case (UC-) projecting it","EVT":"no downstream consumer (a UC-, a 'whenever EVT-' POL- reaction, the asyncapi contract, or an intentional audit-only/internal sink)",
     "AGG":"expected persistence (DATA-) / a use-case","RM":"expected a view use-case (UC-) surfacing it, or N/A for an internal projection","UC":"expected acceptance criteria (AC-) or a task",
-    "AC":"not exercised by any test/task","OBL":"no control (SEC-/DATA-/arch) addresses it",
+    "AC":"not exercised by any test/task","INV":"no acceptance criterion asserts it - project it into an AC-, or note it's enforced structurally (by construction / a DATA- constraint)","OBL":"no control (SEC-/DATA-/arch) addresses it",
     "THR":"no mitigating control (SEC-/ADR-/OBL-/DATA-) addresses it and it isn't marked accepted-risk",
     "SLO":"no alert/runbook references it","NFR":"no test/SLO evidences it","ASR":"no verifying test",
     "API":"no consumer/test","EXP":"no analytics event/task wires it","DATA":"no consumer"}
@@ -505,7 +505,12 @@ DATAID = re.compile(r"\bDATA-[A-Za-z0-9._-]*[A-Za-z0-9]\b")
 MITCUE = re.compile(r"mitigat|control|address|counter|defen|residual|remediat|safeguard|protect", re.I)
 ACCRISK = re.compile(r"accept(?:ed|s)?[ \-]risk", re.I)
 EVTSINK = re.compile(r"audit-only|operator-console-internal|internal[ \-]sink|terminal[ \-]sink|intentional[ \-]sink|no[ \-]consumer[ \-]by[ \-]design", re.I)
-thr_covered, evt_sinks = set(), set()
+# an invariant is covered when an AC asserts it (back-referenced → it's in refset already) OR its OWN block
+# declares STRUCTURAL enforcement (by construction / the type system / a DB constraint) — neither of which the
+# refset test catches when the invariant is enforced without a user-facing acceptance criterion. Mirrors the
+# THR non-SEC-control escape: read the element's own definition block for the cue.
+INVSTRUCT = re.compile(r"by construction|structural(?:ly)?|type-enforced|enforced by (?:the )?(?:aggregate|type|construct)|by the type system|immutable|(?:check|unique|foreign-key|not-null|not null|primary-key) constraint|database constraint|db constraint", re.I)
+thr_covered, evt_sinks, inv_covered = set(), set(), set()
 for _p, _r in cmd_files():
     if os.path.basename(_r) == "traceability.md": continue
     _lines = read(_p).splitlines()
@@ -529,16 +534,18 @@ for _p, _r in cmd_files():
         _segs = re.split(r"·", _lines[_ln]) if _multi else None
         for _gid in _ids:
             _pre = _gid.split("-")[0].upper()
-            if _pre not in ("THR", "EVT"): continue
+            if _pre not in ("THR", "EVT", "INV"): continue
             _block = next((s for s in _segs if _gid in s), _lines[_ln]) if _multi else "\n".join(_lines[_ln:_end])
             if _pre == "THR" and (CTRLID.search(_block) or ACCRISK.search(_block) or (DATAID.search(_block) and MITCUE.search(_block))):
                 thr_covered.add(_gid)
             if _pre == "EVT" and EVTSINK.search(_block):
                 evt_sinks.add(_gid)
+            if _pre == "INV" and (INVSTRUCT.search(_block) or DATAID.search(_block)):
+                inv_covered.add(_gid)
 # downstream type a coverage WARN expects; if NONE of that type exists yet, the downstream layer is
 # simply empty (early stage) and the WARN is noise, not a gap — suppress it. (#7: a CMD has no UC only
 # once use-cases exist; before then "CMD has no UC" is 100% expected and drowns real within-layer gaps.)
-DOWN_TYPE = {"CMD":("UC",),"EVT":("UC",),"AGG":("DATA",),"RM":("UC",),"UC":("AC",),"AC":("T",),
+DOWN_TYPE = {"CMD":("UC",),"EVT":("UC",),"AGG":("DATA",),"RM":("UC",),"UC":("AC",),"AC":("T",),"INV":("AC",),
     "OBL":("SEC","DATA"),"THR":("SEC",),"NFR":("ASR","SLO"),"ASR":("T",),"API":("T",),"EXP":("T",)}
 present_types = {d.split("-")[0].upper() for d in defined}
 # a parent with a keyed child is covered by it (UC-014 by AC-014a; NFR-014 by ASR-014) even with no explicit ref
@@ -559,6 +566,7 @@ for tok in sorted(defined):
     if tok in refset or tok in trace_ids or tok in keyed_parents: continue
     if pre == "THR" and tok in thr_covered: continue            # mitigated by a non-SEC control / accepted-risk (its own block)
     if pre == "EVT" and tok in evt_sinks: continue              # intentional audit-only / operator-console-internal sink
+    if pre == "INV" and tok in inv_covered: continue            # enforced structurally (by construction / a DATA- constraint) — no AC needed
     add("WARN", sorted(defsites.get(tok) or def3sites.get(tok) or ["(?)"])[0],
         "coverage: '" + tok + "' has no downstream reference - " + COV_HINT[pre] + " (structural gap to resolve or mark N/A)")
 
@@ -748,6 +756,26 @@ for p, r in cmd_files():
     upstream = [t for t in IDTOK.findall(RANGE.sub(" ", read(p))) if t.split("-")[0].upper() not in ("T", "ADR")]
     if not upstream:
         add("WARN", r, "task cites no upstream spec ID - a task must trace to what it implements (a UC-/AC-/CMD-/NFR-/DATA-/API-…), else its code has no spec basis to conformance-check against")
+
+# 19b an AC is owned by EXACTLY ONE task (the down-direction mirror of #19). An acceptance criterion is the
+#    unit of acceptance: its Verification Record is generated from the single task that carries it, and
+#    check_task_record requires THAT task to hold an '@covers AC-' test. If two task files both name an AC,
+#    ownership is split - which task's `done` retires it? whose test discharges it? - so the gate is ambiguous.
+#    The ZERO-owner case is already #14 (an AC with no downstream task); this is the >1 mirror. Heuristic - an
+#    AC token in a task file is read as that task CLAIMING it (a sibling that only builds on the work should
+#    `depends-on` the OWNING task, not re-name its AC) - so WARN, and suppressed until any task exists (premature
+#    mid-spec, mirroring #14's downstream-empty guard).
+if "T" in present_types:
+    ac_owners = {}                                              # AC-id -> set of task files that name it
+    for p, r in cmd_files():
+        if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+        for tok in set(IDTOK.findall(RANGE.sub(" ", read(p)))):
+            if tok.split("-")[0].upper() == "AC" and tok in defined:
+                ac_owners.setdefault(tok, set()).add(r)
+    for ac in sorted(ac_owners):
+        if len(ac_owners[ac]) > 1:
+            add("WARN", sorted(defsites.get(ac) or def3sites.get(ac) or ["(?)"])[0],
+                "%s is claimed by %d tasks (%s) - an AC is the unit of acceptance and needs exactly one accountable task (its Verification Record + @covers test); give it one owner and have the other task(s) depends-on that task, not re-cover the AC" % (ac, len(ac_owners[ac]), ", ".join(sorted(ac_owners[ac]))))
 
 # 20 every ADR declares a recognized lifecycle status - makes the obsolete-ADR check (#17) reliable and
 #    keeps supersession trackable. (template.md / _archive/ exempt.)

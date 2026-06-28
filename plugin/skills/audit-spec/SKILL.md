@@ -23,11 +23,11 @@ conflate them.
 - **Below it — the linter.** Already enforces (don't repeat): closed-world & paths · file headers ·
   placeholders · dangling links · stable-ID resolution · **upstream-only reference direction** ·
   define-once · stage-purity · namespaced-ID ban · the downstream-coverage map (`CMD-→UC-→AC-→T-`,
-  `AGG-→DATA-`, `NFR-→ASR-/SLO-`, `OBL-→control`, `EVT-→consumer`, …) · `THR-→SEC-` ·
+  `AGG-→DATA-`, `NFR-→ASR-/SLO-`, `OBL-→control`, `EVT-→consumer`, …) · `THR-→SEC-` · `INV-→AC-` (an invariant is asserted by an AC, or enforced structurally) ·
   child→parent keying (`AC-`→`UC-`, `ASR-`→`NFR-`) · **derived→driver backref presence** (`JRN-`→`UC-`,
   `SLO-`→`NFR-`, `ML-`→`UC-`, each cited co-located on the child's own definition; an impl-design
   `<module>.md` names its `MOD-` + `T-`) · per-`T-` unresolved-gap (ERROR) · task-graph
-  acyclicity (the `depends-on` DAG, ERROR) · task→upstream traceability · NFR `enforced-by` · module `role:` ·
+  acyclicity (the `depends-on` DAG, ERROR) · task→upstream traceability · **AC single-owner** (each in-scope `AC-` claimed by exactly one task) · NFR `enforced-by` · module `role:` ·
   ADR status · **state-machine integrity (unreachable / dead-end / nondeterministic states)** ·
   **authorization completeness (every command has a rule; no blank decision cell)** · **typed-field
   consistency (a `retention`/`residency`/`class`/`SLA`/`price` stated twice must agree; every `DATA-` carries

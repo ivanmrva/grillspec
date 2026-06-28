@@ -224,6 +224,20 @@ expect("contract-coverage-credit", run(LINT, {
 expect("task-traceability", run(LINT, {"10-delivery/tasks/T-9.md": idtable(("T-9", "x"))}),
        must=["cites no upstream spec ID"])
 
+# 19b an AC is the unit of acceptance: exactly one task may carry it (its Verification Record + @covers test).
+# two tasks both naming AC-001a -> WARN (split ownership); each AC owned by one task -> clean (a sibling that
+# builds on the work depends-on the owner, it does not re-name the AC).
+expect("ac-single-owner-violation", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-001", "Login"), ("AC-001a", "valid"), ("AC-001b", "invalid")),
+    "10-delivery/tasks/T-001.md": HDR + "\n# T-001\nimplements UC-001\nbehavior: AC-001a\n",
+    "10-delivery/tasks/T-002.md": HDR + "\n# T-002\nimplements UC-001\nbehavior: AC-001a\n",
+}), must=["AC-001a is claimed by 2 tasks"])
+expect("ac-single-owner-ok", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-001", "Login"), ("AC-001a", "valid"), ("AC-001b", "invalid")),
+    "10-delivery/tasks/T-001.md": HDR + "\n# T-001\nimplements UC-001\nbehavior: AC-001a\n",
+    "10-delivery/tasks/T-002.md": HDR + "\n# T-002\ndepends-on: T-001\nimplements UC-001\nbehavior: AC-001b\n",
+}), forbid=["is claimed by"])
+
 expect("adr-status", run(LINT, {"adr/ADR-DDD-1.md": "# ADR-DDD-1 thing\nDecision: do it.\n"}),
        must=["no recognized 'status:'"])
 
@@ -285,6 +299,25 @@ expect("invariant-id-registered", run(LINT, {
     "04-domain/ddd/tactical/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-201 OwningBranchFixed — branch set at creation\n",
     "05-functional-spec/uc.md": idtable(("UC-1", "Book"), ("AC-1a", "rejects late reschedule")) + "\nAC-1a asserts INV-201\n",
 }), must=["0 error(s)"], forbid=["undefined ID 'INV-201'"])
+
+# INV coverage: an invariant must be ASSERTED by an AC (the projection edge derive-functional states) — or be
+# enforced STRUCTURALLY (by construction / a DATA constraint). An invariant no AC asserts is an unenforced
+# domain rule → WARN; asserted or structural → clean; suppressed until ACs exist (premature mid-spec).
+expect("invariant-coverage-orphan", run(LINT, {
+    "04-domain/ddd/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-1 BranchFixed — branch set at creation\n",
+    "05-functional-spec/uc.md": idtable(("UC-1", "Book"), ("AC-1a", "rejects X")),
+}), must=["'INV-1' has no downstream"])
+expect("invariant-coverage-asserted-ok", run(LINT, {
+    "04-domain/ddd/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-1 BranchFixed — branch set at creation\n",
+    "05-functional-spec/uc.md": idtable(("UC-1", "Book"), ("AC-1a", "rejects X")) + "\nAC-1a asserts INV-1\n",
+}), forbid=["'INV-1' has no downstream"])
+expect("invariant-coverage-structural-ok", run(LINT, {
+    "04-domain/ddd/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-1 BranchFixed — enforced by construction, immutable after creation\n",
+    "05-functional-spec/uc.md": idtable(("UC-1", "Book"), ("AC-1a", "x")),
+}), forbid=["'INV-1' has no downstream"])
+expect("invariant-coverage-premature-suppressed", run(LINT, {
+    "04-domain/ddd/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-1 BranchFixed — branch set at creation\n",
+}), forbid=["'INV-1' has no downstream"])
 
 # ── 13b context-namespaced IDs: literal external-vendor identifiers shaped like <lead>-<TYPE>-… (Alpaca's
 #    APCA-API-KEY-ID header: lead APCA, type API) are flagged in PROSE but must be writable verbatim inside a

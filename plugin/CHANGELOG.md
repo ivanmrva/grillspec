@@ -4,6 +4,13 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.8.4
+
+### Added — two coverage edges that close real silent-pass holes (both WARN, both the down-direction mirror of an existing check)
+- **`lint_spec.py`: an `AC-` must be owned by exactly one task (check 19b).** An acceptance criterion is the unit of acceptance — its Verification Record is generated from the single task that carries it, and `check_task_record.py` requires *that* task to hold an `@covers AC-` test. If two task files both name an AC, ownership is split (which task's `done` retires it? whose test discharges it?), so the gate is ambiguous. The zero-owner case was already the structural-coverage check (`AC-`→`T-`); this adds the `>1` mirror. Heuristic — an `AC-` token in a task file is read as that task *claiming* it (a sibling that only builds on the work should `depends-on` the owner, not re-name its AC) — so **WARN**, suppressed until any `T-` exists. `derive-tasks` Coverage rule + `SPEC-CHECKS.md` updated.
+- **`lint_spec.py`: an invariant (`INV-`) must be asserted by an AC (extends the structural-coverage check).** `INV-` was a registered domain id-type with **no** downstream check, even though `derive-functional` projects acceptance criteria *from* invariants — so an invariant no AC asserts silently passed as an unenforced domain rule, the conspicuous gap in the "every obligation has teeth" family (`THR-`→control, `NFR-`→`enforced-by`, `ASR-`→fitness, `AC-`→test). **Fix:** `INV-` joins the coverage map (`INV-`→`AC-`, WARN, suppressed until ACs exist). Two supporting pieces: `asserts`/`upholds` added to the reference-marker set (the assertion verb wasn't recognized, so a correctly-asserted invariant wouldn't have been credited); and a **structural-enforcement escape** mirroring the THR non-SEC-control escape — an invariant whose own block declares it enforced *by construction* / by a `DATA-` constraint is covered without an AC, so structurally-guaranteed invariants don't false-fire. `derive-functional` rule + `audit-spec` linter-inventory + `SPEC-CHECKS.md` updated.
+- Regression tests `ac-single-owner-violation`/`-ok`, `invariant-coverage-orphan`/`-asserted-ok`/`-structural-ok`/`-premature-suppressed`.
+
 ## 4.8.3
 
 ### Fixed — two false-positive/over-strict findings surfaced by real derive-tasks output
