@@ -38,6 +38,9 @@ for i, a in enumerate(sys.argv):
         WANT = sys.argv[i + 1]
 INIT = "--init" in flags
 REPORT = "--report" in flags                                   # render a human-readable, tool-VOUCHED completion report
+ASSUME_DONE = "--assume-done" in flags                         # gate a record as if it claimed done (for the
+#   tool-call-time exec gate: PreToolUse fires BEFORE the `status: done` edit lands, so the on-disk record
+#   still says in-progress — this evaluates "would the done-claim hold?" against the unchanged obligation rows.
 
 # Mirror lint_spec's type-prefix vocabulary (kept in sync via selfcheck).
 TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|JRN|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
@@ -243,6 +246,8 @@ for p in records:
     tid = p.stem
     status, rows = parse_record(p)
     where = tid
+    if ASSUME_DONE:
+        status = "done"
     if status not in ("done", "complete"):
         met = sum(1 for s, _ in rows.values() if is_pass(s))
         add("INFO", where, "in-progress (%d/%d obligations PASS) — not gating." % (met, len(rows)))

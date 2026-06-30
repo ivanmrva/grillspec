@@ -29,11 +29,12 @@ repo is wired so this is near-zero effort - see below. You can always run it by 
 
 ## What's automatic (in the plugin) vs. what you add
 
-**Ships in the plugin (passive):** the skills, engines, linters, the project-local spec-governance hook, and the subagents below. **The plugin installs no global hooks** - it acts only when you invoke a skill, so it never fires on your other projects or your `~/.claude` config.
+**Ships in the plugin (passive):** the skills, engines, linters, the project-local spec-governance hook, the project-local exec-gate, and the subagents below. **The plugin installs no _global_ hooks** - it acts only when you invoke a skill, and the two enforcers it does install are wired into the spec repo only, so nothing fires on your other projects or your `~/.claude` config.
 
 **You add to your project** (a plugin cannot ship a permission allowlist): a `.claude/settings.json` for smooth auto/AFK runs - a broad in-project `allow`, a `deny` for destructive/out-of-scope commands, and **no `additionalDirectories`** so writes cannot leave the project. Prune the allow-list to your stack and add your test command (see `test-runner`). **Scope and destructive-command guarding is this permission layer's job** (Claude Code already prompts) - the plugin does not impose a global command guard.
 - **Spec governance (project-local, in the plugin → installed into your repo):**
   - `spec_governance_hook.sh` -> the walking-skeleton installs it as the project's spec **git pre-commit hook**. On commit it runs `lint_spec.py` + `guard_derived.py` over `spec/` and blocks a commit that breaks consistency or hand-edits a derived artifact. Runs **only in that repo, on commit** - nothing global. (Override: `git commit --no-verify`.) The conductor also runs `lint_spec.py` + `impact.py` each run, so consistency/propagation feedback isn't deferred to commit time.
+  - `gate_exec.py` -> the walking-skeleton runs `install_exec_gates.py` to merge it as a **Claude Code PreToolUse hook** into this repo's `.claude/settings.json`. It is the **tool-call-time** sibling of the commit hook: it enforces the per-task build *order* a commit-time check can't see - a `src/**` edit is blocked until a failing test was recorded for the active task (red-before-green), and a flip to `status: done` is blocked while `check_task_record.py` is unmet. Project-local, fires **only in that repo**. (Override: `GRILLSPEC_GATE_OFF=1`.) The loop records its RED via `gate_exec.py --start T-NNN` / `--red --test "…"`.
 - **Subagents** (in the plugin):
   - `test-runner` (Sonnet) - run the suites in parallel while you implement; failures come back as
     `file:line - reason`, logs stay out of the main context.

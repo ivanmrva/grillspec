@@ -77,14 +77,21 @@ unless someone genuinely wants just that one skill via managed install.
 
 **Ships in the plugin** (resolved from the install cache via `${CLAUDE_PLUGIN_ROOT}`):
 the full skill set, the shared engines and layout map (`grill-shared/`), the spec
-linters and the project-local spec-governance hook (`tools/`), and the subagents
-(`agents/`). **The plugin installs no global hooks** - it acts only when you
-invoke a skill, and never touches other projects or your Claude config.
+linters and the two project-local enforcers - the spec-governance hook and the
+exec-gate (`tools/`) - and the subagents (`agents/`). **The plugin installs no
+_global_ hooks** - it acts only when you invoke a skill, and never touches other
+projects or your `~/.claude` config.
 
-**Created in your project at runtime** by the skills: the `spec/` tree. The
-system enforces its own `spec/` layout and **creates it regardless of how your
-repo is otherwise organised** - that is expected and part of usage. Nothing is
-copied into your project's `.claude/`.
+**Created in your project at runtime** by the skills: the `spec/` tree, and -
+once the walking-skeleton runs - the two **project-local** enforcers wired into
+this repo only: the git **pre-commit** spec hook in `.git/hooks/`, and a Claude
+Code **PreToolUse exec-gate** merged into this project's `.claude/settings.json`
+(it enforces red-before-green and blocks a hollow done-claim _at tool-call time_,
+where commit-time checks can't see the ordering). The system enforces its own
+`spec/` layout and **creates it regardless of how your repo is otherwise
+organised** - that is expected and part of usage. The plugin install cache stays
+read-only; nothing is written to your project's `.claude/` until the
+walking-skeleton runs, and never to your `~/.claude/`.
 
 ## Recommended project add-ons (optional, not installable by a plugin)
 
@@ -100,14 +107,24 @@ want them:
   `spec_governance_hook.sh` as the project's spec **pre-commit hook** - it runs
   `lint_spec.py` + `guard_derived.py` over `spec/`, scoped to that repo. Run the
   same linters in CI on every push; see `docs/`.
+- **Exec-gate (project-local).** The walking-skeleton also runs
+  `install_exec_gates.py`, which merges a **PreToolUse hook** into this project's
+  `.claude/settings.json` (`gate_exec.py`). It is the tool-call-time sibling of
+  the commit-time hook above: it blocks a `src/**` edit until a failing test was
+  recorded for the active task (red-before-green), and blocks flipping a task to
+  `status: done` while its Verification Record is unmet. Scoped to this repo only.
+  Override per call with `GRILLSPEC_GATE_OFF=1` (the analogue of `--no-verify`).
 
 ## Governance is project-local, never global
 
-The plugin installs **no Claude Code hooks**, so it never fires on your other
-projects or your `~/.claude` config. Spec consistency and the derived-artifact
-guard run where they belong: the conductor invokes them each run, and the
-project's own git **pre-commit hook** (`spec_governance_hook.sh`) + CI enforce
-them at commit/PR time - inside that repo only.
+The plugin installs **no _global_ Claude Code hooks**, so it never fires on your
+other projects or your `~/.claude` config. Both enforcement layers live inside
+the spec repo: the conductor invokes the spec linters each run, the git
+**pre-commit hook** (`spec_governance_hook.sh`) + CI enforce spec consistency and
+the derived-artifact guard at commit/PR time, and the **project-local PreToolUse
+exec-gate** (`gate_exec.py`, wired into this repo's `.claude/settings.json`)
+enforces the per-task build _order_ at tool-call time - the one thing a
+commit-time check structurally can't see. All three are inside that repo only.
 
 ## Editing and releasing
 

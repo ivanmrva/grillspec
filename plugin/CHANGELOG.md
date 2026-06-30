@@ -4,6 +4,15 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.9.0
+
+### Added — tool-call-time exec gate: the per-task build *order* enforced live, not just at commit
+- **`gate_exec.py` — a project-local Claude Code PreToolUse hook, the tool-call-time sibling of `spec_governance_hook.sh`.** The existing checkers gate a task's *end state* at commit/CI; nothing watched the *order* of the work while it happened — and ordering (red-before-green, "don't batch") is exactly what a commit-time check structurally can't see (`exec-engine`: "temporal order can't be proven after the fact"). Two gates, both reusing existing tools: **(1) red-before-green** — a `src/**` (non-test) edit is blocked while a task is active until a real failing-test run was recorded for it (`--red --test "<cmd>"` runs the command and refuses to record unless it exits non-zero, so the red-log means a test was *seen* to fail, not asserted); **(2) no hollow done-claim** — an edit flipping a task record to `status: done` is blocked unless `check_task_record.py` already passes. Fail-**open** on any internal error (a gate bug never bricks editing); engages **only inside an exec loop** (no active task → no-op), so the walking-skeleton and ad-hoc edits aren't gated. Override per call with `GRILLSPEC_GATE_OFF=1` (the analogue of `git commit --no-verify`). Enforces red-before-code **per task** (not yet per-line micro-cycle — a later ratchet increment).
+- **`install_exec_gates.py` — the idempotent installer the walking-skeleton runs.** Merges the PreToolUse hook into the project's `.claude/settings.json`, preserving the user's other keys/hooks; no-ops if already present. Project-local like the git pre-commit hook — it writes only **this** repo's `.claude/`, never `~/.claude`, and never fires on other projects.
+- **`check_task_record.py --assume-done`** — gate a record against the full done-bar regardless of its on-disk `status:`. Needed because PreToolUse fires *before* the `status: done` edit lands, so the on-disk record still reads `in-progress`; the flag asks "would the done-claim hold against the existing obligation rows?".
+- **Wiring:** `derive-tasks` walking-skeleton stands up **exec-order governance (c)** alongside code (a) and spec/doc (b); the `exec-engine` RED step records its red run through the gate (`--start` / `--red`) and the process-bookend documents live ordering enforcement. README/WORKING reword the guarantee from "no Claude Code hooks" to **"no _global_ hooks — two project-local enforcers wired into the spec repo only"** (and "nothing copied into `.claude/`" → "nothing until the walking-skeleton runs; never to `~/.claude/`").
+- Tests `test_gate_exec.py` (18 — RED gate · done-claim gate · test-file exemption · `--red` rejects a passing command · override · installer merge/idempotency/preservation).
+
 ## 4.8.4
 
 ### Added — two coverage edges that close real silent-pass holes (both WARN, both the down-direction mirror of an existing check)
