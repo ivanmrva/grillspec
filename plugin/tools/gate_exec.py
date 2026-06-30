@@ -59,6 +59,17 @@ def gate_dir(root: Path) -> Path:
     return root / "spec" / "10-delivery" / "verification" / ".gate"
 
 
+def ensure_gate_dir(root: Path) -> Path:
+    """mkdir the gate dir and make it self-ignoring — the active-task pointer and red-logs are
+    transient per-session build state, never committed (and they'd churn/conflict if they were)."""
+    g = gate_dir(root)
+    g.mkdir(parents=True, exist_ok=True)
+    gi = g / ".gitignore"
+    if not gi.is_file():
+        gi.write_text("# transient exec-gate state — not version-controlled\n*\n")
+    return g
+
+
 def config(root: Path) -> dict:
     p = root / ".claude" / "grillspec-gate.json"
     if p.is_file():
@@ -109,8 +120,7 @@ def cmd_start(task: str) -> int:
     if not re.fullmatch(r"T-\d+", task or ""):
         print("gate: --start needs a task id like T-014", file=sys.stderr)
         return 1
-    g = gate_dir(root)
-    g.mkdir(parents=True, exist_ok=True)
+    g = ensure_gate_dir(root)
     (g / "active-task").write_text(task + "\n")
     print("gate: active task = %s (RED gate engaged for src/** edits)" % task)
     return 0
@@ -143,7 +153,7 @@ def cmd_red(test_cmd: str) -> int:
         print("gate --red: that test command PASSED (exit 0) — RED needs a test that FAILS for the "
               "right reason before you write the code. Write the failing test first.", file=sys.stderr)
         return 1
-    g = gate_dir(root)
+    g = ensure_gate_dir(root)
     (g / "red").mkdir(parents=True, exist_ok=True)
     (g / "red" / (task + ".json")).write_text(json.dumps({
         "task": task, "test_cmd": test_cmd, "recorded_at": now_iso(),

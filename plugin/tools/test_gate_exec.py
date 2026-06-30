@@ -84,6 +84,8 @@ def main():
     check("--red on a failing test recorded", r.returncode == 0)
     check("red-log file exists",
           (p / "spec" / "10-delivery" / "verification" / ".gate" / "red" / "T-007.json").is_file())
+    check("gate dir self-ignores (transient state not committed)",
+          (p / "spec" / "10-delivery" / "verification" / ".gate" / ".gitignore").read_text().strip().endswith("*"))
     r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
     check("src edit allowed after red-log", r.returncode == 0)
 
