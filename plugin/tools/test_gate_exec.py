@@ -37,6 +37,18 @@ def mkproject():
     return d
 
 
+def mkgitproject(branch):
+    """A git project checked out on `branch` — for the branch-derived (parallel-safe) active task."""
+    d = mkproject()
+    (d / "README").write_text("x\n")          # something to track so the initial commit isn't empty
+    env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t",
+               GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+    for cmd in (["git", "init", "-q"], ["git", "add", "-A"],
+                ["git", "commit", "-qm", "init"], ["git", "checkout", "-qb", branch]):
+        subprocess.run(cmd, cwd=d, env=env, capture_output=True)
+    return d
+
+
 PASS = FAIL = 0
 
 
@@ -111,6 +123,39 @@ def main():
     r = run_hook(p, "Edit", {"file_path": str(rec),
                              "old_string": "PENDING", "new_string": "PASS"})
     check("non-done edit to record allowed", r.returncode == 0)
+
+    # --- branch-derived active task (parallel-safe, no --start needed) ------------------
+    gb = mkgitproject("task/T-021-foo")
+    bsrc = gb / "src" / "c.py"
+    r = run_hook(gb, "Write", {"file_path": str(bsrc), "content": "x"})
+    check("on a task branch + no red-log → src edit DENIED (branch is the signal)", r.returncode == 2)
+    r = run_sub(gb, "--red", "--test", "false")          # no --start — task comes from the branch
+    check("--red works with no --start (task derived from branch)", r.returncode == 0)
+    check("red-log keyed by the branch task",
+          (gb / "spec" / "10-delivery" / "verification" / ".gate" / "red" / "T-021.json").is_file())
+    r = run_hook(gb, "Write", {"file_path": str(bsrc), "content": "x"})
+    check("src edit allowed after branch-derived red-log", r.returncode == 0)
+
+    # --- a real task branch beats a stale --start pointer -------------------------------
+    run_sub(gb, "--start", "T-999")                       # stale/wrong explicit pointer
+    r = run_sub(gb, "--red", "--test", "false")           # should still record under T-021 (the branch)
+    check("branch task overrides a stale --start pointer",
+          (gb / "spec" / "10-delivery" / "verification" / ".gate" / "red" / "T-021.json").is_file())
+
+    # --- two parallel worktrees on different branches don't clobber ---------------------
+    # (each worktree has its own local .gate/; the branch keys the red-log — simulate with 2 repos)
+    wa = mkgitproject("task/T-030-a")
+    wb = mkgitproject("task/T-031-b")
+    run_sub(wa, "--red", "--test", "false")
+    run_sub(wb, "--red", "--test", "false")
+    # A's edit needs A's red-log; it must NOT be unblocked by B's, and vice-versa
+    ra = run_hook(wa, "Write", {"file_path": str(wa / "src" / "a.py"), "content": "x"})
+    rb = run_hook(wb, "Write", {"file_path": str(wb / "src" / "b.py"), "content": "x"})
+    check("parallel worktree A enforces its own task", ra.returncode == 0)
+    check("parallel worktree B enforces its own task", rb.returncode == 0)
+    check("worktree A red-log is A's task only",
+          (wa / "spec/10-delivery/verification/.gate/red/T-030.json").is_file()
+          and not (wa / "spec/10-delivery/verification/.gate/red/T-031.json").is_file())
 
     # --- installer: fresh settings.json -------------------------------------------------
     fresh = Path(tempfile.mkdtemp())

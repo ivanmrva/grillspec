@@ -21,10 +21,16 @@ It is NOT a global hook and never fires on other projects or the user's `~/.clau
   user's ability to edit). It DENIES (exit 2) only on a clean, intended gate violation.
   Emergency override: set GRILLSPEC_GATE_OFF=1 (the tool-call analogue of `git commit --no-verify`).
 
+The active task is derived from the **git branch** (`task/T-NNN-…`, which the engineering workflow
+already mandates per task). That makes the gate **parallel-safe**: an AFK wave runs each task in its
+own branch/worktree, so nothing shares a pointer to clobber, and each worktree's `.gate/` is local
+(git-ignored, never carried between worktrees). `--start` writes an explicit pointer only as a
+fallback for flows that don't branch-per-task; a stale pointer can't override a real task branch.
+
 Subcommands the exec loop calls (the engine instructs it; the gate enforces it):
-  --start T-NNN              mark T-NNN the active task (gate engages for it; off when no task active)
   --red   --test "<cmd>"     run <cmd>, REQUIRE it to fail, record the red-log for the active task
-  --done  [T-NNN]            clear the active task (after merge)
+  --start T-NNN              (fallback) set the active task when NOT on a `task/T-NNN` branch
+  --done  [T-NNN]            clear the explicit pointer (no-op when the branch is the signal)
   --hook                     PreToolUse entrypoint: reads the hook JSON on stdin, allow(0)/deny(2)
 """
 import json
@@ -88,7 +94,26 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+def branch_task(root: Path):
+    """The active task derived from the current git branch (`task/T-NNN-…`). This is the PRIMARY
+    signal because it is **parallel-safe**: AFK runs each task in its own branch/worktree, so the
+    branch identifies the task with no shared pointer to clobber — and a worktree's `.gate/` is local
+    (it's git-ignored, so it never travels between worktrees). Returns None off a task branch."""
+    try:
+        out = subprocess.run(["git", "-C", str(root), "rev-parse", "--abbrev-ref", "HEAD"],
+                             capture_output=True, text=True, check=True)
+    except Exception:
+        return None
+    m = re.search(r"T-\d+", out.stdout.strip())
+    return m.group(0) if m else None
+
+
 def active_task(root: Path):
+    """Branch-derived task first (parallel-safe), then an explicit `--start` pointer as a fallback for
+    flows that don't branch-per-task. A stale pointer can't override a real task branch."""
+    bt = branch_task(root)
+    if bt:
+        return bt
     p = gate_dir(root) / "active-task"
     if p.is_file():
         t = p.read_text().strip()

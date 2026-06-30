@@ -4,6 +4,14 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.10.0
+
+### Changed — the exec-gate is parallel-safe: active task derived from the git branch (covers AFK)
+- **The gate now reads the active task from the `task/T-NNN` branch**, not a single written pointer. This closes the real hole: `autorun` runs a wave **in parallel**, one task per branch/worktree — a single `.gate/active-task` pointer would clobber across tasks, and (because `.gate/` is git-ignored) a written pointer never travels into a worktree anyway. Keying off the branch makes each parallel task identify itself with **no shared state**, so the per-task RED→GREEN cadence is held **live in every AFK wave**, not just caught at the commit-time gate — which is exactly where TDD drift is worst. A stale `--start` pointer can no longer override a real task branch. `--start`/`--done` stay as an explicit fallback for flows that don't branch-per-task (the gate no-ops off a task branch with no pointer, as before).
+- **Worktree inheritance made explicit.** `derive-tasks` now directs the walking-skeleton to **commit** the wired `.claude/settings.json` + vendored tools (repo config, not a personal `settings.local.json`) so git worktrees — which only see committed files — actually load the hook; an uncommitted hook would silently not fire in an AFK worktree. `autorun` gains a rule documenting that the gate enforces every task in the wave independently and that each parallel task runs in its own branch/worktree.
+- `exec-engine` RED step simplified: record RED with `--red --test "…"` and the gate derives the task from the branch; `--start` only when off a task branch.
+- Tests: branch-derived active task · `--red` with no `--start` · branch beats a stale pointer · two parallel worktrees enforce their own task without cross-unblocking (31 gate tests).
+
 ## 4.9.1
 
 ### Added — exec-gate consistency: cataloged, and its state self-ignores
