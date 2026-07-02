@@ -307,13 +307,28 @@ for p in records:
             if tok.startswith(EVIDENCE_PREFIXES) and not (ROOT / tok).exists():
                 add("ERROR", where, "row '%s' cites evidence '%s' which does not exist on disk." % (key, tok))
 
-    # 6. numeric bars - coverage/mutation measured >= stated bar.
+    # 6. numeric bars - coverage/mutation measured >= stated bar. A present, non-N/A row MUST cite a measured
+    #    value AND its bar in a parseable form, else the gate is unverifiable - free-form evidence ("looks good")
+    #    is exactly how a mutation/coverage gate gets silently bypassed. (N/A - e.g. no domain-logic change - is
+    #    a legitimate skip and carries its reason.)
     for key in ("coverage", "mutation"):
         if key in rows:
-            ev = rows[key][1]
+            st, ev = rows[key]
+            if re.match(r"\s*n/?a\b", st, re.I) or re.match(r"\s*n/?a\b", ev, re.I):
+                # an N/A must justify itself - a bare "N/A"/"—" silently skips the assertion-quality gate
+                # (mutation especially: it's the one mechanical proxy for "the tests actually bite").
+                leftover = re.sub(r"n/?a|—|[-:\s]", "", st + " " + ev, flags=re.I)
+                if not leftover:
+                    add("ERROR", where, "row '%s' is N/A but states no reason - a bare N/A silently skips the "
+                                        "%s gate; state why (e.g. 'N/A — no domain-logic change')." % (key, key))
+                continue
             nums = re.findall(r"(\d+(?:\.\d+)?)\s*%?", ev)
-            bar_m = re.search(r"bar\D*(\d+(?:\.\d+)?)", ev, re.I)
-            if nums and bar_m:
+            bar_m = re.search(r"(?:bar|threshold|target|min(?:imum)?|floor|>=|≥|⩾)\D*(\d+(?:\.\d+)?)", ev, re.I)
+            if not (nums and bar_m):
+                add("ERROR", where, "row '%s' must cite a measured value AND its bar (e.g. '86%% (bar 80%%)', or "
+                                    "'threshold'/'target'/'>='/'≥') so the gate is checkable - free-form evidence "
+                                    "can't be verified." % key)
+            else:
                 measured, bar = float(nums[0]), float(bar_m.group(1))
                 if measured < bar:
                     add("ERROR", where, "%s %.3g is below its bar %.3g." % (key, measured, bar))

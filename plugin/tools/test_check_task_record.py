@@ -130,6 +130,20 @@ expect("fabricated-evidence", run(proj(record(rows={"AC-014a": ("tests/e2e/GHOST
 expect("coverage-below-bar", run(proj(record(rows={"coverage": ("61% (bar 80%)", "PASS")}))),
        must=["ERROR", "coverage 61 is below its bar 80"])
 
+# ── the bar may be worded 'threshold'/'target'/'>=', not just 'bar' ─────────
+expect("coverage-threshold-word-ok", run(proj(record(rows={"coverage": ("84% (threshold 80%)", "PASS")}))),
+       must=["0 error(s)"], forbid=["ERROR"])
+expect("coverage-threshold-below-fails", run(proj(record(rows={"coverage": ("61% (threshold 80%)", "PASS")}))),
+       must=["ERROR", "below its bar"])
+
+# ── a free-form coverage/mutation cell (no measured+bar, not N/A) is unverifiable ──
+expect("coverage-freeform-fails", run(proj(record(rows={"coverage": ("looks good", "PASS")}))),
+       must=["ERROR", "must cite a measured value AND its bar"])
+
+# ── a BARE N/A on the mutation gate (no reason) is a silent skip -> ERROR ──
+expect("mutation-bare-na-fails", run(proj(record(rows={"mutation": ("—", "N/A")}))),
+       must=["ERROR", "states no reason"])
+
 # ── a done-claim that OMITS the deploy row fails (silent scope reduction) ───
 expect("missing-deploy-row", run(proj(record(drop=("deploy",)))),
        must=["ERROR", "deploy", "cannot be omitted"], forbid=["0 error(s)"])

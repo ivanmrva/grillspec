@@ -44,7 +44,22 @@ jobs:
       - name: migration-real regression suite — the fake/empty-migration tripwire still fires
         run: python3 plugin/tools/test_check_migration_real.py
 
-      - name: e2e gate-chain — the five accountability gates compose on a realistic project
+      - name: mock-budget regression suite — the over-mocking tripwire still fires
+        run: python3 plugin/tools/test_check_mock_budget.py
+
+      - name: test-tiers regression suite — declared-tier-vs-actual-suite still fires
+        run: python3 plugin/tools/test_check_test_tiers.py
+
+      - name: e2e-target regression suite — the e2e-against-a-local-stack tripwire still fires
+        run: python3 plugin/tools/test_check_e2e_target.py
+
+      - name: operate-records regression suite — the 12-operate reconciliation still fires
+        run: python3 plugin/tools/test_check_operate_records.py
+
+      - name: release-attestation regression suite — the opt-in release gate still fires
+        run: python3 plugin/tools/test_check_release_attestation.py
+
+      - name: e2e gate-chain — the accountability gates compose on a realistic project
         run: python3 plugin/tools/test_e2e_gates.py
 
       - name: build — all distribution artifacts compile

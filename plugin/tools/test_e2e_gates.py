@@ -2,10 +2,12 @@
 # test_e2e_gates.py - end-to-end integration test for the accountability + ops gates as a CHAIN.
 #
 # The per-tool suites (test_check_task_record / test_check_no_fakes / test_check_config_drift /
-# test_check_deploy_real / test_check_migration_real) lock each tool's behaviour in isolation. THIS proves they
+# test_check_deploy_real / test_check_migration_real / test_check_mock_budget / test_check_test_tiers /
+# test_check_e2e_target / test_check_operate_records) lock each tool's behaviour in isolation. THIS proves they
 # compose on one realistic mini-project: a properly-done task (real code, no fakes, declared config, a real
-# deploy, a real migration, a backed Verification Record) passes ALL FIVE gates, and each distinct kind of cheat
-# trips exactly the gate that owns it. Stdlib only; no network. Run: python3 tools/test_e2e_gates.py
+# deploy, a real migration, a backed Verification Record, a full tiered test tree, a reconciled operate record)
+# passes ALL gates, and each distinct kind of cheat trips exactly the gate that owns it. Stdlib only; no network.
+# Run: python3 tools/test_e2e_gates.py
 import subprocess, sys, tempfile, shutil, pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -14,6 +16,10 @@ FAKE = HERE / "check_no_fakes.py"
 DRIFT = HERE / "check_config_drift.py"
 DEPLOY = HERE / "check_deploy_real.py"
 MIG  = HERE / "check_migration_real.py"
+MB   = HERE / "check_mock_budget.py"
+TT   = HERE / "check_test_tiers.py"
+ET   = HERE / "check_e2e_target.py"
+OPR  = HERE / "check_operate_records.py"
 
 def project(d):
     """A clean, fully-backed mini-project: one done task, real code, declared config, @covers-tagged tests."""
@@ -70,6 +76,20 @@ def project(d):
             "    steps:\n      - run: helm upgrade --install app ./chart\n",
         # a REAL migration (has DDL) - the migration gate's clean side
         "migrations/001_orders.sql": "CREATE TABLE orders (id serial primary key, total numeric);\n",
+        # the machine-readable tier contract (the tier/mock/e2e gates read this)
+        "spec/09-solution/test/levels.md":
+            "# levels\n\n## Tier contract\n"
+            "| tier | real-deps | may-mock | mock-ceiling | target-env | coverage-bar | mutation-bar |\n"
+            "|---|---|---|---|---|---|---|\n"
+            "| unit | none | — | none | local | 80% | 70% |\n"
+            "| integration | db | third-party-network | boundary-only | local | 70% | — |\n"
+            "| contract | provider,consumer | — | none | local | — | — |\n"
+            "| e2e | all | — | none | preview | — | — |\n",
+        # every declared tier has a suite; no mocks; the e2e reads its target from env
+        "tests/unit/charge.unit.test.js": "it('adds', () => { expect(1 + 1).toBe(2); });\n",
+        "tests/integration/charge.int.test.js": "it('persists', async () => { await db.save({}); });\n",
+        # a 12-operate deploy record naming a real T- to a declared env - the operate gate's clean side
+        "spec/12-operate/deploy-dev-1.0.0.md": "# deploy dev 1.0.0\nDeployed T-001 to dev.\n",
     }
     for rel, content in f.items():
         p = d / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(content, encoding="utf-8")
@@ -89,7 +109,7 @@ def fresh(mutate=None):
     if mutate: mutate(d)
     return d
 
-# ── 1. the clean project passes ALL FOUR gates ─────────────────────────────
+# ── 1. the clean project passes ALL gates ──────────────────────────────────
 d = fresh()
 try:
     r1 = run(REC,   [str(d / "spec"), "--task", "T-001"])
@@ -97,11 +117,19 @@ try:
     r3 = run(DRIFT, [str(d)])
     r4 = run(DEPLOY, [str(d)])
     r5 = run(MIG,   [str(d)])
+    r6 = run(MB,    [str(d)])
+    r7 = run(TT,    [str(d)])
+    r8 = run(ET,    [str(d)])
+    r9 = run(OPR,   [str(d)])
     check("clean: task-record passes",  r1.returncode == 0, r1.stdout + r1.stderr)
     check("clean: no-fakes passes",     r2.returncode == 0, r2.stdout + r2.stderr)
     check("clean: config-drift passes", r3.returncode == 0, r3.stdout + r3.stderr)
     check("clean: deploy-real passes",  r4.returncode == 0, r4.stdout + r4.stderr)
     check("clean: migration-real passes", r5.returncode == 0, r5.stdout + r5.stderr)
+    check("clean: mock-budget passes",  r6.returncode == 0, r6.stdout + r6.stderr)
+    check("clean: test-tiers passes",   r7.returncode == 0, r7.stdout + r7.stderr)
+    check("clean: e2e-target passes",   r8.returncode == 0, r8.stdout + r8.stderr)
+    check("clean: operate-records passes", r9.returncode == 0, r9.stdout + r9.stderr)
     rr = run(REC, [str(d / "spec"), "--report", "T-001"])
     check("clean: report says VERIFIED", "VERIFIED" in rr.stdout and rr.returncode == 0, rr.stdout)
 finally:
@@ -179,6 +207,49 @@ d = fresh(drop_deploy_row)
 try:
     r = run(REC, [str(d / "spec"), "--task", "T-001"])
     check("nodeployrow: task-record catches omission", r.returncode == 1 and "deploy" in (r.stdout + r.stderr))
+finally:
+    shutil.rmtree(d, ignore_errors=True)
+
+# ── 8. a mock at a 'none'-ceiling tier trips mock-budget ONLY ──────────────
+def unit_mock(d):
+    (d / "tests/unit/charge.unit.test.js").write_text("jest.mock('../../src/charge');\nit('x', () => {});\n")
+d = fresh(unit_mock)
+try:
+    check("unitmock: mock-budget catches it", run(MB, [str(d)]).returncode == 1)
+    check("unitmock: test-tiers unaffected",  run(TT, [str(d)]).returncode == 0)
+    check("unitmock: no-fakes unaffected",    run(FAKE, [str(d)]).returncode == 0)
+finally:
+    shutil.rmtree(d, ignore_errors=True)
+
+# ── 9. a declared tier with no suite trips test-tiers ONLY ─────────────────
+def drop_integration(d):
+    shutil.rmtree(d / "tests" / "integration", ignore_errors=True)
+d = fresh(drop_integration)
+try:
+    r = run(TT, [str(d)])
+    check("notier: test-tiers catches missing suite", r.returncode == 1 and "integration" in (r.stdout + r.stderr))
+    check("notier: mock-budget unaffected",           run(MB, [str(d)]).returncode == 0)
+finally:
+    shutil.rmtree(d, ignore_errors=True)
+
+# ── 10. an "e2e" on a local stack trips e2e-target ONLY ────────────────────
+def localhost_e2e(d):
+    (d / "tests/e2e/charge.test.js").write_text("// @covers AC-001a\nconst base = 'http://localhost:3000';\nit('charges', () => {});\n")
+d = fresh(localhost_e2e)
+try:
+    check("localhoste2e: e2e-target catches it", run(ET, [str(d)]).returncode == 1)
+    check("localhoste2e: mock-budget unaffected", run(MB, [str(d)]).returncode == 0)
+finally:
+    shutil.rmtree(d, ignore_errors=True)
+
+# ── 11. a dangling ref in a 12-operate record trips operate-records ONLY ───
+def dangling_operate(d):
+    (d / "spec/12-operate/deploy-dev-1.0.0.md").write_text("# deploy\nDeployed T-999 to dev.\n")
+d = fresh(dangling_operate)
+try:
+    r = run(OPR, [str(d)])
+    check("danglingop: operate-records catches it", r.returncode == 1 and "T-999" in (r.stdout + r.stderr))
+    check("danglingop: no-fakes unaffected",        run(FAKE, [str(d)]).returncode == 0)
 finally:
     shutil.rmtree(d, ignore_errors=True)
 

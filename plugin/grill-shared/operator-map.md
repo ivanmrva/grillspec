@@ -17,7 +17,7 @@ produce is normal git content; consistency is kept by the linter + propagation.
 → solution (`derive-architecture` · `-data` · `-api` · `-security` · `-infra-ops` · `-observability` ·
 `-test` · `-impl`) → **[implementation-readiness]** → delivery prep (`derive-conventions` →
 `derive-tasks`) → **[delivery-readiness]** → per task: `implement-task` → `run-tests` → `conformance-review` (or **`autorun`** for the whole AFK-eligible set, autonomously — see `WORKING.md`)
-→ (branch → MR → CI → merge → deploy dev → e2e pipeline) → **(release: your call — consult the readiness checklist)** → operate
+→ (branch → MR → CI → merge → deploy dev → e2e pipeline) → **(release: run `audit-build --deep` for the independent whole-build attestation + the release gate `check_release_attestation --require-deep --require-fresh`, then your call — consult the readiness checklist)** → operate
 (`deploy-release` · `migrate-data` · `operate-incident` → `diagnose`) + maintain (focused changes).
 Always available: **`prototype`** (answer one empirical question) · **`generate-docs`** (publish the project site).
 
@@ -94,7 +94,8 @@ Several surfaces verify the work; they're complementary, not redundant:
 |---|---|---|---|
 | **`run-tests`** | the slice's own suite is green; every `AC-` exercised | each task | runs |
 | **code fitness functions** (pre-commit hook + CI) | boundary/dependency rules, contract shapes | every commit | runs — this **is** conformance-review's mechanical subset, automated |
-| **`conformance-review`** | code vs **our spec** (`UC-`/`AC-`/`API-`/`SEC-`/`NFR-` + traceability) **+ design-health** | each task (`changed`) / on demand (`full`) | partly — judgment + the fitness functions above |
+| **`conformance-review`** | code vs **our spec** (`UC-`/`AC-`/`API-`/`SEC-`/`NFR-` + traceability) **+ design-health** — the per-task, build-time, **self-certifying** gate | each task (`changed`) / wider on demand (`full`) | partly — judgment + the fitness functions above |
+| **`audit-build`** | the **whole build** vs the spec's **process** — the **independent, release-time attestation** that the per-task gates were genuinely run + backed (ledger integrity), cross-task coverage survives, the suite shape matches the declared distribution, and `12-operate/` records reconcile. Distrusts the accumulated verdicts; reuses conformance-review's checks at aggregate scope | on demand / **before a release** | partly — `check_task_record.py` + `check_mock_budget.py`/`check_test_tiers.py`/`check_e2e_target.py`/`check_operate_records.py` baseline + judgment |
 | **`audit-spec`** | the **spec itself** — consistency · contradictions · domain/branch completeness · code-gen readiness (the judgment above `lint_spec.py`'s mechanical baseline) | on demand / before a build or release | partly — `lint_spec.py` + `check_contracts.py` baseline + judgment |
 | native **`/code-review`** | generic correctness · security · regressions | **ad hoc** (NOT in the pipeline; local CLI, or the hosted GitHub App on Team/Enterprise at ~$15–25/PR) | runs |
 | **Tier-B suite** (journey / fitness / NFR) | cross-feature journeys, architectural characteristics, NFR evidence | CI / post-merge pipeline | runs |
@@ -104,6 +105,13 @@ Key relationships: **`conformance-review`'s blocking checks ARE the fitness func
 automatically** — the skill adds what needs judgment (does behaviour match the `AC-`, is the design
 deepening). And **`conformance-review` ≠ native `/code-review`**: ours owns spec-conformance +
 traceability (the native one has no spec); the native one owns generic bug/security hunting (ours
-doesn't), and is **run ad hoc, not wired into CI**. The automated layers all run as **GitHub Actions**
+doesn't), and is **run ad hoc, not wired into CI**. And **`conformance-review` ≠ `audit-build`** — the
+same two-axes split as spec-side: judge the **spec** (`audit-spec`) or the **build** (`conformance-review` /
+`audit-build`); one **task** (`conformance-review`) or the **whole** of it (`audit-build`). QA vs external
+audit: `conformance-review` is the inline, per-task, **self-certifying** gate (its verdict *is* the
+`conformance` gate row); `audit-build` is the independent, whole-build, release-time attestation that
+**distrusts** those verdicts and audits the ledger itself — a skill that certifies the build must not also
+be the one that audits it. Use `conformance-review` when finishing a task; use `audit-build` before a
+release or wave close. The automated layers all run as **GitHub Actions**
 (`.github/workflows/`): `spec-governance.yml` (lint + derived-guard), `code-ci.yml` (Layer 1 + optional
 Layer-2 conformance-review), `docs-site.yml` (Pages deploy).
