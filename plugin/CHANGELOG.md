@@ -4,6 +4,11 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.11.1
+
+### Fixed — numeric-bar check read the first digit anywhere as the measured value
+- **`check_task_record.py` false-failed a passing coverage/mutation row when its evidence named a task-id, a tool version, or per-file sub-scores before the headline metric.** The 4.11.0 hardening took `nums[0]` — the first number *anywhere* in the evidence — as the measured value, so `'…T-002 pure logic — 82.04% overall (…) ≥ 70%'` read `002` as the score and reported `mutation 2 is below its bar 70`. Now the measured value is the first **percent-tagged** number that isn't the bar (the `%` excludes ids/versions; skipping the bar's own position stops the threshold being read as the metric). Regression tests added for a task-id + per-file-subscore headline (must pass) and a genuinely-below-bar headline (must still fail).
+
 ## 4.11.0
 
 ### Added — whole-build audit + test-tier enforcement: prove the BUILD was done to process, not just each task

@@ -144,6 +144,16 @@ expect("coverage-freeform-fails", run(proj(record(rows={"coverage": ("looks good
 expect("mutation-bare-na-fails", run(proj(record(rows={"mutation": ("—", "N/A")}))),
        must=["ERROR", "states no reason"])
 
+# ── the measured value is the HEADLINE %, not the first digit anywhere: a task-id / per-file subscores
+#    before the headline metric must NOT false-fail a passing row (regression for the 4.11.0 nums[0] bug) ──
+expect("mutation-headline-not-taskid", run(proj(record(rows={"mutation":
+        ("test:mutation (Stryker), T-002 pure logic — 82.04% overall (account-state.ts 78.57% · stripe-mappers.ts 83.05%) ≥ 70% break", "PASS")}))),
+       must=["0 error(s)"], forbid=["ERROR", "below its bar"])
+# and it still CATCHES a real miss when the headline is below the bar, even with an id in the prose
+expect("mutation-headline-below-bar-caught", run(proj(record(rows={"mutation":
+        ("T-002 mutation — 61.5% overall ≥ 70% bar", "PASS")}))),
+       must=["ERROR", "61.5 is below its bar 70"])
+
 # ── a done-claim that OMITS the deploy row fails (silent scope reduction) ───
 expect("missing-deploy-row", run(proj(record(drop=("deploy",)))),
        must=["ERROR", "deploy", "cannot be omitted"], forbid=["0 error(s)"])

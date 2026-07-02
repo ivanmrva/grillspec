@@ -322,14 +322,19 @@ for p in records:
                     add("ERROR", where, "row '%s' is N/A but states no reason - a bare N/A silently skips the "
                                         "%s gate; state why (e.g. 'N/A — no domain-logic change')." % (key, key))
                 continue
-            nums = re.findall(r"(\d+(?:\.\d+)?)\s*%?", ev)
+            # the measured value is the first PERCENT-tagged number that is NOT the bar. Requiring the '%'
+            # excludes task-ids / versions / per-file digits ('T-002', 'v1.2'), and skipping the bar's own
+            # position stops the threshold being read as the metric. (The prior nums[0] grabbed the first digit
+            # ANYWHERE - so 'T-002 ... 82% ≥ 70%' read '002' as the score and false-failed a passing row.)
             bar_m = re.search(r"(?:bar|threshold|target|min(?:imum)?|floor|>=|≥|⩾)\D*(\d+(?:\.\d+)?)", ev, re.I)
-            if not (nums and bar_m):
-                add("ERROR", where, "row '%s' must cite a measured value AND its bar (e.g. '86%% (bar 80%%)', or "
-                                    "'threshold'/'target'/'>='/'≥') so the gate is checkable - free-form evidence "
-                                    "can't be verified." % key)
+            pcts = [(m.start(1), float(m.group(1))) for m in re.finditer(r"(\d+(?:\.\d+)?)\s*%", ev)]
+            measured = next((v for pos, v in pcts if not bar_m or pos != bar_m.start(1)), None) if bar_m else None
+            if measured is None or not bar_m:
+                add("ERROR", where, "row '%s' must cite a measured value AND its bar as %%-tagged numbers (e.g. "
+                                    "'86%% (bar 80%%)', or 'threshold'/'target'/'>='/'≥') so the gate is checkable - "
+                                    "free-form evidence can't be verified." % key)
             else:
-                measured, bar = float(nums[0]), float(bar_m.group(1))
+                bar = float(bar_m.group(1))
                 if measured < bar:
                     add("ERROR", where, "%s %.3g is below its bar %.3g." % (key, measured, bar))
 
