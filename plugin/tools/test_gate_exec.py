@@ -157,6 +157,43 @@ def main():
           (wa / "spec/10-delivery/verification/.gate/red/T-030.json").is_file()
           and not (wa / "spec/10-delivery/verification/.gate/red/T-031.json").is_file())
 
+    # --- gate 3: content tripwires — fire with NO active task (the bootstrap window) -----
+    g3 = mkproject()
+    tf = g3 / "tests" / "pay.test.js"
+    r = run_hook(g3, "Write", {"file_path": str(tf), "content": "it.skip('x', () => {})\n"})
+    check("skip marker into a test file → DENIED (no task needed)", r.returncode == 2)
+    check("deny message says red is the truthful signal", "truthful signal" in r.stderr)
+    r = run_hook(g3, "Write", {"file_path": str(tf), "content": "it('x', () => { expect(1).toBe(1) })\n"})
+    check("clean test write allowed", r.returncode == 0)
+    r = run_hook(g3, "Edit", {"file_path": str(tf), "old_string": "it('x', () => {",
+                              "new_string": "it.only('x', () => {"})
+    check(".only introduced by Edit → DENIED", r.returncode == 2)
+    r = run_hook(g3, "Write", {"file_path": str(g3 / "tests" / "test_pay.py"),
+                               "content": "@pytest.mark.skipif(no_db, reason='db not ready')\ndef test_p(): ...\n"})
+    check("pytest skipif into a test file → DENIED", r.returncode == 2)
+    r = run_hook(g3, "Write", {"file_path": str(tf),
+                               "content": "it.skip('q', () => {}) // no-skips: allow flaky FLK-2\n"})
+    check("inline-waived skip line allowed", r.returncode == 0)
+    # a PRE-EXISTING skip is not re-triggered by an edit that merely keeps it (line-set diff)
+    tf2 = g3 / "tests" / "legacy.test.js"
+    tf2.parent.mkdir(parents=True, exist_ok=True)
+    tf2.write_text("it.skip('legacy', () => {})\n")
+    r = run_hook(g3, "Write", {"file_path": str(tf2),
+                               "content": "it.skip('legacy', () => {})\nit('new', () => {})\n"})
+    check("rewrite keeping a pre-existing skip → allowed (only NEW lines gate)", r.returncode == 0)
+    # production side: a fake/mock-import is denied at the keystroke, comments are not
+    ps = g3 / "src" / "gw.py"
+    r = run_hook(g3, "Write", {"file_path": str(ps), "content": "class FakeGateway:\n    pass\n"})
+    check("Fake* class into src/ → DENIED", r.returncode == 2)
+    r = run_hook(g3, "Write", {"file_path": str(ps), "content": "from unittest.mock import MagicMock\n"})
+    check("mock import into src/ → DENIED", r.returncode == 2)
+    r = run_hook(g3, "Write", {"file_path": str(ps),
+                               "content": "# never use unittest.mock here\nclass Gateway:\n    pass\n"})
+    check("comment mentioning a mock lib allowed", r.returncode == 0)
+    r = run_hook(g3, "Write", {"file_path": str(tf), "content": "it.skip('x', () => {})\n"},
+                 env_extra={"GRILLSPEC_GATE_OFF": "1"})
+    check("GRILLSPEC_GATE_OFF bypasses the content gate", r.returncode == 0)
+
     # --- installer: fresh settings.json -------------------------------------------------
     fresh = Path(tempfile.mkdtemp())
     (fresh / "spec").mkdir()

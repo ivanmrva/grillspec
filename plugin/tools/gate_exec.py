@@ -4,7 +4,7 @@
 This is the tool-call-time sibling of the commit-time `spec_governance_hook.sh`. The commit/CI
 checkers verify the END STATE of a task; this gate verifies the ORDER of the work WHILE it happens,
 which is the only thing a commit-time check structurally cannot see (exec-engine.md: "Temporal order
-on its own can't be proven after the fact"). It enforces exactly two transitions of the per-task loop:
+on its own can't be proven after the fact"). It enforces three transitions of the per-task loop:
 
   1. RED-before-GREEN — a production-tree edit (`src/**`, non-test) is blocked while a task is active
      UNLESS a real failing-test run was recorded for that task. Kills the "skip the tests / write all
@@ -12,6 +12,14 @@ on its own can't be proven after the fact"). It enforces exactly two transitions
   2. No hollow done-claim — an edit that flips a task's `status:` to `done` is blocked unless
      `check_task_record.py --task T-NNN` is already green. Promotes the existing commit-time check to
      the moment the claim is made, instead of discovering it at commit.
+  3. No cheat at the keystroke — an edit that INTRODUCES a skip/xfail/.only marker into a test file,
+     or a mock-library import / Fake*-double definition into the production tree, is blocked the
+     moment it is written. This is the edit-time twin of `check_no_skips.py` + `check_no_fakes.py`:
+     the commit-time tripwires catch the end state, but mid-task is where the rationalization happens
+     ("the broker isn't ready, skip the test for now") and by commit time code is built on top of it.
+     Unlike gates 1-2 it needs NO active task — the cheat is wrong at any time, including setup/
+     bootstrap work before the first task branch. Only newly-introduced lines trigger it; a line
+     carrying the inline waiver (`no-skips: allow …` / `no-fakes: allow …`) passes.
 
 It is PROJECT-LOCAL: the walking-skeleton wires it into THIS repo's `.claude/settings.json` (see
 `install_exec_gates.py`), exactly like the git pre-commit hook is wired into THIS repo's `.git/hooks/`.
@@ -43,6 +51,25 @@ from pathlib import Path
 
 TEST_MARKERS = (".test.", ".spec.", "_test.", "test_", "/tests/", "/__tests__/", "/test/")
 DEFAULT_PRODUCTION_GLOBS = ["src/"]   # relative-path prefixes that count as the shipping tree
+
+# ---- gate-3 content tripwires (the edit-time twins of check_no_skips.py / check_no_fakes.py — keep the
+# ---- pattern cores in sync with those tools; this is the high-precision ERROR subset only, never the WARNs,
+# ---- because a PreToolUse deny is disruptive and must fire only on the unambiguous cheat).
+SKIP_NEW = re.compile(
+    r"\b(?:it|test|describe|context|suite)\s*\.\s*(?:skip|only|fixme|failing)\s*\(|"
+    r"(?<![.\w])[xf](?:it|describe|context)\s*\(|(?<![.\w])xtest\s*\(|\bthis\.skip\s*\(|"
+    r"pytest\.mark\.(?:skip|skipif|xfail)|\bpytest\.(?:skip|xfail|importorskip)\s*\(|"
+    r"@unittest\.skip|@skip(?:If|Unless)?\s*\(|\bskipTest\s*\(|"
+    r"\b[tb]\.Skip(?:f|Now)?\s*\(|#\[\s*ignore|@(?:Disabled|Ignore)\b|"
+    r"\[\s*Ignore\s*[\]\(]|\bSkip\s*=\s*\"|->markTestSkipped\s*\(")
+FAKE_NEW = re.compile(
+    r"\b(?:class|def|func|function|type|interface|struct|record|object|trait)\s+"
+    r"(?:(?:Fake|Stub|Mock|Dummy)[A-Z0-9_]\w*|(?:fake|stub|mock|dummy)_\w+)\b|"
+    r"\b(?:unittest\.mock|from\s+mock\b|import\s+mock\b|sinon|testdouble|@?jest|nock|"
+    r"org\.mockito|mockito|easymock|moq|nsubstitute|fakeiteasy|gomock|golang/mock|testify/mock|mockk)\b")
+# camel-case test names are case-SENSITIVE (a production `Latest.java` must stay gated as production)
+TEST_NAME = re.compile(r"^test_|_test\.|\.test\.|\.spec\.|_spec\.", re.I)
+CAMEL_TEST = re.compile(r"[a-z0-9](?:Test|Tests|Spec|Specs)\.\w+$")
 
 
 def project_root() -> Path:
@@ -213,6 +240,67 @@ def task_id_from_path(file_path: str):
     return m.group(1) if m else None
 
 
+def is_test_path(file_path: str) -> bool:
+    norm = "/" + os.path.abspath(file_path or "").replace(os.sep, "/").lstrip("/")
+    name = os.path.basename(norm)
+    return any(m in norm for m in TEST_MARKERS) or bool(TEST_NAME.search(name)) or bool(CAMEL_TEST.search(name))
+
+
+def introduced_lines(tool_input: dict, file_path: str) -> list:
+    """The lines this Write/Edit/MultiEdit INTRODUCES — a line-set diff against the text it replaces,
+    so editing near a pre-existing (possibly waived) marker never re-triggers the gate."""
+    if "content" in tool_input:                                  # Write: diff against the on-disk file
+        old = ""
+        try:
+            p = Path(file_path)
+            if file_path and p.is_file():
+                old = p.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            old = ""
+        seen = set(old.splitlines())
+        return [l for l in (tool_input.get("content", "") or "").splitlines() if l not in seen]
+    edits = tool_input.get("edits") if isinstance(tool_input.get("edits"), list) else [tool_input]
+    out = []
+    for e in edits:                                              # Edit / MultiEdit: diff new vs old string
+        seen = set((e.get("old_string", "") or "").splitlines())
+        out.extend(l for l in (e.get("new_string", "") or "").splitlines() if l not in seen)
+    return out
+
+
+def content_violation(root: Path, tool_input: dict, file_path: str):
+    """Gate 3 — the reason string when this edit introduces a test-skip into a test file or a
+    fake/mock-import into the production tree; None when clean. Comment-only lines are ignored for
+    the production check (a comment MENTIONING a mock library is not an import)."""
+    lines = introduced_lines(tool_input, file_path)
+    if not lines:
+        return None
+    if is_test_path(file_path):
+        for l in lines:
+            if ("no-skips: allow" not in l) and SKIP_NEW.search(l):
+                return ("this edit introduces a skip/only/xfail/disable marker into a test file:\n"
+                        "    %s\n"
+                        "A skipped test reads green while asserting nothing, and .only silently shrinks "
+                        "the suite. If the dependency isn't ready, let the test FAIL — red is the "
+                        "truthful signal — and record the blocker (spec/_human-input.md), or mark the "
+                        "task `blocked`. A genuinely legitimate case carries an inline "
+                        "`no-skips: allow <reason>`. Override: GRILLSPEC_GATE_OFF=1." % l.strip())
+        return None
+    if is_production_path(root, file_path):
+        for l in lines:
+            if l.lstrip().startswith(("#", "//", "*")) or "no-fakes: allow" in l:
+                continue
+            if FAKE_NEW.search(l):
+                return ("this edit introduces a test double / mocking-library import into the "
+                        "production tree:\n"
+                        "    %s\n"
+                        "Production code is production-only from the very first line — doubles live "
+                        "under tests/. If the real dependency isn't wired yet, keep the adapter real "
+                        "and let its test fail (red is the truthful signal), or mark the task "
+                        "`blocked` and escalate. A genuinely legitimate case carries an inline "
+                        "`no-fakes: allow <reason>`. Override: GRILLSPEC_GATE_OFF=1." % l.strip())
+    return None
+
+
 def cmd_hook() -> int:
     try:
         payload = json.load(sys.stdin)
@@ -244,6 +332,13 @@ def cmd_hook() -> int:
                     "fakes) before claiming done, or override with GRILLSPEC_GATE_OFF=1."
                     % (tid, (res.stdout + res.stderr).strip()))
         return 0
+
+    # Gate 3 — no cheat at the keystroke. Task-independent on purpose: a skip in a test or a fake in
+    # src/ is wrong during setup/bootstrap work too — exactly the window before the first task branch,
+    # where "X isn't ready yet" is most tempting and no other gate is live yet.
+    violation = content_violation(root, tool_input, file_path)
+    if violation:
+        return deny(violation)
 
     # Gate 1 — RED before GREEN. A production-tree edit needs a recorded failing test for the active
     # task. No active task → not inside an exec loop → not gated (walking-skeleton/ad-hoc edits pass).

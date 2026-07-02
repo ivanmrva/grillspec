@@ -3,7 +3,7 @@
 #
 # The per-tool suites (test_check_task_record / test_check_no_fakes / test_check_config_drift /
 # test_check_deploy_real / test_check_migration_real / test_check_mock_budget / test_check_test_tiers /
-# test_check_e2e_target / test_check_operate_records) lock each tool's behaviour in isolation. THIS proves they
+# test_check_e2e_target / test_check_no_skips / test_check_operate_records) lock each tool's behaviour in isolation. THIS proves they
 # compose on one realistic mini-project: a properly-done task (real code, no fakes, declared config, a real
 # deploy, a real migration, a backed Verification Record, a full tiered test tree, a reconciled operate record)
 # passes ALL gates, and each distinct kind of cheat trips exactly the gate that owns it. Stdlib only; no network.
@@ -19,6 +19,7 @@ MIG  = HERE / "check_migration_real.py"
 MB   = HERE / "check_mock_budget.py"
 TT   = HERE / "check_test_tiers.py"
 ET   = HERE / "check_e2e_target.py"
+NS   = HERE / "check_no_skips.py"
 OPR  = HERE / "check_operate_records.py"
 
 def project(d):
@@ -121,6 +122,7 @@ try:
     r7 = run(TT,    [str(d)])
     r8 = run(ET,    [str(d)])
     r9 = run(OPR,   [str(d)])
+    r10 = run(NS,   [str(d)])
     check("clean: task-record passes",  r1.returncode == 0, r1.stdout + r1.stderr)
     check("clean: no-fakes passes",     r2.returncode == 0, r2.stdout + r2.stderr)
     check("clean: config-drift passes", r3.returncode == 0, r3.stdout + r3.stderr)
@@ -130,6 +132,7 @@ try:
     check("clean: test-tiers passes",   r7.returncode == 0, r7.stdout + r7.stderr)
     check("clean: e2e-target passes",   r8.returncode == 0, r8.stdout + r8.stderr)
     check("clean: operate-records passes", r9.returncode == 0, r9.stdout + r9.stderr)
+    check("clean: no-skips passes",     r10.returncode == 0, r10.stdout + r10.stderr)
     rr = run(REC, [str(d / "spec"), "--report", "T-001"])
     check("clean: report says VERIFIED", "VERIFIED" in rr.stdout and rr.returncode == 0, rr.stdout)
 finally:
@@ -242,6 +245,17 @@ d = fresh(localhost_e2e)
 try:
     check("localhoste2e: e2e-target catches it", run(ET, [str(d)]).returncode == 1)
     check("localhoste2e: mock-budget unaffected", run(MB, [str(d)]).returncode == 0)
+finally:
+    shutil.rmtree(d, ignore_errors=True)
+
+# ── 10b. a skipped test trips no-skips ONLY ────────────────────────────────
+def skip_test(d):
+    (d / "tests/e2e/charge.test.js").write_text("// @covers AC-001a\nit.skip('charges', () => {});\n")
+d = fresh(skip_test)
+try:
+    check("skip: no-skips catches it",       run(NS, [str(d)]).returncode == 1)
+    check("skip: mock-budget unaffected",    run(MB, [str(d)]).returncode == 0)
+    check("skip: test-tiers unaffected",     run(TT, [str(d)]).returncode == 0)
 finally:
     shutil.rmtree(d, ignore_errors=True)
 

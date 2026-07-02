@@ -97,7 +97,9 @@ because mid-build a tier legitimately hasn't landed yet). These gates classify t
 layout is handled — point `--tests` at the source roots if they're non-standard. If the project wired its OWN
 equivalent tier/mock/e2e fitness against the same contract (e.g. a native pnpm check), prefer consuming that
 gate's result over re-running the reference tools · `…/check_e2e_target.py` (e2e tests hit the named
-deployed env, not a local stack) · `…/check_no_fakes.py` / `…/check_deploy_real.py` /
+deployed env, not a local stack) · `…/check_no_skips.py --strict` (no skipped/xfail'd/`.only`-focused test,
+no CI test step that swallows a red — at release every declared deferral has expired, so WARNs are promoted)
+· `…/check_no_fakes.py` / `…/check_deploy_real.py` /
 `…/check_migration_real.py` over the whole tree · `…/check_operate_records.py` (Phase 4). Every ERROR →
 `blocking`; every WARN → an `important` candidate to confirm. **Don't re-do what these decide mechanically —
 run them, trust the output, spend your effort on the meaning below.**

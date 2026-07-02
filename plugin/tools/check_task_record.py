@@ -326,7 +326,10 @@ for p in records:
             # excludes task-ids / versions / per-file digits ('T-002', 'v1.2'), and skipping the bar's own
             # position stops the threshold being read as the metric. (The prior nums[0] grabbed the first digit
             # ANYWHERE - so 'T-002 ... 82% ≥ 70%' read '002' as the score and false-failed a passing row.)
-            bar_m = re.search(r"(?:bar|threshold|target|min(?:imum)?|floor|>=|≥|⩾)\D*(\d+(?:\.\d+)?)", ev, re.I)
+            # The word keywords are \b-anchored: without it, 'min' matched INSIDE ordinary words
+            # ('deterMINistic') and read a stray number as the bar; the symbols stay unanchored (\b is
+            # meaningless next to non-word chars).
+            bar_m = re.search(r"(?:\b(?:bar|threshold|target|min(?:imum)?|floor)\b|>=|≥|⩾)\D*(\d+(?:\.\d+)?)", ev, re.I)
             pcts = [(m.start(1), float(m.group(1))) for m in re.finditer(r"(\d+(?:\.\d+)?)\s*%", ev)]
             measured = next((v for pos, v in pcts if not bar_m or pos != bar_m.start(1)), None) if bar_m else None
             if measured is None or not bar_m:

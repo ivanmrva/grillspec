@@ -153,6 +153,15 @@ expect("mutation-headline-not-taskid", run(proj(record(rows={"mutation":
 expect("mutation-headline-below-bar-caught", run(proj(record(rows={"mutation":
         ("T-002 mutation — 61.5% overall ≥ 70% bar", "PASS")}))),
        must=["ERROR", "61.5 is below its bar 70"])
+# a bar keyword must be a whole word — 'min' inside 'deterMINistic' must NOT be read as the bar
+# (it grabbed the next number as the threshold and false-failed a passing row)
+expect("bar-keyword-not-substring", run(proj(record(rows={"coverage":
+        ("deterministic stage at 100% lines · 93.8% overall (bar 80%)", "PASS")}))),
+       must=["0 error(s)"], forbid=["ERROR", "below its bar"])
+# ...while a real below-bar row with such a word present is still caught
+expect("bar-keyword-not-substring-below-caught", run(proj(record(rows={"coverage":
+        ("deterministic run — 61% overall (bar 80%)", "PASS")}))),
+       must=["ERROR", "61 is below its bar 80"])
 
 # ── a done-claim that OMITS the deploy row fails (silent scope reduction) ───
 expect("missing-deploy-row", run(proj(record(drop=("deploy",)))),

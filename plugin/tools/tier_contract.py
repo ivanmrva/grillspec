@@ -19,6 +19,9 @@ _TIER_SEG = re.compile(r"/(?:tests?|specs?|__tests__)/(?:.*/)?(unit|integration|
 _FNAME_TIER = re.compile(r"(?:^|[._-])(unit|integration|int|contract|e2e|journey|smoke|system|acceptance|nfr)[._-]", re.I)
 # is this file a TEST file at all - lets a co-located SOURCE root be scanned without counting production code
 _TESTFILE = re.compile(r"[._](?:test|spec)s?\.|(?:^|/)test_|[._](?:e2e|int|integration|unit|contract|journey|smoke|nfr|acceptance|system)\.", re.I)
+# the JVM/C#/PHP suffix convention (PayTest.java, PayTests.cs, PaySpec.kt) - case-SENSITIVE on purpose:
+# a case-insensitive match would classify a production 'Latest.java' as a test and blind the gates to it.
+_CAMEL_TEST = re.compile(r"[a-z0-9](?:Test|Tests|Spec|Specs)\.[a-z]+$")
 # directories never worth walking (keeps a co-located src/ scan off vendored/build trees)
 PRUNE = re.compile(r"/(?:node_modules|dist|build|out|coverage|vendor|\.git|\.venv|venv|__pycache__|\.next|target|\.tox)/", re.I)
 # default roots: test dirs AND common source roots (co-located tests) - the test-file filter keeps production out
@@ -32,7 +35,7 @@ def classify(posix, name):
     m = _TIER_SEG.search(posix)
     if m:
         return canon(m.group(1))
-    if _TESTFILE.search(name):
+    if _TESTFILE.search(name) or _CAMEL_TEST.search(name):
         m2 = _FNAME_TIER.search(name)
         return canon(m2.group(1)) if m2 else "unit"
     return None
