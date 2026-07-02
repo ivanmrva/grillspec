@@ -57,8 +57,8 @@ def bundle(skills, outdir, name, public=False):
         if not (src / "SKILL.md").exists():
             sys.exit(f"ERROR: no such skill: {s}")
         dst = outdir / "skills" / s; dst.mkdir(parents=True)
-        for fn in ("SKILL.md", "examples.md"):
-            if (src / fn).exists(): shutil.copy2(src / fn, dst / fn)
+        for f in sorted(src.glob("*.md")):     # SKILL.md + every sibling resource (examples, mode protocols, ...)
+            shutil.copy2(f, dst / f.name)
         shared_seed |= shared_refs((src / "SKILL.md").read_text(encoding="utf-8"))
     shared = resolve_shared(shared_seed)
     if shared:

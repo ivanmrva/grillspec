@@ -14,15 +14,20 @@ For these, **read `${CLAUDE_PLUGIN_ROOT}/grill-shared/conductor-playbook.md`** a
 
 ## Session start — the single front door
 Invoke this to begin. On invocation:
-1. **Run the linter** (`python3 ${CLAUDE_PLUGIN_ROOT}/tools/lint_spec.py`), then **scan + re-derive** (below):
+1. **Run the linter + the freshness check** (`python3 ${CLAUDE_PLUGIN_ROOT}/tools/lint_spec.py` · `…/check_freshness.py` — advisory: every artifact whose cited upstream definition drifted since it was last reconciled; a conductor-less session may legitimately have left these behind), then **scan + re-derive** (below):
    spec-health per area + the bet-health register. Linter ERRORs are authoritative for
    structure/headers/refs/placeholders — fix or surface them before anything else.
 2. **Ask which area to focus on — an option menu, never an open prompt.** Build it from the scan:
    the **recommended next area** (default), **resume** an in-progress area (with open count), **fix
-   cross-area issues** (if found), **go test/clear the riskiest assumption** (from bet-health), **a
+   cross-area issues** (if found), **drain the stale set** (when the entry freshness check reports
+   drift — re-grill/re-derive each drifted artifact via its owning skill, upstream→downstream through
+   `10-delivery`, then re-record the locks), **go test/clear the riskiest assumption** (from bet-health), **a
    specific area I name**, **migrate existing docs**, or **audit the whole spec** (`audit-spec` — the
    consistency + domain-completeness + code-gen-readiness pass above the linter, e.g. before a build or
-   release). Once the implementation-readiness gate passes,
+   release; report-only by default — offer `--fix` to remediate in-session and `--loop` to converge to
+   zero findings). When a `spec-audit-report.md` already sits at the project root, add **execute the
+   audit's fix-chains** (`audit-spec --fix` consumes it — the report's dependency-ordered chains are work
+   to drive, not a terminal artifact). Once the implementation-readiness gate passes,
    add **prepare delivery** (derive-conventions → derive-tasks); once delivery-readiness passes, add **work
    the next task** (implement → run-tests → conformance-review, in build-order). Show blocked areas
    as unavailable + what unblocks them. Ground every suggestion in what the scan found.
@@ -230,9 +235,13 @@ dependency graph.
    captures the upstream those artifacts were just reconciled against (this is how a re-grill clears its own
    stale flag).
 5. **Re-verify:** `lint_spec.py` + `guard_derived.py` + `check_freshness.py` (advisory) + `conformance-review`.
-Default end-state: **nothing stale remains.** Skills may be invoked directly (that's fine) — but *any*
-skill that makes a change owns steps 1–5; the engines bake this in so it happens whether or not the
-conductor is driving.
+Default end-state: **nothing stale remains.** The duty split: **worker skills stay system-blind** — their
+engines ship standalone, so they carry no propagation machinery; a worker only **names the changed IDs in
+its hand-off** and never chases dependents. **Steps 1–5 belong to whoever composes**: you, whenever you're
+driving; the audit skill's `--fix`/`--loop` modes under their exit contract. A skill invoked directly with
+no composer may therefore leave the tree stale — that is expected, and it is exactly what your **entry
+freshness check + the drain-the-stale-set option** exist to catch at the next session: the net is at the
+composer's door, never inside the workers.
 
 ## ▣ RELEASE-READINESS CHECKLIST (advisory — *you* decide when to ship)
 **The system has no concept of "release".** It does continuous spec + code work; promoting to

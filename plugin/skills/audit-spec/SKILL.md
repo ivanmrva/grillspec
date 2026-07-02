@@ -1,8 +1,8 @@
 ---
 name: audit-spec
 description: >-
-  The whole-spec audit — verify an EXISTING spec is complete, internally consistent, contradiction-free, covers all branches (product · domain · software), and is good enough that a coding agent can build from it WITHOUT guessing. Two depths: `consistency` (the judgment the linter can't make — semantic contradictions, scope adherence, decision coherence) and `full` (adds the domain/usage completeness pass that finds what's MISSING). Only `full` can declare code-gen readiness. The judgment layer ABOVE the mechanical tools, distinct from the per-task code-vs-spec conformance review. Loads the shared exec engine.
-argument-hint: "[--depth consistency|full] [--scope all|<area>] — default: --depth full --scope all"
+  The whole-spec audit — verify an EXISTING spec is complete, internally consistent, contradiction-free, covers all branches (product · domain · software), and is good enough that a coding agent can build from it WITHOUT guessing. Two depths: `consistency` (the judgment the linter can't make — semantic contradictions, scope adherence, decision coherence) and `full` (adds the domain/usage completeness pass that finds what's MISSING). Only `full` can declare code-gen readiness. The judgment layer ABOVE the mechanical tools, distinct from the per-task code-vs-spec conformance review. Report-only by default; `--fix` remediates the findings in-session (routed fixes + full propagation through every derived layer, 10-delivery included); `--loop` repeats fix-passes with a parallel read-only auditor fan-out until the spec converges to ZERO findings (K consecutive dry batches). Use --loop when asked to "drive the spec to zero audit findings", "loop the audit until clean", or "exhaustively remediate the spec". Loads the shared exec engine.
+argument-hint: "[--depth consistency|full] [--scope all|<area>] [--fix] [--loop] — default: --depth full --scope all, report-only"
 ---
 
 # audit-spec
@@ -46,11 +46,30 @@ conflate them.
 `--scope all` audits the whole spec; `--scope <area>` limits the read to one area + its reference
 neighbours (for a focused re-check after a change).
 
+**Remediation modes** (report-only is the default; these are the sanctioned mutation modes):
+| Mode | Does | Ends when |
+|---|---|---|
+| `--fix` | ONE audit pass, then remediate every finding at its correct fix-zone and **drain the propagation tail in-session** (the exit contract below) | findings fixed · impact set fully re-derived · mechanical baseline green |
+| `--loop` | repeat `--fix` passes at full depth with a **parallel read-only auditor fan-out** — load `remediation-loop.md` (sibling of this SKILL.md) and follow it | **K=2 consecutive dry batches** + a final clean full sweep + baseline green |
+
+**The fix-mode exit contract (what "fixed" is allowed to mean).** After the last upstream edit: run
+`python3 ${CLAUDE_PLUGIN_ROOT}/tools/impact.py <changed-IDs…>` (or `--since <ref>`) → for **every derived
+artifact in the impact set**, re-run its owning derive step — explicitly including the terminal derived
+layer a partial propagation most often strands: `10-delivery/conventions|tasks|impl-design` and root
+`CLAUDE.md`, not just `05`/`09` — → `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <re-derived
+paths>` + `…/check_freshness.py --record <all touched paths>` → re-run the Phase-0 baseline to green. **You
+may not report "fixed" or "clean" while the impact set of your own edits contains a derived artifact that
+was not re-derived** — a computed-but-unprocessed impact set is an unfinished fix, and saying otherwise is
+the false-success this contract exists to stop. (A re-derive you genuinely can't run — a missing upstream
+decision — is parked as an explicit stale hand-off in the report, never silently dropped.)
+
 ## Ground rules
 - **Source-of-truth fence (from the engine).** Audit the CURRENT working tree only — never git history,
   never outside the project folder. A missing artifact is a FINDING, never something to reconstruct.
-- **Audit, don't mutate.** Default is report-only. If asked to fix, route every fix correctly (below);
-  never bend the spec to match code, nor edit a derived artifact by hand to mask an upstream gap.
+- **Audit, don't mutate — unless in `--fix`/`--loop`.** Default is report-only. In the remediation modes,
+  every fix follows the routing below and the exit contract above; the fan-out auditors stay **read-only**
+  in every mode. Never bend the spec to match code, nor edit a derived artifact by hand to mask an
+  upstream gap.
 - **Severity on every finding:** `blocking` (breaks build-correctness or a hard invariant) · `important`
   (a real gap/ambiguity that will force a wrong guess) · `nit` (style/scan) · `suggestion` (deepening).
   Verdicts gate on `blocking` only.
@@ -206,11 +225,14 @@ re-grilling the authored areas that read it). The report contains:
 | Bet/risk snapshot | Axis 2, visibly separate from spec health |
 | Top fixes | the must-fix-before-codegen items as dependency-ordered fix-chains (`symptom → upstream edit → re-derive → re-grill`), upstream edits before the re-derives that consume them — not authored/derived buckets |
 
-No code, no `spec/` edits. **Never claim "complete" on an un-re-validated artifact** — re-run the
+In `--fix`/`--loop`: the same report plus `audit-fixes-log.md` (cumulative per-pass fix log + findings-per-round trend) and `human-decisions-needed.md` (parked ratification items) at the project root — all three are meta-commentary siblings of `spec/`, transient and git-ignored, and the loop deletes `spec-audit-report.md` after each pass it fully remediates.
+
+Report-only mode: no code, no `spec/` edits. **Never claim "complete" on an un-re-validated artifact** — re-run the
 invariants across the content yourself; "looks complete" is never "is consistent." A defect in THIS SYSTEM
 (an unsatisfiable rule, a wrong check) is routed via `${CLAUDE_PLUGIN_ROOT}/tools/plugin_feedback.py`, never
 into the audit report.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`
+- The `--loop` protocol: `remediation-loop.md` (sibling of this file — load it only in loop mode)
 - Worked example: `examples.md`

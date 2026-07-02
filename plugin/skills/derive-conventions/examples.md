@@ -16,7 +16,7 @@ RULE dep-01  "no unpinned deps; lockfile committed"
   check  npm ci --frozen-lockfile  +  `npm audit --audit-level=high` (in-hook)
 ```
 
-`delivery/conventions/pre-commit-hooks.md` — the CODE hooks (govern `src/` + `tests/` only; spec is governed by a separate framework-level enforcer):
+`delivery/conventions/pre-commit-hooks.md` — the CODE hooks (govern `src/` + `tests/` only; spec is governed by a separate spec-governance enforcer):
 
 ```bash
 # .pre-commit (changed scope only)

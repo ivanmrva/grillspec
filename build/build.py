@@ -303,8 +303,9 @@ def build_skills():
             sp = SHARED / f
             if sp.exists():
                 (d / f).write_text(to_sibling(sp.read_text(encoding="utf-8")), encoding="utf-8")
-        if (src / "examples.md").exists():
-            shutil.copy2(src / "examples.md", d / "examples.md")
+        for extra in sorted(src.glob("*.md")):        # every sibling resource (examples, mode protocols, ...)
+            if extra.name != "SKILL.md":
+                (d / extra.name).write_text(to_sibling(extra.read_text(encoding="utf-8")), encoding="utf-8")
         (d / "LICENSE").write_text(MIT, encoding="utf-8")
         # safety net: nothing should still point at a plugin-only path
         residual = [p.name for p in d.glob("*.md")

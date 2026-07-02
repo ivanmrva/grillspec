@@ -31,7 +31,7 @@ argument-hint: a recorded spec or design docs
 - network carries **security zones/segmentation** (ingress WAF/LB · controlled egress · private/public); data-residency region pinned at infra per class
 - **the cloud provider + residency region are ratify-points, not merit picks** — both are org commitments / one-way doors (existing accounts · vendor contracts · residency law); take them from the constraints, and where the constraints are silent **ratify a default — never silently assume one**
 - **the environment set (count + purpose) + promotion path are a ratify-point, never a silent default** — propose a profiled default (e.g. `dev · stage · prod`, plus ephemeral per-PR preview envs for a web/PLG product) WITH its promotion path, then **surface it for the human to confirm or override**; org/team schemes genuinely vary (no stage · multiple prod regions · a sandbox/UAT tier · ephemeral-only) and this is a team fact the spec can't derive. Record the ratified set + each environment's purpose in `topology.md`; an un-ratified default is an assumption to flag, not a settled fact
-- scope boundary: telemetry/SLOs/alerting/runbooks → the observability area; coding rules + code hooks → the conventions area; **`spec/`+docs governance (`lint_spec.py`, the generated doc-site) is a separate framework-level concern, NOT this pipeline**
+- scope boundary: telemetry/SLOs/alerting/runbooks → the observability area; coding rules + code hooks → the conventions area; **`spec/`+docs governance (`lint_spec.py`, the generated doc-site) is a separate spec-governance concern, NOT this pipeline**
 
 ## Output
 Written under `solution/infra-ops/`:

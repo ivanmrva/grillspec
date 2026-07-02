@@ -1,7 +1,7 @@
 ---
 name: audit-build
 description: >-
-  The whole-build audit — the independent, release-time attestation that the BUILD was done according to the spec's own process, not just that each task self-reported PASS. It judges the built system against the spec the way the whole-spec audit judges the spec. Owns the three things no per-task review can see: the evidence-ledger itself (did every gate really run, is every recorded VERDICT backed), cross-task emergent properties (suite shape vs the declared distribution, an AC- whose covering test a later task weakened, aggregate coverage/mutation), and the operate-ledger reconciliation. Distrusts the accumulated per-task verdicts on purpose. Loads the shared exec engine.
+  The whole-build audit — the independent, release-time attestation that the BUILD was done according to the spec's own process, not just that each task self-reported PASS. It judges the built system against the spec the way the whole-spec audit judges the spec. Owns the three things no per-task review can see: the evidence-ledger itself (did every gate really run, is every recorded VERDICT backed), cross-task emergent properties (suite shape vs the declared distribution, an AC- whose covering test a later task weakened, aggregate coverage/mutation), and the operate-ledger reconciliation. Distrusts the accumulated per-task verdicts on purpose. The judgment phases run as a parallel read-only multi-lens fan-out; report-only with NO fix/loop mode by design — fixes route to the task machinery and a fresh re-audit follows them. Loads the shared exec engine.
 argument-hint: "[--depth attest|deep] [--scope release|all] — default: --depth attest --scope release"
 ---
 
@@ -71,7 +71,8 @@ rejected — record the current HEAD when you write the report.
 - **Source-of-truth fence (from the engine).** Audit the CURRENT working tree only — the built code, the
   test suite, the Verification Records, the `12-operate/` ledger. A missing artifact is a FINDING, never
   something to reconstruct.
-- **Audit, don't mutate.** Report-only. If asked to fix, route each fix to its owner (a hollow record → back
+- **Audit, don't mutate — and no `--fix`/`--loop` exists here, by design (see *The re-audit cycle*).**
+  Report-only. If asked to fix, route each fix to its owner (a hollow record → back
   to that task's conformance review; a spec defect surfaced → the whole-spec audit; a real code gap → a
   focused-change `T-`). Never edit a Verification Record to make it pass, never touch `src/`.
 - **Distrust by default.** A green record is a claim to verify, not a fact to accept. Where a claim can't be
@@ -81,6 +82,24 @@ rejected — record the current HEAD when you write the report.
   gates on `blocking` only.
 - **Verify before flagging.** Quote `file:line`, the `T-` id, or the record path. A finding you can't ground
   is a guess — drop it.
+
+## The judgment phases fan out — parallel read-only auditors, divergent lenses
+Phases 1–3 are model judgment with variance: two independent reads of the same record disagree, one judge
+misses what another catches. The object here is **finite and enumerable** (the done `T-` records, the test
+tree, the ledger), so the recall remedy is **more independent judges within ONE pass** — never more passes
+(that is the whole-spec audit's economics, where the blind-spot space is unbounded; here enumeration
+dominates repeated sampling). Spawn **N=3 read-only auditors** (the `Explore` agent type — no Edit/Write;
+they return findings tables only, never touch the tree), each with a distinct lens over the same scope:
+- **evidence-backing** — does every cited artifact exist, and does it actually back the claim on its row
+  (the `VERDICT: PASS` on disk, the test at the evidence path, the number vs its bar)?
+- **test-bites** — would the covering test FAIL if the behavior broke? Assertion strength, interaction-only
+  smells, mutation signal on the changed logic — the rubber-stamp detector.
+- **cross-task drift** — did a LATER task weaken an EARLIER task's guarantee (a loosened assertion, a
+  rescoped test, a bypassed fitness rule) that each per-task review, seeing only its own slice, missed?
+Union the tables, dedup, then **ground every finding yourself** before it enters the report
+(verify-before-flagging above). In `deep` each lens covers the full scope; in `attest` each lens covers the
+risk-weighted sample. The fan-out buys back the judgment variance a single reader leaves on the table — at
+one pass's cost.
 
 ## Phase 0 — mechanical aggregate baseline (run across ALL tasks, don't duplicate)
 Run the deterministic tools at aggregate scope and record raw counts:
@@ -150,6 +169,19 @@ log of reality, so this is *reconciliation*, not re-derivation — never rewrite
 - **a record that references a spec ID that doesn't resolve**, or **a release whose deploy record is
   missing entirely**, is `important` (a gap in the operational trail); a record that *contradicts* the spec
   it claims to enact (deployed to an env not on the promotion path) is `blocking`.
+
+## The re-audit cycle (fixes never happen here)
+This skill must never gain a `--fix`/`--loop`: **the attestor cannot fix what it attests** — editing a
+record or a test to satisfy the audit is the exact fraud Phase 1 hunts — and build fixes run through the
+engineering workflow (a `needs-rework`/focused-change `T-` → implement → run-tests → conformance-review →
+CI → merge), which is asynchronous and branch-shaped, not an in-session edit. The cycle is therefore:
+**`NOT-ATTESTED` + routed findings → the owning machinery lands the rework waves → a FRESH audit.** The
+`commit:` stamp plus the release gate's `--require-fresh` already invalidate an attestation the moment HEAD
+moves, so every fix forces the re-audit mechanically. On a re-audit after a remediation wave, you may scope
+the **Phase 1** re-checks to the tasks touched since the last report (the ledger is enumerable — re-check
+what changed); **Phases 2 and 4 always run full** (emergent properties and the operate trail don't scope
+down). The `ATTESTED` that gates a release is always a **fresh, full `--deep`** pass — never a scoped
+re-round promoted to a verdict.
 
 ## Output
 Write **`build-audit-report.md` at the PROJECT ROOT** (a sibling of `spec/`, like `spec-audit-report.md` —
