@@ -4,6 +4,14 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.11.3
+
+### Fixed — the tier/mock/e2e gates couldn't read a real levels.md, nor a co-located test layout
+Three compounding failures left the tier gates silently blind (no-op) or false-failing on a well-tiered, real-world repo. All three parse/classify concerns now live in one shared **`tier_contract.py`** (so the three gates + audit-build can't drift again):
+- **Contract header detection matched the scope HTML comment.** A `<!-- scope: … mock-ceiling … | … -->` line (pipe-separated, names the columns) was mistaken for the table header, so the real table below was never read and the gate reported "no tier contract". Now `<!-- … -->` lines are skipped and a header is only accepted when immediately followed by a `|---|` separator row.
+- **Tier keys weren't normalized.** A readable table keys rows as `**unit**` / `**system / journey (e2e)**` (bold, parenthetical); the raw markdown never matched the clean token `classify()` yields, so every test read as "undeclared tier" and every declared tier as "no suite". Column names, cell values, and the tier key are now stripped of markdown and mapped to the canonical tier token.
+- **Co-located / bare-`*.test.ts` layouts were untier-able.** `--tests` now defaults to the test dirs AND common source roots (`src`/`app`/`apps`/`lib`/`packages`/`e2e`), counting only TEST files (production code and helpers skipped, vendor/build dirs pruned); a bare `foo.test.ts`/`foo.spec.ts` classifies as the unit/default tier, and `foo.int.test.ts` / `e2e/foo.e2e.test.ts` by their filename tier. audit-build passes `--require --require-all-tiers` at release, and may instead consume a project's own equivalent gate against the same contract.
+
 ## 4.11.2
 
 ### Fixed — two 4.11.x tier-gate false-fails on legitimate, idiomatic projects

@@ -14,11 +14,12 @@
 # This is the mechanical detector for over-mocking that check_no_fakes.py deliberately does NOT do (that tool
 # never scans tests/). Like it, this is deliberately conservative and escapable, because a noisy gate gets
 # `--no-verify`d: suppress with an inline `mock-budget: allow <reason>` comment, or a path/substring entry in
-# `.claude/mock-budget-allow.txt`.
+# `.claude/mock-budget-allow.txt`. Contract parsing + test-file classification are shared via tier_contract.py.
 #
 # No-ops cleanly when there is no tier contract or no test tree. Run from the project root:
-#   python3 tools/check_mock_budget.py [project_root] [--tests tests,test] [--levels <path>] [--strict]
+#   python3 tools/check_mock_budget.py [project_root] [--tests <roots>] [--levels <path>] [--strict]
 import sys, re, pathlib
+from tier_contract import load_contract, classify, iter_test_files, DEFAULT_ROOTS
 
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 ROOT = pathlib.Path(args[0] if args else ".")
@@ -27,15 +28,10 @@ def opt(flag, default):
         if a == flag and i + 1 < len(sys.argv):
             return sys.argv[i + 1]
     return default
-TEST_DIRS = [s for s in opt("--tests", "tests,test").split(",") if s]
+TEST_DIRS = [s for s in opt("--tests", DEFAULT_ROOTS).split(",") if s]
 LEVELS = pathlib.Path(opt("--levels", str(ROOT / "spec" / "09-solution" / "test" / "levels.md")))
 STRICT = "--strict" in sys.argv
 
-CODE_EXT = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".java", ".kt", ".rb", ".cs", ".php", ".rs", ".scala", ".swift"}
-# a test file's tier, from its path (the directory segment) or a filename hint.
-TIER_SEG = re.compile(r"/(?:tests?|specs?|__tests__)/(?:.*/)?(unit|integration|contract|e2e|journey|smoke|system|acceptance|nfr)(?:/|_|-|\.|$)", re.I)
-FNAME_TIER = re.compile(r"(?:^|[._-])(unit|integration|int|contract|e2e|journey|smoke|system|acceptance|nfr)[._-]", re.I)
-SYNONYM = {"journey": "e2e", "smoke": "e2e", "system": "e2e", "acceptance": "e2e", "nfr": "e2e", "int": "integration"}
 # MODULE-level mocking swaps a real import/attribute behind the code's back - THIS is the over-mock a 'none'
 # ceiling must ban (case-insensitive; '@'-prefixed tokens can't rely on a leading \b so each carries its own).
 MODULE_MOCK = re.compile(
@@ -51,31 +47,6 @@ FACTORY = re.compile(r"(?:jest|vi)\.(?:fn|spyOn)\b|\b(?:Magic|Async)?Mock\s*\(")
 IMPORT_MOCK = re.compile(r"\b(?:from\s+mock\b|import\s+mock\b|require\(['\"][^'\"]*mock)", re.I)
 DEFAULT_REALDEP = ("db", "database", "datastore", "repository", "repo", "sql", "postgres", "mysql", "sqlite",
                    "mongo", "redis", "broker", "kafka", "rabbit", "queue", "sqs", "pubsub", "filesystem", "fs")
-
-def load_contract(path):
-    """{tier: {col: value}} parsed from the levels.md tier-contract table (header has 'tier' + 'mock-ceiling')."""
-    if not path.exists():
-        return {}
-    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    for i, ln in enumerate(lines):
-        if "|" in ln and re.search(r"\btier\b", ln, re.I) and re.search(r"mock-?ceiling", ln, re.I):
-            cols = [c.strip().lower().replace(" ", "-") for c in ln.strip().strip("|").split("|")]
-            out = {}
-            for dl in lines[i + 1:]:
-                s = dl.strip()
-                if not s.startswith("|"):
-                    break
-                if re.match(r"^\|?[\s:|-]+\|?$", s):
-                    continue
-                cells = [c.strip() for c in s.strip().strip("|").split("|")]
-                if len(cells) < len(cols):
-                    continue
-                row = dict(zip(cols, cells))
-                t = row.get("tier", "").lower()
-                if t:
-                    out[t] = row
-            return out
-    return {}
 
 def realdeps(row):
     raw = (row.get("real-deps", "") or "").lower()
@@ -99,56 +70,45 @@ def add(sev, where, msg):
     if not any(a in where or a in msg for a in allow):
         F.append((sev, where, msg))
 
-def tier_of(posix, name):
-    m = TIER_SEG.search(posix) or FNAME_TIER.search(name)
-    if not m:
-        return None
-    t = m.group(1).lower()
-    return SYNONYM.get(t, t)
-
-roots = [ROOT / d for d in TEST_DIRS if (ROOT / d).is_dir()]
+roots_exist = any((ROOT / d).is_dir() for d in TEST_DIRS)
 if not contract:
     print("check_mock_budget: no tier contract in %s - nothing to enforce." % LEVELS)
     sys.exit(0)
-if not roots:
+if not roots_exist:
     print("check_mock_budget: no test tree (%s) under %s - nothing to scan." % ("/".join(TEST_DIRS), ROOT))
     sys.exit(0)
 
 scanned = 0
-for base in roots:
-    for p in sorted(base.rglob("*")):
-        if not p.is_file() or p.suffix not in CODE_EXT:
+for posix, name, p in iter_test_files(ROOT, TEST_DIRS):
+    tier = classify(posix, name)
+    if tier not in contract:
+        continue  # undeclared tier -> check_test_tiers' concern, not this one
+    ceiling = (contract[tier].get("mock-ceiling", "") or "").lower()
+    if ceiling in ("", "n-a", "n/a", "-", "—"):
+        continue
+    deps = realdeps(contract[tier])
+    scanned += 1
+    rel = p.relative_to(ROOT).as_posix()
+    for n, line in enumerate(p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        if "mock-budget: allow" in line:
             continue
-        posix = "/" + p.as_posix().strip("/")
-        tier = tier_of(posix, p.name)
-        if tier is None or tier not in contract:
-            continue  # untier-able / undeclared tier -> check_test_tiers' concern, not this one
-        ceiling = (contract[tier].get("mock-ceiling", "") or "").lower()
-        if ceiling in ("", "n-a", "n/a", "-", "—"):
+        mm = bool(MODULE_MOCK.search(line))                 # module-level swap - the real over-mock
+        fac = bool(FACTORY.search(line))                    # a hand-built double (injected = sanctioned)
+        if not (mm or fac or IMPORT_MOCK.search(line)):
             continue
-        deps = realdeps(contract[tier])
-        scanned += 1
-        rel = p.relative_to(ROOT).as_posix()
-        for n, line in enumerate(p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
-            if "mock-budget: allow" in line:
-                continue
-            mm = bool(MODULE_MOCK.search(line))                 # module-level swap - the real over-mock
-            fac = bool(FACTORY.search(line))                    # a hand-built double (injected = sanctioned)
-            if not (mm or fac or IMPORT_MOCK.search(line)):
-                continue
-            where = "%s:%d" % (rel, n)
-            if ceiling == "none":
-                if mm:
-                    add("ERROR", where, "tier '%s' (mock-ceiling 'none') - a MODULE-level mock swaps a real import "
-                                        "behind the code's back; inject a hand-built double through the production "
-                                        "constructor instead (a bare vi.fn()/jest.fn()/Mock() factory is fine)." % tier)
-                # a factory-only line (an injected double) is the sanctioned CONV-047 pattern - allowed.
-            elif ceiling in ("boundary-only", "boundary") and (mm or fac):
-                low = line.lower()
-                hit = next((d for d in deps if re.search(r"\b%s\b" % re.escape(d), low)), None)
-                if hit:
-                    add("ERROR", where, "tier '%s' is boundary-only but this mocks a real dependency ('%s') - "
-                                        "integration tests use the real %s (testcontainers), not a double." % (tier, hit, hit))
+        where = "%s:%d" % (rel, n)
+        if ceiling == "none":
+            if mm:
+                add("ERROR", where, "tier '%s' (mock-ceiling 'none') - a MODULE-level mock swaps a real import "
+                                    "behind the code's back; inject a hand-built double through the production "
+                                    "constructor instead (a bare vi.fn()/jest.fn()/Mock() factory is fine)." % tier)
+            # a factory-only line (an injected double) is the sanctioned CONV-047 pattern - allowed.
+        elif ceiling in ("boundary-only", "boundary") and (mm or fac):
+            low = line.lower()
+            hit = next((d for d in deps if re.search(r"\b%s\b" % re.escape(d), low)), None)
+            if hit:
+                add("ERROR", where, "tier '%s' is boundary-only but this mocks a real dependency ('%s') - "
+                                    "integration tests use the real %s (testcontainers), not a double." % (tier, hit, hit))
 
 order = {"ERROR": 0, "WARN": 1}
 for sev, where, msg in sorted(F, key=lambda x: (order[x[0]], x[1])):

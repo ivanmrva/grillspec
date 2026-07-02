@@ -71,6 +71,10 @@ try:
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
+# co-located: an e2e/*.e2e.test.ts (classifies as e2e) hardcoding localhost is caught
+expect("co-located-e2e-localhost", run({"e2e/checkout.e2e.test.ts": "const u = 'http://localhost:3000';\n"}),
+       must=["ERROR", "local stack"])
+
 # no contract = no-op
 expect("no-contract-noop",
        (lambda: subprocess.run([sys.executable, str(TOOL), str(pathlib.Path(tempfile.mkdtemp(prefix="e2etarget_")))], capture_output=True, text=True))().stdout,

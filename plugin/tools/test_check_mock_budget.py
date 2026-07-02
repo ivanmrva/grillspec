@@ -95,6 +95,13 @@ try:
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
+# co-located: a MODULE mock in a bare src/*.test.ts (classifies as unit) is still caught
+expect("co-located-unit-module-mock", run({"src/checkout/x.test.ts": "vi.mock('../db');\nit('x', () => {});\n"}),
+       must=["ERROR", "MODULE-level"])
+# ...and an injected double beside source is allowed
+expect("co-located-injected-double-ok", run({"src/checkout/x.test.ts": "const p = { create: vi.fn() };\nmake(p);\n"}),
+       must=["0 error(s)"], forbid=["ERROR"])
+
 # no test tree = clean no-op
 expect("no-tests-noop", run({"docs/x.md": "hi\n"}),
        must=["nothing to scan"], forbid=["ERROR", "Traceback"])

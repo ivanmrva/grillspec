@@ -85,15 +85,43 @@ expect("filename-tier-detection", run({
         "tests/charge.e2e.test.js": "it('c', () => {});\n",
     }), must=["0 error(s)"], forbid=["ERROR"])
 
-# most files untier-able -> a blindness WARN (the gate can't see them)
-expect("blindness-warn", run({
+# robustness: a <!-- scope … mock-ceiling … | … --> comment BEFORE the table must not be mistaken for the header
+COMMENT_CONTRACT = (
+    "<!-- scope: the per-tier contract (tier · real-deps · mock-ceiling …) | excludes: x | format: table -->\n"
+    "# levels\n\n## Tier contract\n"
+    "| tier | real-deps | may-mock | mock-ceiling | target-env | coverage-bar | mutation-bar |\n"
+    "|---|---|---|---|---|---|---|\n"
+    "| unit | none | — | none | local | 80% | 70% |\n"
+    "| integration | db | third-party-network | boundary-only | local | 70% | — |\n"
+    "| e2e | all | — | none | preview | — | — |\n")
+expect("comment-header-not-mistaken", run(FULL, contract=COMMENT_CONTRACT),
+       must=["0 error(s)", "unit=1", "integration=1", "e2e=1"], forbid=["no tier contract", "ERROR"])
+
+# robustness: bold + parenthetical tier names ('**unit**', '**system / journey (e2e)**') classify correctly
+BOLD_CONTRACT = (
+    "## Tier contract\n"
+    "| **tier** | **real-deps** | **mock-ceiling** | **target-env** |\n"
+    "|---|---|---|---|\n"
+    "| **unit** | none | none | local |\n"
+    "| **integration** | db | boundary-only | local |\n"
+    "| **system / journey (e2e)** | all | none | preview |\n")
+expect("bold-parenthetical-tiers", run(FULL, contract=BOLD_CONTRACT),
+       must=["0 error(s)", "unit=1", "integration=1", "e2e=1"], forbid=["ERROR", "never declares"])
+
+# co-located layout: src/**/*.test.ts = unit, *.int.test.ts = integration, e2e/*.e2e.test.ts = e2e (report's repo)
+expect("co-located-layout", run({
+        "src/checkout/checkout.test.ts": "it('u', () => {});\n",
+        "src/billing/billing.int.test.ts": "it('i', () => {});\n",
+        "e2e/checkout.e2e.test.ts": "it('e', () => {});\n",
+    }), must=["0 error(s)", "unit=1", "integration=1", "e2e=1"], forbid=["ERROR", "never declares"])
+
+# production code beside a co-located test is NOT counted (only test files)
+expect("co-located-skips-production", run({
+        "src/checkout/checkout.ts": "export const f = () => 1;\n",
+        "src/checkout/checkout.test.ts": "it('u', () => {});\n",
+        "tests/integration/b.py": "def test_b(): pass\n",
         "tests/e2e/c.py": "def test_c(): pass\n",
-        "tests/integration/b.py": "def test_b(): pass\n",   # cover integration so the only ERROR is 'unit missing'...
-        "tests/unit/a.py": "def test_a(): pass\n",
-        "tests/helpers/x.py": "def h(): pass\n",
-        "tests/helpers/y.py": "def h(): pass\n",
-        "tests/helpers/z.py": "def h(): pass\n",
-    }), must=["WARN", "blind"])
+    }), must=["0 error(s)", "unit=1"], forbid=["ERROR"])
 
 print("\n%d passed, %d failed" % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)

@@ -91,7 +91,12 @@ test tree — over-mocking, wrong-tier placement, a declared tier with no suite;
 tree with NO tier contract a blocking finding** — the strategy was never derived, so silence would be false
 assurance — and **`--require-all-tiers`** makes a declared-but-unbuilt tier blocking too, which is correct
 at release: the build is complete, so every tier must exist. The per-commit gate omits `--require-all-tiers`
-because mid-build a tier legitimately hasn't landed yet) · `…/check_e2e_target.py` (e2e tests hit the named
+because mid-build a tier legitimately hasn't landed yet). These gates classify tests by directory
+(`tests/<tier>/`) OR filename (`foo.int.test.ts`; a bare `foo.test.ts` = unit) and read a real human-authored
+`levels.md` (bold/parenthetical tier names, a scope comment above the table), so a **co-located** source-root
+layout is handled — point `--tests` at the source roots if they're non-standard. If the project wired its OWN
+equivalent tier/mock/e2e fitness against the same contract (e.g. a native pnpm check), prefer consuming that
+gate's result over re-running the reference tools · `…/check_e2e_target.py` (e2e tests hit the named
 deployed env, not a local stack) · `…/check_no_fakes.py` / `…/check_deploy_real.py` /
 `…/check_migration_real.py` over the whole tree · `…/check_operate_records.py` (Phase 4). Every ERROR →
 `blocking`; every WARN → an `important` candidate to confirm. **Don't re-do what these decide mechanically —
