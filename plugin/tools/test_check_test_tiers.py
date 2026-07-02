@@ -49,9 +49,12 @@ FULL = {
 # every declared tier has a suite -> clean
 expect("all-tiers-present", run(FULL), must=["0 error(s)"], forbid=["ERROR"])
 
-# a declared tier with no suite -> ERROR
-expect("missing-tier", run({"tests/unit/a.py": "def test_a(): pass\n", "tests/e2e/c.py": "def test_c(): pass\n"}),
-       must=["ERROR", "integration", "never built"])
+# a declared tier with no suite -> WARN by default (mid-build; a per-commit gate must not go red on a not-yet-due tier)
+expect("missing-tier-warns", run({"tests/unit/a.py": "def test_a(): pass\n", "tests/e2e/c.py": "def test_c(): pass\n"}),
+       must=["WARN", "integration", "not yet built"], forbid=["ERROR"])
+# ...but ERROR under --require-all-tiers (release / audit-build, where the build is complete)
+expect("missing-tier-require-all", run({"tests/unit/a.py": "def test_a(): pass\n", "tests/e2e/c.py": "def test_c(): pass\n"},
+       args=("--require-all-tiers",)), must=["ERROR", "integration"])
 
 # a dir whose segment isn't a recognized tier is simply not counted (no warn, no error)
 d2 = dict(FULL); d2["tests/perf/z.py"] = "def test_z(): pass\n"

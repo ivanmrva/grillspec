@@ -2,8 +2,11 @@
 # check_mock_budget.py - a coarse, high-precision tripwire against tests that mock beyond their tier's ceiling.
 #
 # The test strategy's tier contract (spec/09-solution/test/levels.md) declares, per tier, a `mock-ceiling`:
-#   none         -> no test doubles at all (unit/contract/e2e): a mock here means the test is doing another
-#                   tier's work, or an e2e that mocks isn't e2e. ANY mock usage is an ERROR.
+#   none         -> no MODULE-level mocking (unit/contract/e2e): vi.mock/jest.mock/@patch/patch.object/sinon/
+#                   testdouble swap a real import or attribute behind the code's back -> ERROR. A bare double
+#                   FACTORY (vi.fn()/jest.fn()/spyOn/MagicMock()) constructed in the test and injected through
+#                   the PRODUCTION constructor is the sanctioned hexagonal pattern (build a fake port, pass it
+#                   in) and is ALLOWED - banning it would false-fail an idiomatic ports-and-adapters unit test.
 #   boundary-only -> integration: real DB/broker/filesystem, mock ONLY third-party network at the boundary.
 #                   A mock that names a real-dep keyword (the tier's declared real deps, or db/broker/repo/...)
 #                   is an ERROR - "use the real dependency, not a double".
@@ -33,13 +36,18 @@ CODE_EXT = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".java", ".kt", ".rb", "
 TIER_SEG = re.compile(r"/(?:tests?|specs?|__tests__)/(?:.*/)?(unit|integration|contract|e2e|journey|smoke|system|acceptance|nfr)(?:/|_|-|\.|$)", re.I)
 FNAME_TIER = re.compile(r"(?:^|[._-])(unit|integration|int|contract|e2e|journey|smoke|system|acceptance|nfr)[._-]", re.I)
 SYNONYM = {"journey": "e2e", "smoke": "e2e", "system": "e2e", "acceptance": "e2e", "nfr": "e2e", "int": "integration"}
-# no leading \b: some alternatives start with '@' (a non-word char), before which \b can never match; each
-# token instead carries its own trailing \b / punctuation to stay precise.
-MOCK = re.compile(
-    r"(?:unittest\.mock|mock\.(?:patch|Mock|MagicMock|AsyncMock)|@patch\b|\bMagicMock\b|\bAsyncMock\b|"
-    r"\bsinon\b|\btestdouble\b|td\.replace|jest\.(?:mock|fn|spyOn)|vi\.(?:mock|fn|spyOn)|\bnock\b|"
-    r"org\.mockito|\bmockito\b|@Mock\b|\beasymock\b|\bmoq\b|\bnsubstitute\b|\bfakeiteasy\b|\bgomock\b|golang/mock|testify/mock|\bmockk\b)",
+# MODULE-level mocking swaps a real import/attribute behind the code's back - THIS is the over-mock a 'none'
+# ceiling must ban (case-insensitive; '@'-prefixed tokens can't rely on a leading \b so each carries its own).
+MODULE_MOCK = re.compile(
+    r"(?:jest|vi)\.(?:do)?mock\b|@patch\b|\bpatch\.object\b|(?:unittest\.)?mock\.patch\b|"
+    r"\bsinon\b|\btestdouble\b|\btd\.replace|vitest-mock-extended|jest-mock-extended|"
+    r"\bnock\b|org\.mockito|\bmockito\b|@Mock\b|\beasymock\b|\bmoq\b|\bnsubstitute\b|\bfakeiteasy\b|\bgomock\b|golang/mock|testify/mock|\bmockk\b",
     re.I)
+# a bare double FACTORY - injected through the production constructor, this is the sanctioned boundary (CONV-047),
+# NOT a 'none' breach. Case-SENSITIVE so `vi.mock(` (lowercase) doesn't match the `Mock(` construction token.
+FACTORY = re.compile(r"(?:jest|vi)\.(?:fn|spyOn)\b|\b(?:Magic|Async)?Mock\s*\(")
+# importing a mock library is only a signal (unittest.mock is also how you get MagicMock for the factory), so it
+# counts toward "is this a mock line" but is never itself a 'none' breach.
 IMPORT_MOCK = re.compile(r"\b(?:from\s+mock\b|import\s+mock\b|require\(['\"][^'\"]*mock)", re.I)
 DEFAULT_REALDEP = ("db", "database", "datastore", "repository", "repo", "sql", "postgres", "mysql", "sqlite",
                    "mongo", "redis", "broker", "kafka", "rabbit", "queue", "sqs", "pubsub", "filesystem", "fs")
@@ -124,13 +132,18 @@ for base in roots:
         for n, line in enumerate(p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             if "mock-budget: allow" in line:
                 continue
-            if not (MOCK.search(line) or IMPORT_MOCK.search(line)):
+            mm = bool(MODULE_MOCK.search(line))                 # module-level swap - the real over-mock
+            fac = bool(FACTORY.search(line))                    # a hand-built double (injected = sanctioned)
+            if not (mm or fac or IMPORT_MOCK.search(line)):
                 continue
             where = "%s:%d" % (rel, n)
             if ceiling == "none":
-                add("ERROR", where, "tier '%s' has mock-ceiling 'none' but this test mocks - push the double out, "
-                                    "or move the test to the tier its real dependencies belong to." % tier)
-            elif ceiling in ("boundary-only", "boundary"):
+                if mm:
+                    add("ERROR", where, "tier '%s' (mock-ceiling 'none') - a MODULE-level mock swaps a real import "
+                                        "behind the code's back; inject a hand-built double through the production "
+                                        "constructor instead (a bare vi.fn()/jest.fn()/Mock() factory is fine)." % tier)
+                # a factory-only line (an injected double) is the sanctioned CONV-047 pattern - allowed.
+            elif ceiling in ("boundary-only", "boundary") and (mm or fac):
                 low = line.lower()
                 hit = next((d for d in deps if re.search(r"\b%s\b" % re.escape(d), low)), None)
                 if hit:

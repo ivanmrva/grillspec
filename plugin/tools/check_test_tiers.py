@@ -4,14 +4,17 @@
 # The tier contract (spec/09-solution/test/levels.md) declares which tiers the strategy requires. This confirms
 # each declared tier actually EXISTS as a suite, and that no tests live in a tier the contract never declared -
 # the two failures a per-task review can't see (it only sees one slice's tests, never the suite as a whole):
-#   ERROR: a declared tier with ZERO test files - the strategy names it but nothing was built.
+#   a declared tier with ZERO test files -> WARN by default (a build is incremental: contract/e2e/NFR-evidence
+#     tiers legitimately don't exist until their tasks land, so a PER-COMMIT gate must not go red on a not-yet-due
+#     tier); ERROR only under --require-all-tiers (audit-build / the release gate, where the build is complete and
+#     every declared tier must exist).
 #   WARN:  a test directory that maps to no declared tier - misfiled, or an undeclared tier that dodged the contract.
 # It also prints the per-tier file counts (informational) so the distribution-shape judgment in audit-build has
 # the numbers. It does NOT judge whether a given test sits at the RIGHT tier (that's semantic - audit-build) nor
 # whether the distribution matches pyramid/integration-weighted (that's a judgment on these counts).
 #
 # No-ops cleanly when there is no tier contract or no test tree. Run from the project root:
-#   python3 tools/check_test_tiers.py [project_root] [--tests tests,test] [--levels <path>] [--strict]
+#   python3 tools/check_test_tiers.py [project_root] [--tests tests,test] [--levels <path>] [--require-all-tiers] [--strict]
 import sys, re, pathlib
 
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
@@ -24,7 +27,8 @@ def opt(flag, default):
 TEST_DIRS = [s for s in opt("--tests", "tests,test").split(",") if s]
 LEVELS = pathlib.Path(opt("--levels", str(ROOT / "spec" / "09-solution" / "test" / "levels.md")))
 STRICT = "--strict" in sys.argv
-REQUIRE = "--require" in sys.argv   # a test tree with NO tier contract becomes an ERROR (audit-build passes this)
+REQUIRE = "--require" in sys.argv           # a test tree with NO tier contract becomes an ERROR (audit-build)
+REQUIRE_ALL = "--require-all-tiers" in sys.argv  # every declared tier must have a suite (release completeness)
 
 CODE_EXT = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".java", ".kt", ".rb", ".cs", ".php", ".rs", ".scala", ".swift", ".json", ".feature", ".yaml", ".yml"}
 TIER_SEG = re.compile(r"/(?:tests?|specs?|__tests__)/(?:.*/)?(unit|integration|contract|e2e|journey|smoke|system|acceptance|nfr)(?:/|_|-|\.|$)", re.I)
@@ -106,8 +110,14 @@ for base in roots:
 
 for tier in sorted(contract):
     if counts.get(tier, 0) == 0:
-        add("ERROR", "tier:" + tier, "the tier contract declares '%s' but no %s suite exists under %s - "
-                                     "a required test level was never built." % (tier, tier, "/".join(TEST_DIRS)))
+        # a declared tier with no suite: WARN mid-build (tiers arrive as their tasks land - a per-commit gate
+        # must not go red on a not-yet-due tier), ERROR only under --require-all-tiers (audit-build / release).
+        # Appended directly so --strict doesn't promote it - its level is governed solely by --require-all-tiers.
+        lvl = "ERROR" if REQUIRE_ALL else "WARN"
+        F.append((lvl, "tier:" + tier,
+                  "the tier contract declares '%s' but no %s suite exists under %s - not yet built. Fine "
+                  "mid-build; enforced at release (audit-build / the release gate run --require-all-tiers)."
+                  % (tier, tier, "/".join(TEST_DIRS))))
 for tier, sample in sorted(undeclared.items()):
     add("WARN", sample, "tests filed under tier '%s' which the contract never declares - misfiled, or an "
                         "undeclared tier that dodged the strategy." % tier)

@@ -48,28 +48,40 @@ def expect(name, output, must=(), forbid=()):
 expect("unit-clean", run({"tests/unit/a.py": "def test_add():\n    assert 1 + 1 == 2\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 
-# a unit test that mocks breaches a 'none' ceiling -> ERROR
-expect("unit-mocks-error", run({"tests/unit/a.py": "from unittest.mock import MagicMock\ndef test_x():\n    MagicMock()\n"}),
-       must=["ERROR", "unit", "mock-ceiling 'none'"])
+# CONV-047: a hand-built double injected through the production constructor is ALLOWED at a 'none' tier
+expect("unit-injected-double-ok", run({"tests/unit/checkout.test.ts":
+        "const billing = { create: vi.fn() };\nconst svc = makeCreateCheckoutSession(billing);\n"}),
+       must=["0 error(s)"], forbid=["ERROR"])
+expect("unit-magicmock-inject-ok", run({"tests/unit/svc_test.py":
+        "from unittest.mock import MagicMock\ndef test_x():\n    svc = Service(MagicMock())\n"}),
+       must=["0 error(s)"], forbid=["ERROR"])
 
-# an e2e test that mocks is the same ERROR (an e2e that mocks isn't e2e)
-expect("e2e-mocks-error", run({"tests/e2e/a.js": "jest.mock('../db');\nit('x', () => {});\n"}),
+# ...but MODULE-level mocking (swaps a real import behind the code's back) is still an ERROR at 'none'
+expect("unit-module-mock-error", run({"tests/unit/a.ts": "vi.mock('../billing');\nit('x', () => {});\n"}),
+       must=["ERROR", "MODULE-level"])
+expect("unit-patch-error", run({"tests/unit/a.py": "from unittest.mock import patch\n@patch('app.clock')\ndef test_x():\n    pass\n"}),
+       must=["ERROR", "MODULE-level"])
+
+# an e2e test that module-mocks is the same ERROR (an e2e that swaps imports isn't e2e)
+expect("e2e-module-mock-error", run({"tests/e2e/a.js": "jest.mock('../db');\nit('x', () => {});\n"}),
        must=["ERROR", "e2e"])
 
 # integration MAY mock a third-party boundary
 expect("integration-boundary-ok", run({"tests/integration/a.js": "jest.mock('stripe');\nit('x', () => {});\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 
-# ...but integration must NOT mock a real dependency (the DB) -> ERROR
+# ...but integration must NOT mock a real dependency (the DB) -> ERROR (module-level OR a hand-built db fake)
 expect("integration-mocks-db-error", run({"tests/integration/a.py": "from unittest.mock import patch\n@patch('app.db')\ndef test_x():\n    pass\n"}),
        must=["ERROR", "boundary-only", "real dependency"])
+expect("integration-vifn-db-error", run({"tests/integration/a.ts": "const db = { save: vi.fn() };\nuse(db);\n"}),
+       must=["ERROR", "real dependency"])
 
-# inline waiver suppresses
-expect("inline-waiver", run({"tests/unit/a.py": "from unittest.mock import Mock  # mock-budget: allow legacy\n"}),
+# inline waiver suppresses a module-mock
+expect("inline-waiver", run({"tests/unit/a.ts": "vi.mock('../x'); // mock-budget: allow legacy shim\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 
 # allowlist file suppresses by path
-expect("allowlist-file", run({"tests/unit/a.py": "from unittest.mock import Mock\n", ".claude/mock-budget-allow.txt": "tests/unit/a.py\n"}),
+expect("allowlist-file", run({"tests/unit/a.ts": "vi.mock('../x');\n", ".claude/mock-budget-allow.txt": "tests/unit/a.ts\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 
 # no contract at all = clean no-op

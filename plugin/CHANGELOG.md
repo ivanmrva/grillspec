@@ -4,6 +4,12 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` to release.
 
+## 4.11.2
+
+### Fixed — two 4.11.x tier-gate false-fails on legitimate, idiomatic projects
+- **`check_mock_budget.py` banned ALL `vi.fn`/`spyOn`/`MagicMock()` at a `none` tier, colliding with the mandated constructor-injected-fake pattern (CONV-047).** The over-mock a `none` ceiling must catch is *module-level* replacement (`vi.mock`/`jest.mock`/`@patch`/`patch.object`/`sinon`/`testdouble`) — swapping a real import behind the code's back. A hand-built double *factory* (`vi.fn()`/`jest.fn()`/`spyOn`/`MagicMock()`) constructed in the test and injected through the production constructor is the sanctioned hexagonal boundary and is now **allowed** at `none`. (At a `boundary-only` tier, mocking a *real dependency* — by either means — is still an error.)
+- **`check_test_tiers.py` ERRORed on a declared-but-not-yet-built tier, but derive-conventions wires it into the per-commit gate** — so an incremental build (tiers land with their tasks) went red on every commit for tiers not yet due. A declared tier with no suite is now a **WARN per-commit** and an **ERROR only under `--require-all-tiers`** (which audit-build / the release gate pass, where the build is complete and every tier must exist). `--strict` no longer promotes it — its level is governed solely by `--require-all-tiers`.
+
 ## 4.11.1
 
 ### Fixed — numeric-bar check read the first digit anywhere as the measured value

@@ -226,8 +226,11 @@ def drop_integration(d):
     shutil.rmtree(d / "tests" / "integration", ignore_errors=True)
 d = fresh(drop_integration)
 try:
-    r = run(TT, [str(d)])
-    check("notier: test-tiers catches missing suite", r.returncode == 1 and "integration" in (r.stdout + r.stderr))
+    # per-commit (default) is a WARN — mid-build a tier may not have landed; the release gate (--require-all-tiers) errors
+    soft = run(TT, [str(d)])
+    r = run(TT, [str(d), "--require-all-tiers"])
+    check("notier: per-commit only WARNs",            soft.returncode == 0 and "not yet built" in (soft.stdout + soft.stderr))
+    check("notier: --require-all-tiers catches it",   r.returncode == 1 and "integration" in (r.stdout + r.stderr))
     check("notier: mock-budget unaffected",           run(MB, [str(d)]).returncode == 0)
 finally:
     shutil.rmtree(d, ignore_errors=True)

@@ -86,10 +86,12 @@ rejected — record the current HEAD when you write the report.
 Run the deterministic tools at aggregate scope and record raw counts:
 `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task_record.py` per `T-` in scope (every gate row present +
 PASS/`N/A`, evidence paths real, an independent `VERDICT: PASS` on disk) · `…/check_mock_budget.py` and
-`…/check_test_tiers.py --require` (the tier contract from `test/levels.md` vs the actual test tree —
-over-mocking, wrong-tier placement, a declared tier with no suite; **`--require` makes a test tree with NO
-tier contract a blocking finding** — the strategy was never derived, so silence here would be false
-assurance) · `…/check_e2e_target.py` (e2e tests hit the named
+`…/check_test_tiers.py --require --require-all-tiers` (the tier contract from `test/levels.md` vs the actual
+test tree — over-mocking, wrong-tier placement, a declared tier with no suite; **`--require` makes a test
+tree with NO tier contract a blocking finding** — the strategy was never derived, so silence would be false
+assurance — and **`--require-all-tiers`** makes a declared-but-unbuilt tier blocking too, which is correct
+at release: the build is complete, so every tier must exist. The per-commit gate omits `--require-all-tiers`
+because mid-build a tier legitimately hasn't landed yet) · `…/check_e2e_target.py` (e2e tests hit the named
 deployed env, not a local stack) · `…/check_no_fakes.py` / `…/check_deploy_real.py` /
 `…/check_migration_real.py` over the whole tree · `…/check_operate_records.py` (Phase 4). Every ERROR →
 `blocking`; every WARN → an `important` candidate to confirm. **Don't re-do what these decide mechanically —
