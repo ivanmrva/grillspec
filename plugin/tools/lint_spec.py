@@ -1025,6 +1025,107 @@ for p, r in cmd_files():
             if (row[ri].strip() if ri < len(row) else "").lower() in EMPTY_CELL:
                 add("WARN", r, "module '%s' declares no role - each module names its role (domain · driving-port · driven-port · application-service · adapter) so its inward-only dependency direction is checkable" % name)
 
+# 27 ADR number-sequence integrity - an interior gap in an area's ADR numbering (003 -> 005 with no 004)
+#    usually means a decision was ratified but its ADR was never filed. The dangling-ref checks only fire when
+#    something ACTIVELY cites the missing id; a silent hole nobody cites yet is invisible. Archived ADRs
+#    (adr/_archive/) still COUNT as filed (their id is in `defined`), so only a truly-absent number is a gap.
+#    WARN interior gaps only - numbering need not start at 1 (an area code may have been renamed mid-project).
+adr_nums = {}                                                # area prefix -> set of filed ADR numbers
+for d in defined:
+    m = re.match(r"ADR-([A-Z0-9]+)-(\d+)$", d)
+    if m: adr_nums.setdefault(m.group(1), set()).add(int(m.group(2)))
+for pre, nums in sorted(adr_nums.items()):
+    lo, hi = min(nums), max(nums)
+    missing = [n for n in range(lo, hi + 1) if n not in nums]
+    if missing:
+        add("WARN", "adr/", "ADR-%s numbering skips %s (filed %03d..%03d) - a gap usually means a decision was made but its ADR was never filed; file the missing ADR(s) or renumber so the sequence is contiguous" % (pre, ", ".join("%03d" % n for n in missing), lo, hi))
+
+# 28 every RESOLVED decision in _human-input.md that cites an ADR id must resolve to a real adr/ file. A
+#    ratified decision recorded as 'Decided (ADR-INFRA-004)' with no ADR-INFRA-004 on disk is an un-filed
+#    decision masquerading as filed - and the ref checks EXEMPT _human-input (spec-root orchestration file),
+#    so nothing else catches it. Guarded on an adr/ dir existing (a project that hasn't started filing ADRs
+#    may legitimately reference future ones).
+if _htxt and (SPEC / "adr").is_dir():
+    adr_on_disk = {d for d in defined if d.startswith("ADR-")}
+    _resolve_cue = re.compile(r"(?i)\b(?:resolved|decided|ratified|accepted|answered|closed|made)\b")
+    _adrref = re.compile(r"ADR-[A-Za-z][A-Za-z0-9]*-\d+")
+    for i, line in enumerate(_htxt.splitlines(), 1):
+        if not _resolve_cue.search(line): continue
+        for tok in _adrref.findall(line):
+            if tok.upper() not in adr_on_disk:
+                add("WARN", "_human-input.md", "resolved decision cites %s but no adr/ file defines it - a ratified decision must not reference a non-existent ADR; file the ADR or fix the id" % tok, i)
+
+# 29 an afk:eligible task must not carry an un-provisioned human-prerequisite. A task's afk status (the phase/
+#    afk row) says whether an UNATTENDED run may dispatch it; its `human-prereq` dimension names any external
+#    credential/access/provisioning it can't proceed without. `afk: eligible` + a non-N/A human-prereq is a
+#    contradiction - the AFK run PARKS on the prereq mid-slice. Free-prose provenance ('arrives via T-001') is
+#    not verifiable here, so the eligibility claim is unbacked: WARN to mark it blocked, or (once a machine-
+#    readable provisioning register exists) back the prereq with a provisioned entry / a passed provisioning task.
+def task_afk(text):                                          # task-level afk from the afk row or the phase cell (NOT a whole-file grep - the prototype-review cell carries an illustrative 'afk: blocked')
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("|"):
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            if len(cells) >= 2 and cells[0].lower() == "afk":
+                m = re.search(r"(?i)\b(eligible|blocked)\b", cells[1]);  return m.group(1).lower() if m else None
+            if len(cells) >= 2 and cells[0].lower() == "phase":
+                m = re.search(r"(?i)afk\s*:?\s*(eligible|blocked)", cells[1])
+                if m: return m.group(1).lower()
+        else:
+            m = re.match(r"(?i)afk\s*:\s*(eligible|blocked)\b", s)
+            if m: return m.group(1).lower()
+    return None
+def task_human_prereq(text):                                 # the human-prereq dimension cell value, or None if the row is absent
+    for line in text.splitlines():
+        s = line.strip()
+        if not s.startswith("|"): continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if len(cells) >= 2 and re.sub(r"[\s_-]", "", cells[0].lower()) == "humanprereq":
+            return cells[1]
+    return None
+def is_na(cell):                                             # a satisfied / not-applicable prereq cell (EMPTY_CELL is exact-match; a prereq may read 'N/A — headless')
+    c = cell.strip().lower()
+    return c in EMPTY_CELL or re.match(r"n/?a\b|none\b", c) is not None
+# the credential-provisioning register (part a+c): a spec-root, LAYER-FREE authored file (`_provisioning.md`)
+# that both maps each credential/config key to its owner + consuming tasks AND carries the LIVE provisioned/
+# pending state. It is layer-free because it joins a credential (infra, L5) to the tasks that consume it
+# (delivery, L6) - a map that on a derived L5 file would be an illegal downward ref; state must be authored,
+# not regenerated, so it survives task re-derivation. First table column = the credential key (matches
+# `environments.md`, the join token); a `state` column holds provisioned|pending.
+PROV_STATES = {"provisioned", "pending"}
+def parse_provisioning(text):
+    reg = {}
+    for header, body in md_tables(text.splitlines()):
+        if not header: continue
+        si = next((i for i, h in enumerate(header) if h.strip() == "state"), None)
+        for row in body:
+            key = (row[0] if row else "").strip(" *`_")
+            if not key or key.lower() in EMPTY_CELL: continue
+            reg[key] = (row[si].strip().lower() if si is not None and si < len(row) else "")
+    return reg
+_prov = SPEC / "_provisioning.md"
+prov_reg = parse_provisioning(read(_prov)) if _prov.exists() else None
+if prov_reg is not None:                                     # register present: sanity-check each row's state value
+    for k, st in prov_reg.items():
+        if st and st not in PROV_STATES:
+            add("WARN", "_provisioning.md", "credential '%s' has unrecognized state '%s' - use provisioned | pending" % (k, st))
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    txt = read(p)
+    hp = task_human_prereq(txt)
+    if task_afk(txt) != "eligible" or hp is None or is_na(hp): continue
+    if prov_reg is None:                                     # no register yet - the eligibility claim is simply unbacked
+        add("WARN", r, "afk:eligible but declares a non-N/A human-prereq (\"%s\") - an external credential/access it can't proceed without will PARK an unattended run mid-slice; mark it afk:blocked, or add a `_provisioning.md` register and back the prereq with a provisioned entry" % (hp.strip()[:70]))
+        continue
+    named = [k for k in prov_reg if k in hp]                 # which registered keys this prereq names (exact-substring join)
+    if not named:
+        add("WARN", r, "afk:eligible with a human-prereq (\"%s\") that names no key in _provisioning.md - reference the credential by its `environments.md` key so its provisioned-state is verifiable, or mark afk:blocked" % (hp.strip()[:70]))
+    else:
+        pend = [k for k in named if prov_reg[k] != "provisioned"]
+        if pend:
+            add("WARN", r, "afk:eligible but credential(s) %s are not 'provisioned' in _provisioning.md - an unattended run will PARK; provision them (or mark afk:blocked) before claiming eligibility" % ", ".join(sorted(pend)))
+        # else: every named credential is provisioned -> the eligibility claim is BACKED, no finding
+
 order = {"ERROR": 0, "WARN": 1, "INFO": 2}
 F.sort(key=lambda x: (order[x[0]], x[1], x[2]))
 e = sum(1 for x in F if x[0] == "ERROR"); wn = sum(1 for x in F if x[0] == "WARN")

@@ -131,6 +131,16 @@ expect("config-extends-recognition", run({"deploy/release.sh": "#!/bin/bash\nmyc
         ".claude/deploy-real-commands.txt": "mycorp-deployer\n"}),
        must=["0 error(s)"], forbid=["ERROR", "WARN"])
 
+# the bare English word "No-op" in a legitimate CI comment is NOT a faked deploy (regression: was flagged ERROR)
+expect("noop-comment-not-fake", run({".github/workflows/deploy.yml":
+        "jobs:\n  deploy:\n    steps:\n      # No-op on non-main branches; real deploy runs on main only\n"
+        "      - run: helm upgrade --install app ./chart\n"}),
+       must=["0 error(s)"], forbid=["ERROR"])
+# but an actual "no-op deploy" placeholder IS still caught
+expect("noop-deploy-placeholder", run({".github/workflows/deploy.yml":
+        "jobs:\n  deploy:\n    steps:\n      - run: echo no-op deploy for now\n"}),
+       must=["ERROR", "placeholder"])
+
 # no deploy artifact at all = clean no-op (an early project that hasn't wired CI yet)
 expect("no-deploy-artifact-noop", run({"src/app.py": "print('hi')\n", "README.md": "hi\n"}),
        must=["nothing to scan"], forbid=["ERROR", "Traceback"])

@@ -80,6 +80,23 @@ expect("allowlist-file", run({"src/g.py": "class FakeGateway:\n    pass\n", ".cl
 expect("no-src-noop", run({"docs/readme.md": "hello\n"}),
        must=["nothing to scan"], forbid=["ERROR", "Traceback"])
 
+# a real hardcoded/canned/placeholder identifier in production is a WARN
+expect("canned-ident-warn", run({"src/g.py": "cannedResponse = load()\nHARDCODED_KEY = 'x'\n"}),
+       must=["WARN", "hardcoded/canned/placeholder"], forbid=["ERROR"])
+
+# 'canned' as a substring of an unrelated word (a config-key builder) is NOT flagged (regression)
+expect("scanned-not-canned", run({"src/cfg.py": "def build_key(scannedKeys):\n    return unscannedConfig(scannedKeys)\n"}),
+       must=["0 error(s)"], forbid=["ERROR", "WARN"])
+
+# a negation comment ('never hardcoded') is prose, not an identifier - NOT flagged (regression)
+expect("negation-comment-ok", run({"src/s.py":
+        "def key():\n    # secret is read from env, never faked/hardcoded\n    return os.environ['K']\n"}),
+       must=["0 error(s)"], forbid=["WARN", "ERROR"])
+
+# but a NON-negated comment noting a real hardcoded value still warns
+expect("nonneg-comment-warns", run({"src/s.py": "K = 'abc'  # this token is hardcoded and should move to env\n"}),
+       must=["WARN", "hardcoded/canned/placeholder"])
+
 # custom --src dirs
 expect("custom-src", run({"app/g.py": "class MockRepo:\n    pass\n"}, args=("--src", "app")),
        must=["ERROR", "MockRepo"])

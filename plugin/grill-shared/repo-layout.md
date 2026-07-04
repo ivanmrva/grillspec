@@ -43,7 +43,18 @@ spec/
 │  (bets, risks, and gaps live INLINE in each artifact with a status; the conductor derives the
 │   cross-area views — a glossary view, the bet register, risks, readiness — by READING outputs, not as files.
 │   The one operational queue is `_human-input.md` at the spec root: the batched human-in-the-loop asks
-│   `autorun` parks for you to clear in a sitting — an orchestration handoff, not a decision/assumption ledger)
+│   `autorun` parks for you to clear in a sitting — an orchestration handoff, not a decision/assumption ledger.
+│   Being layer-free (spec root), it is the ONE place operational "where are the steps" navigation may point
+│   DOWN at a runbook — e.g. a provisioning ask citing `12-operate/bootstrap.md §N` for the click-by-click —
+│   which a layer-bound solution file like `infra-ops/prerequisites.md` (the requirement register) may not.
+│   Its sibling is `_provisioning.md` (also spec-root, layer-free, authored): the LIVE credential register —
+│   one row per external credential/config key (matching `infra-ops/environments.md`) → { owner · consuming
+│   tasks (`T-`) · state `provisioned`|`pending` · evidence }. It joins a credential (infra, L5) to its
+│   consuming tasks (delivery, L6) — a downward map that can't sit on a derived L5 file — and holds the LIVE
+│   state that must survive task re-derivation, so it is authored, not regenerated. `derive-tasks` seeds it
+│   (map columns, `pending`) preserving any existing state; `autorun` reads it BEFORE a wave to know which
+│   credential-gated branches park, and flips a row to `provisioned` when its owner task merges. `lint_spec.py`
+│   uses it to verify an `afk: eligible` task's credential prereqs are actually provisioned)
 │
 │  ┌─────────── PHASE A · AUTHORED — your input drives it (grill, except functional-spec) ───────────┐
 ├── 01-discovery/           grill-problem-validation   (runs first · continuous)   grill

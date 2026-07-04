@@ -241,6 +241,89 @@ expect("ac-single-owner-ok", run(LINT, {
 expect("adr-status", run(LINT, {"adr/ADR-DDD-1.md": "# ADR-DDD-1 thing\nDecision: do it.\n"}),
        must=["no recognized 'status:'"])
 
+# 27 an interior gap in an area's ADR numbering (003, 005 filed; 004 missing) is flagged
+ADRTXT = "# ADR-%s thing\nStatus: accepted\nDecision: do it.\n"
+expect("adr-sequence-gap", run(LINT, {
+    "adr/ADR-INFRA-3.md": ADRTXT % "INFRA-3",
+    "adr/ADR-INFRA-5.md": ADRTXT % "INFRA-5",
+}), must=["ADR-INFRA numbering skips 004"])
+# a contiguous sequence (and an unrelated single ADR in another area) is NOT flagged
+expect("adr-sequence-contiguous-ok", run(LINT, {
+    "adr/ADR-INFRA-3.md": ADRTXT % "INFRA-3",
+    "adr/ADR-INFRA-4.md": ADRTXT % "INFRA-4",
+    "adr/ADR-DDD-1.md": ADRTXT % "DDD-1",
+}), forbid=["numbering skips"])
+# an archived ADR still counts as filed - the number it occupies is NOT a gap
+expect("adr-sequence-archived-counts", run(LINT, {
+    "adr/ADR-INFRA-3.md": ADRTXT % "INFRA-3",
+    "adr/_archive/ADR-INFRA-4.md": ADRTXT % "INFRA-4",
+    "adr/ADR-INFRA-5.md": ADRTXT % "INFRA-5",
+}), forbid=["numbering skips"])
+
+# 28 a resolved _human-input decision citing an ADR with no file on disk is flagged
+expect("human-input-dangling-adr", run(LINT, {
+    "adr/ADR-INFRA-3.md": ADRTXT % "INFRA-3",
+    "_human-input.md": HDR + "\n| ask | disposition |\n|---|---|\n| vendor residency | Decided (ADR-INFRA-4) |\n",
+}), must=["resolved decision cites ADR-INFRA-4", "no adr/ file"])
+# the same cite WITH the ADR filed is clean
+expect("human-input-adr-exists-ok", run(LINT, {
+    "adr/ADR-INFRA-4.md": ADRTXT % "INFRA-4",
+    "_human-input.md": HDR + "\n| ask | disposition |\n|---|---|\n| vendor residency | Decided (ADR-INFRA-4) |\n",
+}), forbid=["resolved decision cites"])
+
+# 29 an afk:eligible task with a non-N/A human-prereq (an un-provisioned credential) is flagged - it would PARK
+def taskf(phase, human_prereq, extra=""):
+    return (HDR + "\n# T-046\n\n| field | value |\n|---|---|\n| phase | %s |\n"
+            "| implements | UC-1 |\n| human-prereq | %s |\n%s" % (phase, human_prereq, extra))
+expect("afk-eligible-unprovisioned-prereq", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "10-delivery/tasks/T-046.md": taskf("MVP · afk: eligible", "Web Push VAPID keys (set VAPID_* in CI) — arrives via T-001"),
+}), must=["afk:eligible but declares a non-N/A human-prereq"])
+# afk:eligible with an N/A human-prereq is clean
+expect("afk-eligible-na-prereq-ok", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "10-delivery/tasks/T-046.md": taskf("MVP · afk: eligible", "N/A"),
+}), forbid=["human-prereq"])
+# a task that is afk:blocked may carry a real human-prereq (that's the correct state) - NOT flagged
+expect("afk-blocked-prereq-ok", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "10-delivery/tasks/T-046.md": taskf("MVP · afk: blocked — external credential", "Twelve Data API key (set TD_KEY in CI)"),
+}), forbid=["afk:eligible but declares"])
+# the illustrative 'afk: blocked' inside a prototype-review cell must NOT override an eligible task's status
+expect("afk-eligible-despite-illustrative-blocked", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "10-delivery/tasks/T-046.md": taskf("MVP · afk: eligible", "Resend API key (set RESEND_KEY in CI)",
+        "| prototype-review | task-start — HITL (afk: blocked — visual/UX decision) only if unratified |\n"),
+}), must=["afk:eligible but declares a non-N/A human-prereq"])
+
+# ── part a+c: the _provisioning.md register makes afk:eligible verifiable ──
+def prov(*rows):  # spec-root register: key · consumed-by · state
+    return HDR + "\n| key | consumed-by | owner | state |\n|---|---|---|---|\n" + \
+        "".join("| %s | %s | %s | %s |\n" % r for r in rows)
+# a registered, PROVISIONED credential BACKS the afk:eligible claim - no finding
+expect("provisioned-backs-eligible", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "10-delivery/tasks/T-046.md": taskf("MVP · afk: eligible", "RESEND_KEY set in CI"),
+    "_provisioning.md": prov(("RESEND_KEY", "T-046", "human", "provisioned")),
+}), forbid=["afk:eligible", "PARK"])
+# a registered but PENDING credential does NOT back it - flagged as will-park
+expect("pending-does-not-back-eligible", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "10-delivery/tasks/T-046.md": taskf("MVP · afk: eligible", "RESEND_KEY set in CI"),
+    "_provisioning.md": prov(("RESEND_KEY", "T-046", "human", "pending")),
+}), must=["not 'provisioned'", "RESEND_KEY"])
+# a prereq naming NO registered key can't be verified - flagged
+expect("unregistered-credential-flagged", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "10-delivery/tasks/T-046.md": taskf("MVP · afk: eligible", "Twelve Data key set in CI"),
+    "_provisioning.md": prov(("RESEND_KEY", "T-047", "human", "provisioned")),
+}), must=["names no key in _provisioning.md"])
+# an unrecognized state value in the register is flagged
+expect("provisioning-bad-state", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "_provisioning.md": prov(("RESEND_KEY", "T-046", "human", "maybe")),
+}), must=["unrecognized state 'maybe'"])
+
 # ── 16b derived->driver backref presence + 16c impl-design trace (this session) ──
 # a journey must cite the UC- it renders, co-located on its heading; missing -> ERROR (UC area present, so not premature)
 expect("backref-jrn-missing-uc", run(LINT, {

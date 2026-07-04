@@ -80,9 +80,11 @@ def is_noop_cmd(cmd):
         return False                                            # a real command part -> not a no-op
     return True
 
+# "no-op" is qualified to "no-op deploy" (like its fake/stub/dummy siblings) so the bare English word "no-op" -
+# common in a legitimate CI comment ("# No-op on non-main branches") - is NOT mistaken for a faked deploy.
 PLACEHOLDER = re.compile(
     r"(?i)\b(?:TODO|FIXME|XXX|HACK|placeholder|not[ _-]?implemented|coming[ _-]?soon|"
-    r"fill[ _-]?in|replace[ _-]?me|fake[ _-]?deploy|stub(?:bed)?[ _-]?deploy|no[ _-]?op|dummy[ _-]?deploy)\b")
+    r"fill[ _-]?in|replace[ _-]?me|fake[ _-]?deploy|stub(?:bed)?[ _-]?deploy|no[ _-]?op[ _-]?deploy|dummy[ _-]?deploy)\b")
 DISABLED = re.compile(r"(?i)\b(?:if\s*:\s*false|when\s*:\s*never|enabled\s*:\s*false)\b")
 
 def load_list(name):

@@ -36,11 +36,15 @@ dev / stage / prod are the same module, region-pinned `eu-west-1`; config-in-env
 
 **Cost practice** (`cost.md`): allocate by tag `team`+`env`+`tenant`; unit-cost = **$ / 1k bookings**; levers = Fargate right-sizing · 1-yr Savings Plans · Spot for async workers; anomaly alert > 20% WoW; monthly per-tenant showback; `eu-west-1` chosen partly on carbon intensity.
 
-**Human-only prerequisites** (`prerequisites.md`) — **names + locations, never values** — front-loaded by the walking-skeleton bootstrap:
-- AWS account + billing alarm + service quotas (Fargate vCPU · Aurora ACUs)
-- secret **names** + where set: `PAYMENTS_API_KEY` (CI + platform secret store) · `DB_MASTER` (IaC backend)
-- OAuth/app registration for SSO (IdP console)
-- DNS: `api.example.com` A/AAAA + ACM validation records
-- residency choice: `eu-west-1` (account-gated)
+**Human-only prerequisites** (`prerequisites.md`) — the **requirement register**: one row per dependency, **names + locations + config keys, never values, no console click-path** (those are `bootstrap.md`, downstream):
 
-Recorded: each availability/RTO/RPO NFR → a mechanism + DR tier; flags decouple deploy from release; the rollout names a burn-rate promotion/abort signal; cost as a *practice*, not a number; the human prerequisites enumerated as names for the bootstrap.
+| dependency | where set | config key(s) | phase | owner | residency/compliance |
+|---|---|---|---|---|---|
+| AWS account + billing alarm + quotas (Fargate vCPU · Aurora ACUs) | AWS org console | — | initial | ops-admin | — |
+| Payments API key | CI + platform secret store | `PAYMENTS_API_KEY` | initial | sys-admin | PCI: prod key vaulted, distinct per env |
+| DB master credential | IaC backend | `DB_MASTER` | initial | sys-admin | — |
+| SSO OAuth/app registration | IdP console | `OIDC_CLIENT_ID`/`_SECRET` | pre-launch | ops-admin | — |
+| DNS `api.example.com` | registrar/Route 53 | — | pre-launch | sys-admin | — |
+| Residency region `eu-west-1` | AWS account | (region pin) | initial | ops-admin | GDPR: EU-only |
+
+Recorded: each availability/RTO/RPO NFR → a mechanism + DR tier; flags decouple deploy from release; the rollout names a burn-rate promotion/abort signal; cost as a *practice*, not a number; the human prerequisites captured as a register (WHAT + who + which key) — the click-by-click to provision each lives in the walking-skeleton's `12-operate/bootstrap.md`, which references this register upstream.

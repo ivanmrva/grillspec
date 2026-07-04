@@ -184,8 +184,9 @@ failure this phase exists to prevent.
   exist (boundary contracts + architecture seam + declared `role:` + conventions + relevant glossary; a UI
   slice has its `DS-` contract + its `JRN-` journey reference (+ the interaction-states it realises) + the kept prototype, and its `prototype-review` gate is settled — auto-AFK passed, or any HITL `visual/UX decision` escalation resolved (an open prototype-review HITL is `blocking`)); the test strategy MANUFACTURES the slice's edges;
   every decision the code needs is in the spec or an ADR. Zero load-bearing ambiguity. **Any non-`N/A`
-  `human-prereq` on the slice is resolved (provisioned) or explicitly waived** — a slice that can't be built
-  without an unmet human action is not ready (`blocking`).
+  `human-prereq` on the slice is resolved — its credential marked `provisioned` in the `_provisioning.md`
+  register — or explicitly waived** — a slice that can't be built without an unmet human action is not ready
+  (`blocking`); a bare free-prose ‘arrives via T-001’ with no `provisioned` register row does not count as resolved.
 - **Ratify axis — un-ratified user-owned values.** A user-owned VALUE the engines require to be ratified
   (NFR/SLA/SLO numbers · retention/residency · jurisdiction/regimes · pricing & tier limits · environments &
   git workflow · cloud/region/datastore/IdP commitments · a11y level · DR tier · cost ceiling · test-rigor

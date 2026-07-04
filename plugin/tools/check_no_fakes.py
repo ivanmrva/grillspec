@@ -41,7 +41,26 @@ DEF_FAKE = re.compile(
 MOCK_IMPORT = re.compile(
     r"\b(?:unittest\.mock|from\s+mock\b|import\s+mock\b|sinon|testdouble|@?jest|nock|"
     r"org\.mockito|mockito|easymock|moq|nsubstitute|fakeiteasy|gomock|golang/mock|testify/mock|mockk)\b", re.I)
-WARN_IDENT = re.compile(r"\b\w*(?:hardcoded|canned|placeholder)\w*\b", re.I)
+# a hardcoded/canned/placeholder token used AS an identifier. Matched at a sub-token boundary (identifier start,
+# after `_`, or a camelCase hump) so `canned` inside an unrelated word - e.g. `scanned`/`scannedKeys` in a
+# config-key builder - is NOT a false positive, while `HARDCODED_KEY` / `cannedResponse` / `isPlaceholder` still fire.
+WARN_IDENT = re.compile(
+    r"(?<![A-Za-z0-9])(?:hardcoded|canned|placeholder|HARDCODED|CANNED|PLACEHOLDER)\w*"
+    r"|(?:Hardcoded|Canned|Placeholder)\w*")
+# a comment that NEGATES the keyword ("never hardcoded", "omitted, never faked/hardcoded") is prose, not an
+# identifier - so a WARN_IDENT hit inside such a comment is suppressed.
+NEGATION = re.compile(r"(?i)\b(?:never|not|no|non|without|avoids?|forbid(?:s|den)?|"
+                      r"prohibit(?:s|ed)?|bans?|banned|omit(?:s|ted)?|isn't|aren't|won't|don't|doesn't)\b")
+
+def negated_comment(line, m):
+    """True when the WARN_IDENT match sits inside an inline/line comment that negates it - the fake-keyword is
+    describing what the code DOESN'T do, not naming a real fake identifier."""
+    cs = None
+    for tok in ("#", "//", "/*"):
+        i = line.find(tok)
+        if i != -1 and (cs is None or i < cs):
+            cs = i
+    return cs is not None and m.start() >= cs and NEGATION.search(line[cs:m.start()]) is not None
 WARN_NOTIMPL = re.compile(r"\b(?:raise\s+NotImplementedError|NotImplementedError\(|throw\s+new\s+Error\(\s*['\"]not implemented|TODO:?\s*implement)\b", re.I)
 WARN_FALLBACK = re.compile(r"\bif\b[^\n]*\b(?:not\s+configured|unconfigured|no\s+\w*\s*(?:key|credential|token)|missing\s+\w*\s*(?:key|credential|config))\b", re.I)
 
@@ -87,9 +106,10 @@ for base in roots:
                 add("ERROR", where, "defines '%s' - a test double in the production tree (move it under tests/)." % m.group("name"))
             if MOCK_IMPORT.search(line) and not line.lstrip().startswith(("#", "//", "*")):
                 add("ERROR", where, "imports a mocking/test-double library into production code.")
+            mi = WARN_IDENT.search(line)
             if WARN_NOTIMPL.search(line):
                 add("WARN", where, "an unimplemented/placeholder body on a production path.")
-            elif WARN_IDENT.search(line):
+            elif mi and not negated_comment(line, mi):
                 add("WARN", where, "a hardcoded/canned/placeholder identifier in production code.")
             if WARN_FALLBACK.search(line):
                 add("WARN", where, "an 'unconfigured -> fallback' guard - an absent dependency should fail the test, not be coded around.")
