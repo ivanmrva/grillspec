@@ -16,7 +16,7 @@ Usage:
 
 Exit code 0 = PASS, 1 = FAIL. Stdlib only; no spec/ required.
 """
-import sys, os, json, re, py_compile, pathlib
+import sys, os, json, re, pathlib
 
 def find_plugin_root(arg):
     if arg:
@@ -255,8 +255,8 @@ if tools_dir.is_dir():
         if py.name == "selfcheck.py":
             continue
         try:
-            py_compile.compile(str(py), doraise=True)
-        except py_compile.PyCompileError as e:
+            compile(py.read_bytes(), str(py), "exec")
+        except (SyntaxError, ValueError, TypeError) as e:
             err(f"tools/{py.name}: does not compile - {e}")
 
 # --- report ----------------------------------------------------------------
