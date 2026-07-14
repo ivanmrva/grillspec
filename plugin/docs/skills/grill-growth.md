@@ -14,8 +14,8 @@ A live, plain-language **interview** — it asks one question at a time; **no pr
 Writes its artifact.
 
 ## How to run it
-- **In the bundle plugin:** `/grillspec:grill-growth`
-- **Standalone:** copy the `grill-growth/` folder into `~/.claude/skills/`, then run `/grill-growth`. It works on its own and composes with sibling skills, each writing to its own output folder.
+- **In the bundle plugin:** `/grillspec:grill-growth` in Claude Code or `$grillspec:grill-growth` in Codex
+- **Standalone:** copy the `grill-growth/` folder into `~/.claude/skills/` and run `/grill-growth` in Claude Code, or into `~/.agents/skills/` and run `$grill-growth` in Codex. It works on its own and composes with sibling skills, each writing to its own output folder.
 
 ## How to tell it did its job  *(verification)*
 Check the artifact covers its scope above, carries stable IDs, and records any gaps inline in the artifact (with a validation status for bets).

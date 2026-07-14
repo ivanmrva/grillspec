@@ -2,7 +2,7 @@
 
 An online expand-contract migration for `DATA-Order`: split a free-text `address` column into structured fields, no downtime.
 
-> **Claude:** Deployed code must tolerate **both** shapes mid-rollout, so I'll expand first, never drop in the same release.
+> **Agent:** Deployed code must tolerate **both** shapes mid-rollout, so I'll expand first, never drop in the same release.
 > **Expand** — add nullable `address_line1/city/postcode` + dual-write trigger (forward); rollback = drop the new columns (reversible, guarded).
 > **Backfill** — 4.2M rows, chunked at **batch 5 000**, throttle **pause on replica-lag > 1s**; ran via shadow-table copy + cutover (non-blocking).
 > **Verify** — on a prod copy first: counts match (4 204 118 = 4 204 118), FK integrity clean. High-value, so a **checksum shadow-compare** of `md5(address)` vs `md5(concat(line1,city,postcode))` over all rows: 0 mismatches.

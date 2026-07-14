@@ -17,10 +17,10 @@
 #   - a `.sql` migration with no DDL/DML statement; an `operations = []`; a migration with no recognized
 #     migration statement whose only body is `pass`/empty.
 # Suppress with an inline `migration-real: allow <reason>` comment, or a path/substring entry in
-# `.claude/migration-real-allow.txt`. `--strict` promotes WARN -> ERROR.
+# `.grillspec/migration-real-allow.txt`. `--strict` promotes WARN -> ERROR.
 #
 # EXTENSIBLE: a non-standard migration-home path fragment (e.g. `db/changesets/`) added to
-# `.claude/migration-real-dirs.txt` (one per line) is recognised as a migration home + scanned.
+# `.grillspec/migration-real-dirs.txt` (one per line) is recognised as a migration home + scanned.
 #
 # An empty DOWN / rollback migration is treated as a legitimate no-op (an irreversible change with no rollback) -
 # emptiness there is not flagged; a placeholder in it still is.
@@ -37,7 +37,8 @@ STRICT = "--strict" in sys.argv
 # alone (a `migrate_users.py` service isn't a migration) - the migration HOME is the signal.
 MIG_PATH = re.compile(r"(?:^|/)(?:migrations?|migrate)(?:/|$)|alembic/versions/|prisma/migrations/", re.I)
 MIG_EXT = {".sql", ".py", ".rb", ".js", ".ts", ".go"}
-SKIP = ("/node_modules/", "/.git/", "/vendor/", "/dist/", "/build/", "/.venv/", "/venv/")
+SKIP = ("/node_modules/", "/.git/", "/.grillspec/", "/.claude/", "/.codex/",
+        "/vendor/", "/dist/", "/build/", "/.venv/", "/venv/")
 
 # a real DDL/DML statement (sql) - presence means the .sql migration actually changes something.
 SQL_STMT = re.compile(
@@ -59,9 +60,9 @@ PLACEHOLDER = re.compile(
 COMMENT = re.compile(r"(?m)^\s*(?:--|#|//).*$|/\*.*?\*/", re.S)
 
 def load_list(name):
-    """One token per line from .claude/<name> (blank lines + `#` comments ignored). Empty when absent."""
+    """One token per line from .grillspec/<name> (blank lines + `#` comments ignored). Empty when absent."""
     out = []
-    f = ROOT / ".claude" / name
+    f = ROOT / ".grillspec" / name
     if f.exists():
         for ln in f.read_text(encoding="utf-8", errors="replace").splitlines():
             ln = ln.split("#", 1)[0].strip()

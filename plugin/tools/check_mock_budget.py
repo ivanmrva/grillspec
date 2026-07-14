@@ -14,7 +14,7 @@
 # This is the mechanical detector for over-mocking that check_no_fakes.py deliberately does NOT do (that tool
 # never scans tests/). Like it, this is deliberately conservative and escapable, because a noisy gate gets
 # `--no-verify`d: suppress with an inline `mock-budget: allow <reason>` comment, or a path/substring entry in
-# `.claude/mock-budget-allow.txt`. Contract parsing + test-file classification are shared via tier_contract.py.
+# `.grillspec/mock-budget-allow.txt`. Contract parsing + test-file classification are shared via tier_contract.py.
 #
 # No-ops cleanly when there is no tier contract or no test tree. Run from the project root:
 #   python3 tools/check_mock_budget.py [project_root] [--tests <roots>] [--levels <path>] [--strict]
@@ -56,7 +56,7 @@ def realdeps(row):
 contract = load_contract(LEVELS)
 
 allow = []
-allowf = ROOT / ".claude" / "mock-budget-allow.txt"
+allowf = ROOT / ".grillspec" / "mock-budget-allow.txt"
 if allowf.exists():
     for ln in allowf.read_text(encoding="utf-8", errors="replace").splitlines():
         ln = ln.split("#", 1)[0].strip()

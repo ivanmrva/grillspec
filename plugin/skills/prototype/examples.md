@@ -2,7 +2,7 @@
 
 One open question, settled by running code instead of arguing.
 
-> **Claude:** Before we commit the architecture: can we price a 50-leg shipping route **under 200ms** at p95? That's the assumption that kills the design if it's wrong — so spike the riskiest one first. This is a **feasibility** question (will it perform), not usability or desirability.
+> **Agent:** Before we commit the architecture: can we price a 50-leg shipping route **under 200ms** at p95? That's the assumption that kills the design if it's wrong — so spike the riskiest one first. This is a **feasibility** question (will it perform), not usability or desirability.
 > Branch chosen by the question: a tiny interactive terminal app that pushes the routing rule through the hard cases (50 legs, worst-case fan-out), state surfaced after every run. One command: `python prototypes/route-pricing-latency/run.py`. No persistence, no tests — throwaway.
 > Ran the worst case 1 000×: p95 **148ms**, p99 212ms with a memoized leg-cost table; naive recompute was 1.4s. **Answer: feasible** with memoization; the cache shape is load-bearing.
 

@@ -14,8 +14,8 @@ A task package and the code it touches.
 Writes its artifact.
 
 ## How to run it
-- **In the bundle plugin:** `/grillspec:migrate-data`
-- **Standalone:** copy the `migrate-data/` folder into `~/.claude/skills/`, then run `/migrate-data`. It works on its own and composes with sibling skills, each writing to its own output folder.
+- **In the bundle plugin:** `/grillspec:migrate-data` in Claude Code or `$grillspec:migrate-data` in Codex
+- **Standalone:** copy the `migrate-data/` folder into `~/.claude/skills/` and run `/migrate-data` in Claude Code, or into `~/.agents/skills/` and run `$migrate-data` in Codex. It works on its own and composes with sibling skills, each writing to its own output folder.
 
 ## How to tell it did its job  *(verification)*
 Check the artifact covers its scope above, carries stable IDs, and records any gaps inline in the artifact (with a validation status for bets).

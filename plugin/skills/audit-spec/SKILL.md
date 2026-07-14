@@ -56,7 +56,7 @@ neighbours (for a focused re-check after a change).
 `python3 ${CLAUDE_PLUGIN_ROOT}/tools/impact.py <changed-IDs…>` (or `--since <ref>`) → for **every derived
 artifact in the impact set**, re-run its owning derive step — explicitly including the terminal derived
 layer a partial propagation most often strands: `10-delivery/conventions|tasks|impl-design` and root
-root `AGENTS.md`/`CLAUDE.md`, not just `05`/`09` — → `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <re-derived
+root canonical `AGENTS.md` + import-only `CLAUDE.md`, not just `05`/`09` — → `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <re-derived
 paths>` + `…/check_freshness.py --record <all touched paths>` → re-run the Phase-0 baseline to green. **You
 may not report "fixed" or "clean" while the impact set of your own edits contains a derived artifact that
 was not re-derived** — a computed-but-unprocessed impact set is an unfinished fix, and saying otherwise is
@@ -78,7 +78,7 @@ decision — is parked as an explicit stale hand-off in the report, never silent
 - **Remediation routing (the most common way to corrupt a spec is to fix it in the wrong place):** an
   AUTHORED-zone defect (foundation, `04-domain/ddd`, `06-requirements/*`, `07-design-system`, `08-ux`,
   `11-commercial/*`, glossary/actors/ADRs) is fixed in place; a DERIVED-zone defect (`09-solution/*`,
-  `05-functional-spec/`, `10-delivery/{conventions,tasks,impl-design}/`, root `AGENTS.md`/`CLAUDE.md`) is fixed by
+  `05-functional-spec/`, `10-delivery/{conventions,tasks,impl-design}/`, root canonical `AGENTS.md` + import-only `CLAUDE.md`) is fixed by
   editing its UPSTREAM and re-deriving — **never** by hand-editing the derived file. State the route in
   the finding.
 
@@ -92,7 +92,7 @@ resolve to a real definition (ERROR), and every REST op must carry its traceabil
 security scope + an error response (WARN). It no-ops cleanly when PyYAML or the api folder is absent, so it
 is safe to always attempt. Also run **`…/check_freshness.py`** (advisory) — it lists every artifact, grilled
 OR derived, that cites an upstream definition which has CHANGED since the artifact was last reconciled
-(`.claude/freshness.lock`). It never gates; it hands you the precise, complete candidate set for the
+(`.grillspec/freshness.lock`). It never gates; it hands you the precise, complete candidate set for the
 staleness judgment in Phase 2, so you no longer guess which IDs to spot-check. (No lock yet = a baseline gap
 to note, not an error.) Every ERROR → `blocking`; every WARN → a `important`
 candidate to confirm; every INFO heuristic → a candidate to judge (the linter flagged it precisely because

@@ -2,9 +2,9 @@
 
 Pinning the regime for the *AI slot-recommender* that auto-assigns technicians to jobs.
 
-> **Claude:** This model ranks jobs and assigns work to named technicians — that's an employment-context decision, which puts it in EU AI Act high-risk territory, not "limited". Is a human able to override an assignment before it's final? *(I'd require human-oversight + logging here, not just a disclosure banner.)*
+> **Agent:** This model ranks jobs and assigns work to named technicians — that's an employment-context decision, which puts it in EU AI Act high-risk territory, not "limited". Is a human able to override an assignment before it's final? *(I'd require human-oversight + logging here, not just a disclosure banner.)*
 > **User:** Right now it auto-commits with no review. We can add an override step.
-> **Claude:** Then the obligation is human-in-the-loop plus traceability logging. I'll also fire a fundamental-rights impact assessment, separate from the data-protection one — they trigger independently.
+> **Agent:** Then the obligation is human-in-the-loop plus traceability logging. I'll also fire a fundamental-rights impact assessment, separate from the data-protection one — they trigger independently.
 > **User:** Agreed, add both.
 
 Recorded: one high-risk AI component with its obligation checklist; this is obligations, not legal advice — the worker-monitoring angle needs counsel.

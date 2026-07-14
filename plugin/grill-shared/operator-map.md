@@ -57,7 +57,7 @@ overlap problem: when in doubt it's an **open question**, and the conductor re-r
 The repo holds two different things; govern them separately (scope hooks by path):
 
 **A. Application / code** (`src/`, `tests/`)
-- *Instructions:* `derive-conventions` + matching `AGENTS.md`/`CLAUDE.md` (how the coding agent writes code).
+- *Instructions:* `derive-conventions` + canonical `AGENTS.md` with an import-only `CLAUDE.md` adapter (how every coding agent writes code).
 - *Code pre-commit hooks:* format · lint · type · secret-scan · fast tests · **code fitness functions**
   (boundary/dependency rules) on the changed scope.
 - *App CI/CD pipeline (`infra-ops`) = **GitHub Actions***: `.github/workflows/code-ci.yml` on PR
@@ -67,7 +67,7 @@ The repo holds two different things; govern them separately (scope hooks by path
 **B. Specification / documentation** (`spec/`, the doc-site) — framework-level, ships with the system
 - *Instructions:* the skills/engines.
 - *Spec governance (GitHub Actions, ships ready-to-run):* `.github/workflows/spec-governance.yml` runs **`lint_spec.py`** + **`guard_derived.py`** on every PR touching the spec. (Also a pre-commit hook locally.)
-- *Derived artifacts are regenerate-only:* everything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions/`, `10-delivery/tasks/`, and root `AGENTS.md`/`CLAUDE.md` changes **only** by re-running its derive-* skill (which records its hash). The guard fails any derived file edited by hand; change the **upstream** and re-derive instead.
+- *Derived artifacts are regenerate-only:* everything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions/`, `10-delivery/tasks/`, root canonical `AGENTS.md`, and its import-only `CLAUDE.md` adapter changes **only** by re-running its derive-* skill (which records its hash). The guard fails any derived file edited by hand; change the **upstream** and re-derive instead.
 - *Publish:* **`generate-docs`** + **`generate-api-reference`** build the doc-site; `.github/workflows/docs-site.yml` deploys it to Pages on push to main.
 - *Propagation-miss backup (see below).*
 
@@ -82,7 +82,7 @@ the old version ships silently. **Backup only:** CI runs `impact.py --since <las
 changed ID and its dependents, and flags any dependent code/task that wasn't updated — catching a
 propagation *miss*. This is a safety net under spec-governance, secondary to propagation; not a parallel
 system. The analogous net for *spec artifacts* (grilled and derived alike) is `check_freshness.py`: it
-records each artifact's cited-upstream hashes (`.claude/freshness.lock`, written beside `derived.lock` when
+records each artifact's cited-upstream hashes (`.grillspec/freshness.lock`, written beside `derived.lock` when
 an area is reconciled) and, at audit time, lists any artifact whose cited definition has since drifted. Also
 advisory, also secondary to propagation — it tells the auditor where a re-grill/re-derive may have been
 missed; it never gates a commit (that would be the status flag this section rejects).
@@ -97,13 +97,13 @@ Several surfaces verify the work; they're complementary, not redundant:
 | **`conformance-review`** | code vs **our spec** (`UC-`/`AC-`/`API-`/`SEC-`/`NFR-` + traceability) **+ design-health** — the per-task, build-time, **self-certifying** gate | each task (`changed`) / wider on demand (`full`) | partly — judgment + the fitness functions above |
 | **`audit-build`** | the **whole build** vs the spec's **process** — the **independent, release-time attestation** that the per-task gates were genuinely run + backed (ledger integrity), cross-task coverage survives, the suite shape matches the declared distribution, and `12-operate/` records reconcile. Distrusts the accumulated verdicts; reuses conformance-review's checks at aggregate scope | on demand / **before a release** · after fixes land, a FRESH `--deep` re-audit (the release gate rejects a stale attestation) | partly — `check_task_record.py` + `check_mock_budget.py`/`check_test_tiers.py`/`check_e2e_target.py`/`check_operate_records.py` baseline + judgment |
 | **`audit-spec`** | the **spec itself** — consistency · contradictions · domain/branch completeness · code-gen readiness (the judgment above `lint_spec.py`'s mechanical baseline) | on demand / before a build or release · `--fix` remediates + drains the impact set (10-delivery included) · `--loop` converges to zero findings | partly — `lint_spec.py` + `check_contracts.py` baseline + judgment |
-| native **`/code-review`** | generic correctness · security · regressions | **ad hoc** (NOT in the pipeline; local CLI, or the hosted GitHub App on Team/Enterprise at ~$15–25/PR) | runs |
+| host-native **code review** | generic correctness · security · regressions | **ad hoc** (NOT in the pipeline; use the review workflow available in the current agent host) | runs |
 | **Tier-B suite** (journey / fitness / NFR) | cross-feature journeys, architectural characteristics, NFR evidence | CI / post-merge pipeline | runs |
 | **release-readiness checklist** | everything above is satisfied before *you* ship | when you choose to release | advisory |
 
 Key relationships: **`conformance-review`'s blocking checks ARE the fitness functions the hook/CI run
 automatically** — the skill adds what needs judgment (does behaviour match the `AC-`, is the design
-deepening). And **`conformance-review` ≠ native `/code-review`**: ours owns spec-conformance +
+deepening). And **`conformance-review` ≠ host-native code review**: ours owns spec-conformance +
 traceability (the native one has no spec); the native one owns generic bug/security hunting (ours
 doesn't), and is **run ad hoc, not wired into CI**. And **`conformance-review` ≠ `audit-build`** — the
 same two-axes split as spec-side: judge the **spec** (`audit-spec`) or the **build** (`conformance-review` /

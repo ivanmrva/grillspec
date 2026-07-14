@@ -2,7 +2,7 @@
 
 > **User:** Three plans — Free, Pro, Enterprise. Pro is the paid default.
 
-> **Claude:** I derived the gatable capabilities from the functional spec (`UC-`) and built the tier×capability grid — **tiers by capability, not price** (the price lives in the commercial monetization area and references these tiers). I gated the premium capabilities, set limits with an explicit over-limit behaviour, named the enforcement boundary for each, and specified how access degrades when billing lapses. Two calls I ratified with you (default in brackets); the rest derived.
+> **Agent:** I derived the gatable capabilities from the functional spec (`UC-`) and built the tier×capability grid — **tiers by capability, not price** (the price lives in the commercial monetization area and references these tiers). I gated the premium capabilities, set limits with an explicit over-limit behaviour, named the enforcement boundary for each, and specified how access degrades when billing lapses. Two calls I ratified with you (default in brackets); the rest derived.
 
 **`entitlements.md`** (excerpt):
 

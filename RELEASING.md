@@ -73,5 +73,8 @@ Default clusters (edit `CLUSTERS` in `build.py`): `grill-ddd`, `derive-tasks`,
 
 ```
 python plugin/tools/selfcheck.py plugin     # source integrity (must say VERDICT: PASS)
+python plugin/tools/test_project_state.py   # neutral project paths + canonical AGENTS.md/CLAUDE.md
+python plugin/tools/test_emit_standalone.py # auxiliary generator remains portable + dual-host
 python build/build.py --zip                  # rebuild all artifacts
+python build/check_dist.py                   # host-neutral generated-surface audit
 ```

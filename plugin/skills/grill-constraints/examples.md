@@ -2,9 +2,9 @@
 
 Pinning the bounds for a patient-messaging feature added to a hospital's existing portal.
 
-> **Claude:** Is "must be HIPAA-compliant" the real constraint, or is the binding one that PHI never leaves your Azure tenant — air-gapped from any third-party LLM? *(The first is a regime; the testable bound is data-residency. I'd record the residency rule, since that's what kills design options.)*
+> **Agent:** Is "must be HIPAA-compliant" the real constraint, or is the binding one that PHI never leaves your Azure tenant — air-gapped from any third-party LLM? *(The first is a regime; the testable bound is data-residency. I'd record the residency rule, since that's what kills design options.)*
 > **User:** Both apply, but yes — PHI must stay in our Azure US tenant, no external API calls with patient data. That's non-negotiable from Security.
-> **Claude:** Who signs off that the data-flow meets that before release — a named owner, not "Security"? *(The release checklist needs a real person to ask.)*
+> **Agent:** Who signs off that the data-flow meets that before release — a named owner, not "Security"? *(The release checklist needs a real person to ask.)*
 > **User:** Our CISO, Dana Whitfield, signs the data-flow review. And we're locked to the existing Okta for SSO.
 
 Recorded:

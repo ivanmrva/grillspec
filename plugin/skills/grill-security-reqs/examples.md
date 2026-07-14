@@ -2,9 +2,9 @@
 
 Setting the authorization rule for *reschedule-job* and the matching tampering threat.
 
-> **Claude:** Default-deny: who may reschedule a job? If any dispatcher can move any branch's job, that's a cross-tenant hole. *(I'd allow only the dispatcher whose branch booked it — a tenant predicate, not a flat role grant.)*
+> **Agent:** Default-deny: who may reschedule a job? If any dispatcher can move any branch's job, that's a cross-tenant hole. *(I'd allow only the dispatcher whose branch booked it — a tenant predicate, not a flat role grant.)*
 > **User:** Only the booking branch's dispatcher. A tech can't reschedule at all.
-> **Claude:** Then the risk is a dispatcher tampering with another branch's schedule by guessing a job-id — I'll log every reschedule append-only so it's at least attributable. Accept or control?
+> **Agent:** Then the risk is a dispatcher tampering with another branch's schedule by guessing a job-id — I'll log every reschedule append-only so it's at least attributable. Accept or control?
 > **User:** Control it — enforce the predicate and keep the audit trail.
 
 Recorded: one default-deny authz rule carrying a tenant predicate, plus the tampering/repudiation control.

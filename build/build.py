@@ -719,6 +719,11 @@ def main(argv):
     targets = {a for a in argv if not a.startswith("-")} or {"all"}
     do_zip = "--zip" in argv
     DIST.mkdir(exist_ok=True)
+    # Retired pre-dual-host directory: never let a stale copy hitchhike in a current release.
+    # The compatibility ZIP with this name is rebuilt from `dist/claude/` below.
+    retired = DIST / "full-system"
+    if retired.exists():
+        shutil.rmtree(retired)
     if targets & {"all", "skills"}:  build_skills()
     if targets & {"all", "full", "claude"}: build_claude()
     if targets & {"all", "full", "codex"}:  build_codex()
@@ -727,6 +732,9 @@ def main(argv):
     (DIST / "GUIDE.md").write_text(master_guide(workers()), encoding="utf-8")
     print(f"  master user guide -> {DIST / 'GUIDE.md'}")
     if do_zip:
+        # A removed/renamed cluster must not leave an old release asset behind.
+        for archive in DIST.glob("grillspec-*.zip"):
+            archive.unlink()
         if (DIST / "skills").exists():
             zip_tree(DIST / "skills", DIST / "grillspec-skills.zip")
         if (DIST / "claude").exists():

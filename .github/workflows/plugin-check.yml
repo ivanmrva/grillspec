@@ -65,8 +65,14 @@ jobs:
       - name: project exec-gate — Claude Code and Codex hook adapters stay equivalent
         run: python3 plugin/tools/test_gate_exec.py
 
+      - name: neutral project state — shared paths and canonical agent guide stay host-independent
+        run: python3 plugin/tools/test_project_state.py
+
+      - name: standalone emitter — auxiliary bundles remain portable and dual-host
+        run: python3 plugin/tools/test_emit_standalone.py
+
       - name: build — all distribution artifacts compile
-        run: python3 build/build.py
+        run: python3 build/build.py --zip
 
       - name: release artifacts — dual manifests, portable skills, and versions agree
         run: python3 build/check_dist.py

@@ -2,7 +2,7 @@
 
 **Mode: provided.** A design-tool handoff bundle landed in the repo's `design-system/` zone (CSS custom properties + a partial `design-tokens.json`). Ingested, then verified against the checklist — a handoff is rarely complete, so it gets gap-filled, not trusted wholesale.
 
-> **Claude:** The tokens are present but **single-tier** (raw values, no semantic layer) and **light-only**; there's no focus-ring token, and the Button spec is missing its `loading` and `disabled` states. I restructured to three tiers (primitive → semantic → component), derived a dark theme as a pure semantic swap, added the focus-ring + minimum-hit-target sizing tokens, and completed the Button contract. The brand seed (logo, `#1F6FEB`, voice = "plain, calm") is yours — I kept it authoritative and had you ratify the derived ramps.
+> **Agent:** The tokens are present but **single-tier** (raw values, no semantic layer) and **light-only**; there's no focus-ring token, and the Button spec is missing its `loading` and `disabled` states. I restructured to three tiers (primitive → semantic → component), derived a dark theme as a pure semantic swap, added the focus-ring + minimum-hit-target sizing tokens, and completed the Button contract. The brand seed (logo, `#1F6FEB`, voice = "plain, calm") is yours — I kept it authoritative and had you ratify the derived ramps.
 
 `design-system/design-system.md` (one component, abridged):
 ```

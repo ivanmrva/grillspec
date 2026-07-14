@@ -1,7 +1,7 @@
 # grill-monetization — worked example
 
 Pricing a transcription API that already ships speaker-diarization and 12-language support:
-> **Claude:** You bill by the minute today, but COGS scales with audio *seconds processed*, not seats — so per-seat would decouple price from cost. I'd meter on **audio-minutes transcribed**. Do you also resell the diarization, or is it bundled?
+> **Agent:** You bill by the minute today, but COGS scales with audio *seconds processed*, not seats — so per-seat would decouple price from cost. I'd meter on **audio-minutes transcribed**. Do you also resell the diarization, or is it bundled?
 > **User:** Diarization is bundled on every call; languages beyond English are the upsell.
 
 Recorded:

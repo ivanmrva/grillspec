@@ -16,7 +16,7 @@
 #   - an identifier containing hardcoded/canned/placeholder; a NotImplemented/"not implemented" body on a
 #     non-abstract path; an unconfigured-fallback guard ("if ... not configured: return <literal>").
 # Suppress a finding with an inline `no-fakes: allow <reason>` comment on the line, or a path/symbol/substring
-# entry in `.claude/no-fakes-allow.txt`.
+# entry in `.grillspec/no-fakes-allow.txt`.
 #
 # No-ops cleanly when no production source dir exists. Run from the project root:
 #   python3 tools/check_no_fakes.py [project_root] [--src src,app,lib] [--strict]   (--strict: WARN -> ERROR)
@@ -65,7 +65,7 @@ WARN_NOTIMPL = re.compile(r"\b(?:raise\s+NotImplementedError|NotImplementedError
 WARN_FALLBACK = re.compile(r"\bif\b[^\n]*\b(?:not\s+configured|unconfigured|no\s+\w*\s*(?:key|credential|token)|missing\s+\w*\s*(?:key|credential|config))\b", re.I)
 
 allow = []
-allowf = ROOT / ".claude" / "no-fakes-allow.txt"
+allowf = ROOT / ".grillspec" / "no-fakes-allow.txt"
 if allowf.exists():
     for ln in allowf.read_text(encoding="utf-8", errors="replace").splitlines():
         ln = ln.split("#", 1)[0].strip()

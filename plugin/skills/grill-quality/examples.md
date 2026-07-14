@@ -1,9 +1,9 @@
 # grill-quality — worked example
 
 Turning "checkout should feel fast and never lose an order" into measurable NFRs for an e-commerce checkout.
-> **Claude:** "Fast" needs a number *at a load*. At what concurrent-checkout volume must p95 hold — Black-Friday peak or a normal Tuesday? *(I'd set the bar at peak; a Tuesday number won't protect you when it matters.)*
+> **Agent:** "Fast" needs a number *at a load*. At what concurrent-checkout volume must p95 hold — Black-Friday peak or a normal Tuesday? *(I'd set the bar at peak; a Tuesday number won't protect you when it matters.)*
 > **User:** Peak. We've hit ~3,000 concurrent checkouts.
-> **Claude:** And "never lose an order" — is that zero-data-loss (RPO 0) on a placed order, even if a node dies mid-write? *(That forces synchronous durability and pushes against the latency target — a real conflict.)*
+> **Agent:** And "never lose an order" — is that zero-data-loss (RPO 0) on a placed order, even if a node dies mid-write? *(That forces synchronous durability and pushes against the latency target — a real conflict.)*
 > **User:** Yes, a *placed* order is sacred. RPO 0. The cart can be best-effort.
 
 ## Output — `nfrs.md`

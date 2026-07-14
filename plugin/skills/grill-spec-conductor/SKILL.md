@@ -84,7 +84,7 @@ STAGE 5 · SOLUTION (the how)
         (architecture fixes the module map + seam contracts; module INTERNALS are designed per-slice in execution — derive-impl-design is JIT, its output landing in 10-delivery/impl-design/ downstream of tasks, NOT a solution area)
         ───────────────── IMPLEMENTATION-READINESS GATE ─────────────────
 STAGE 6 · DELIVERY PREP (build the agent's runway)
-        derive-conventions   standards · dependency/boundary rules · DoD · build/test cmds · AGENTS.md/CLAUDE.md → 10-delivery/conventions/
+        derive-conventions   standards · dependency/boundary rules · DoD · build/test cmds · AGENTS.md + CLAUDE.md import → 10-delivery/conventions/
         derive-tasks         minimal vertical slices (T-NNN) · walking-skeleton first · build-order DAG  → 10-delivery/tasks/
         ───────────────── DELIVERY-READINESS GATE ─────────────────
 STAGE 7 · EXECUTION (per task, in build-order; CODE lives in the repo, NOT spec/)
@@ -140,7 +140,7 @@ function exists.** Mechanism (reuses Deferred, pointed at sequencing):
    designed per-slice in execution via `derive-impl-design`, not gated here). The spec is now
    buildable — proceed to **delivery prep**.
 4. **Delivery-readiness gate (delivery prep → execution):** `derive-conventions` done (standards,
-   dependency/boundary rules, build/test/lint commands, DoD, `AGENTS.md`/`CLAUDE.md`) **and** `derive-tasks`
+   dependency/boundary rules, build/test/lint commands, DoD, canonical `AGENTS.md` + import-only `CLAUDE.md`) **and** `derive-tasks`
    done — a walking-skeleton task exists and is first, every in-scope use-case is covered by ≥1 task,
    every task traces to spec IDs + has acceptance + DoD + dependencies, and `build-order` is acyclic.
    → ready to code.
@@ -228,7 +228,7 @@ dependency graph.
    re-derive (reading existing ADRs, applying a delta) → re-finalize affected tasks → re-run execution
    for affected code. Nothing outside the set is touched. **When a re-derivation rewrites a derived
    artifact** (anything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions|tasks|impl-design/`, or
-   root `AGENTS.md`/`CLAUDE.md`), **run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <those paths>`** so the
+   root canonical `AGENTS.md` + import-only `CLAUDE.md`), **run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <those paths>`** so the
    derived-guard sees a legitimate regeneration and doesn't false-block the commit. **After writing or
    reconciling ANY area — grilled or derived — also run `python3
    ${CLAUDE_PLUGIN_ROOT}/tools/check_freshness.py --record <those paths>`** so the freshness baseline

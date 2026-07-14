@@ -4,6 +4,31 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.16.0
+
+### Changed — one agent-neutral project home and one canonical project guide
+
+- **`.grillspec/` is now the sole GrillSpec-owned project-state home.** Vendored gate tools, gate state,
+  derived/freshness locks, checker allowlists, and deploy/migration configuration all live beneath the neutral
+  directory. Claude Code and Codex keep only their native hook adapter files.
+- **Project tools are vendored once.** Both `.claude/settings.json` and `.codex/hooks.json` execute
+  `.grillspec/tools/gate_exec.py`; host-specific tool copies are no longer generated.
+- **`AGENTS.md` is the canonical project guide.** Generated `CLAUDE.md` files contain exactly `@AGENTS.md`, and
+  the derived-state guard rejects missing, copied, or divergent guide pairs.
+- **No legacy `.claude/` state fallback is provided.** Existing projects must regenerate conventions and
+  reinstall execution gates to adopt the clean neutral layout.
+- **Portable guidance is host-neutral.** Generated skill guides, review instructions, operator maps, and repository
+  layouts describe both Claude Code and Codex without treating either host as shared project state.
+
+### Hardened — generated-surface compatibility is release-gated
+
+- Source self-checks and distribution checks now reject legacy host-owned state paths across current tools,
+  skills, docs, and packaged artifacts.
+- Regression coverage verifies neutral locks and configuration, exact guide imports, shared hook targets,
+  absence of host-specific tool copies, and correct behavior when legacy `.claude/` state is present.
+- The auxiliary standalone emitter now applies the same portable layout invariants as the main build and emits
+  both host manifests, so every supported generator is covered by the dual-host contract.
+
 ## 4.15.1
 
 ### Fixed — task-record AC coverage and two evidence-parser false positives

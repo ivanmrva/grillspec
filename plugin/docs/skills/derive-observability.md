@@ -14,8 +14,8 @@ The **recorded source artifacts** — it derives from them and does **not** inte
 Writes its artifact.
 
 ## How to run it
-- **In the bundle plugin:** `/grillspec:derive-observability`
-- **Standalone:** copy the `derive-observability/` folder into `~/.claude/skills/`, then run `/derive-observability`. It works on its own and composes with sibling skills, each writing to its own output folder.
+- **In the bundle plugin:** `/grillspec:derive-observability` in Claude Code or `$grillspec:derive-observability` in Codex
+- **Standalone:** copy the `derive-observability/` folder into `~/.claude/skills/` and run `/derive-observability` in Claude Code, or into `~/.agents/skills/` and run `$derive-observability` in Codex. It works on its own and composes with sibling skills, each writing to its own output folder.
 
 ## How to tell it did its job  *(verification)*
 Check the artifact covers its scope above, carries stable IDs, and records any gaps inline in the artifact (with a validation status for bets).

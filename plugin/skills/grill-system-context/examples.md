@@ -1,9 +1,9 @@
 # grill-system-context — worked example
 
 Scope of a clinic's patient check-in kiosk, before any internals are drawn.
-> **Claude:** When the kiosk verifies a patient's insurance, does *our* system decide eligibility, or does it just relay an answer from the payer's clearinghouse? *(I'd put eligibility outside the boundary — we ask, they rule.)*
+> **Agent:** When the kiosk verifies a patient's insurance, does *our* system decide eligibility, or does it just relay an answer from the payer's clearinghouse? *(I'd put eligibility outside the boundary — we ask, they rule.)*
 > **User:** We relay. The clearinghouse rules; we just show the result.
-> **Claude:** Then the clearinghouse is a neighbor, not part of us. Does the kiosk ever write back to the EHR, or only read appointments from it?
+> **Agent:** Then the clearinghouse is a neighbor, not part of us. Does the kiosk ever write back to the EHR, or only read appointments from it?
 > **User:** Read-only on appointments. Demographic edits go to the EHR, but a staff member confirms them — not the kiosk.
 
 ## Output — `scope.md`

@@ -1,9 +1,9 @@
 # grill-ux-reqs — worked example
 
 UX requirements for a freelancer invoicing app — the "send an invoice" journey, its interaction states, and accessibility (the **design system is a separate area**; journeys reference it by `DS-` id).
-> **Claude:** What does the freelancer see when a client's email bounces *after* they hit Send — a silent failure, or a recoverable error state? *(This is the rejection gap; an empty/loading/error trio is non-negotiable here.)*
+> **Agent:** What does the freelancer see when a client's email bounces *after* they hit Send — a silent failure, or a recoverable error state? *(This is the rejection gap; an empty/loading/error trio is non-negotiable here.)*
 > **User:** Today it just looks sent. We'd want them told, with a "fix email & resend".
-> **Claude:** Sign-in: any one-time-code-from-memory or puzzle step? That fails accessible-authentication — a passkey or emailed magic-link clears it. *(I'd default to magic-link; ratify?)*
+> **Agent:** Sign-in: any one-time-code-from-memory or puzzle step? That fails accessible-authentication — a passkey or emailed magic-link clears it. *(I'd default to magic-link; ratify?)*
 > **User:** Ratify magic-link.
 
 ## Output — `journeys.md`

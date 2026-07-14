@@ -9,7 +9,7 @@
 #   ERROR: a test in a real-env tier that references localhost / 127.0.0.1 / docker-compose / testcontainers.
 # The e2e target should come from config/env (the named deployed env), never a hardcoded local host. Suppress a
 # legitimate case (a genuinely local pre-check) with an inline `e2e-target: allow <reason>` or an entry in
-# `.claude/e2e-target-allow.txt`. Contract parsing + test-file classification are shared via tier_contract.py.
+# `.grillspec/e2e-target-allow.txt`. Contract parsing + test-file classification are shared via tier_contract.py.
 #
 # No-ops cleanly when there is no tier contract or no test tree. Run from the project root:
 #   python3 tools/check_e2e_target.py [project_root] [--tests <roots>] [--levels <path>]
@@ -35,7 +35,7 @@ realenv = {t for t, row in contract.items()
            if (row.get("target-env", "") or "").strip().lower() not in ("", "local", "-", "—", "n-a", "n/a")}
 
 allow = []
-allowf = ROOT / ".claude" / "e2e-target-allow.txt"
+allowf = ROOT / ".grillspec" / "e2e-target-allow.txt"
 if allowf.exists():
     for ln in allowf.read_text(encoding="utf-8", errors="replace").splitlines():
         ln = ln.split("#", 1)[0].strip()

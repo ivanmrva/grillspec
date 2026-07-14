@@ -14,8 +14,8 @@ A task package and the code it touches.
 Writes its artifact.
 
 ## How to run it
-- **In the bundle plugin:** `/grillspec:autorun`
-- **Standalone:** copy the `autorun/` folder into `~/.claude/skills/`, then run `/autorun`. It works on its own and composes with sibling skills, each writing to its own output folder.
+- **In the bundle plugin:** `/grillspec:autorun` in Claude Code or `$grillspec:autorun` in Codex
+- **Standalone:** copy the `autorun/` folder into `~/.claude/skills/` and run `/autorun` in Claude Code, or into `~/.agents/skills/` and run `$autorun` in Codex. It works on its own and composes with sibling skills, each writing to its own output folder.
 
 ## How to tell it did its job  *(verification)*
 Check the artifact covers its scope above, carries stable IDs, and records any gaps inline in the artifact (with a validation status for bets).

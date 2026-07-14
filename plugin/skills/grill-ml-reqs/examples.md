@@ -1,9 +1,9 @@
 # grill-ml-reqs — worked example
 
 ML requirements for auto-categorizing uploaded receipts in an expense app.
-> **Claude:** "It works" isn't a bar — what's the metric and target for category prediction, on a held-out set? *(I'd anchor on macro-F1, not raw accuracy; your categories are imbalanced — "Meals" dwarfs "Software".)*
+> **Agent:** "It works" isn't a bar — what's the metric and target for category prediction, on a held-out set? *(I'd anchor on macro-F1, not raw accuracy; your categories are imbalanced — "Meals" dwarfs "Software".)*
 > **User:** Macro-F1, and it has to beat the rule-based baseline we ship today.
-> **Claude:** Below what confidence does the model stop auto-applying and ask the user? Silent wrong categories are worse than asking. *(I'd default 0.80 → present top-3 for one tap.)*
+> **Agent:** Below what confidence does the model stop auto-applying and ask the user? Silent wrong categories are worse than asking. *(I'd default 0.80 → present top-3 for one tap.)*
 > **User:** 0.80 sounds right; auto-apply above, suggest below.
 
 ## Output — `capabilities.md`

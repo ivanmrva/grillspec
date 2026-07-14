@@ -2,6 +2,7 @@
 """Behavior tests for the exec-loop gate + its installer. Run: python3 tools/test_gate_exec.py"""
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -95,9 +96,9 @@ def main():
     r = run_sub(p, "--red", "--test", "false")
     check("--red on a failing test recorded", r.returncode == 0)
     check("red-log file exists",
-          (p / "spec" / "10-delivery" / "verification" / ".gate" / "red" / "T-007.json").is_file())
+          (p / ".grillspec" / "gate" / "red" / "T-007.json").is_file())
     check("gate dir self-ignores (transient state not committed)",
-          (p / "spec" / "10-delivery" / "verification" / ".gate" / ".gitignore").read_text().strip().endswith("*"))
+          (p / ".grillspec" / "gate" / ".gitignore").read_text().strip().endswith("*"))
     r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
     check("src edit allowed after red-log", r.returncode == 0)
 
@@ -108,6 +109,25 @@ def main():
                  env_extra={"GRILLSPEC_GATE_OFF": "1"})
     check("GRILLSPEC_GATE_OFF bypasses RED gate", r.returncode == 0)
 
+    # --- gate configuration is shared under .grillspec (no host-specific fallback) ------
+    configured = mkproject()
+    (configured / ".grillspec").mkdir()
+    (configured / ".grillspec" / "grillspec-gate.json").write_text(
+        json.dumps({"production_globs": ["service/"]}))
+    run_sub(configured, "--start", "T-010")
+    r = run_hook(configured, "Write",
+                 {"file_path": str(configured / "service" / "api.py"), "content": "x"})
+    check("shared .grillspec gate config is honored", r.returncode == 2)
+
+    legacy_config = mkproject()
+    (legacy_config / ".claude").mkdir()
+    (legacy_config / ".claude" / "grillspec-gate.json").write_text(
+        json.dumps({"production_globs": ["service/"]}))
+    run_sub(legacy_config, "--start", "T-011")
+    r = run_hook(legacy_config, "Write",
+                 {"file_path": str(legacy_config / "service" / "api.py"), "content": "x"})
+    check("legacy .claude gate config is not a fallback", r.returncode == 0)
+
     # --- Codex apply_patch payload: same RED gate, including multi-file normalization ---
     patch = """*** Begin Patch
 *** Update File: src/b.py
@@ -116,7 +136,7 @@ def main():
 *** End Patch"""
     r = run_hook(p2, "apply_patch", {"command": patch})
     check("Codex apply_patch + active task + no red-log → DENIED", r.returncode == 2)
-    check("Codex deny message points at .codex gate", ".codex/tools/gate_exec.py" in r.stderr)
+    check("Codex deny message points at shared gate", ".grillspec/tools/gate_exec.py" in r.stderr)
 
     # --- done-claim gate: status: done with a failing record → DENY ---------------------
     rec_dir = p / "spec" / "10-delivery" / "verification" / "tasks"
@@ -142,7 +162,7 @@ def main():
     r = run_sub(gb, "--red", "--test", "false")          # no --start — task comes from the branch
     check("--red works with no --start (task derived from branch)", r.returncode == 0)
     check("red-log keyed by the branch task",
-          (gb / "spec" / "10-delivery" / "verification" / ".gate" / "red" / "T-021.json").is_file())
+          (gb / ".grillspec" / "gate" / "red" / "T-021.json").is_file())
     r = run_hook(gb, "Write", {"file_path": str(bsrc), "content": "x"})
     check("src edit allowed after branch-derived red-log", r.returncode == 0)
 
@@ -150,10 +170,10 @@ def main():
     run_sub(gb, "--start", "T-999")                       # stale/wrong explicit pointer
     r = run_sub(gb, "--red", "--test", "false")           # should still record under T-021 (the branch)
     check("branch task overrides a stale --start pointer",
-          (gb / "spec" / "10-delivery" / "verification" / ".gate" / "red" / "T-021.json").is_file())
+          (gb / ".grillspec" / "gate" / "red" / "T-021.json").is_file())
 
     # --- two parallel worktrees on different branches don't clobber ---------------------
-    # (each worktree has its own local .gate/; the branch keys the red-log — simulate with 2 repos)
+    # (each worktree has its own local .grillspec/gate/; branch keys the red-log — simulate with 2 repos)
     wa = mkgitproject("task/T-030-a")
     wb = mkgitproject("task/T-031-b")
     run_sub(wa, "--red", "--test", "false")
@@ -164,8 +184,8 @@ def main():
     check("parallel worktree A enforces its own task", ra.returncode == 0)
     check("parallel worktree B enforces its own task", rb.returncode == 0)
     check("worktree A red-log is A's task only",
-          (wa / "spec/10-delivery/verification/.gate/red/T-030.json").is_file()
-          and not (wa / "spec/10-delivery/verification/.gate/red/T-031.json").is_file())
+          (wa / ".grillspec/gate/red/T-030.json").is_file()
+          and not (wa / ".grillspec/gate/red/T-031.json").is_file())
 
     # --- gate 3: content tripwires — fire with NO active task (the bootstrap window) -----
     g3 = mkproject()
@@ -217,15 +237,22 @@ def main():
     s = json.loads((fresh / ".claude" / "settings.json").read_text())
     blocks = s["hooks"]["PreToolUse"]
     check("installer wrote a PreToolUse block", any(b.get("_source") == "grillspec-exec-gate" for b in blocks))
-    check("installer vendored gate_exec.py", (fresh / ".claude" / "tools" / "gate_exec.py").is_file())
-    check("installer vendored check_task_record.py",
-          (fresh / ".claude" / "tools" / "check_task_record.py").is_file())
+    check("installer vendored shared gate_exec.py",
+          (fresh / ".grillspec" / "tools" / "gate_exec.py").is_file())
+    check("installer vendored shared check_task_record.py",
+          (fresh / ".grillspec" / "tools" / "check_task_record.py").is_file())
+    check("Claude hook targets shared gate",
+          any(h.get("command") == 'python3 "$CLAUDE_PROJECT_DIR/.grillspec/tools/gate_exec.py" --hook'
+              for b in blocks for h in b.get("hooks", [])))
     codex_hooks = json.loads((fresh / ".codex" / "hooks.json").read_text())
     check("installer wrote Codex PreToolUse block",
           any(b.get("matcher") == "apply_patch|Edit|Write"
               for b in codex_hooks["hooks"]["PreToolUse"]))
-    check("installer vendored Codex gate_exec.py",
-          (fresh / ".codex" / "tools" / "gate_exec.py").is_file())
+    check("Codex hook targets shared gate",
+          any('.grillspec/tools/gate_exec.py' in h.get("command", "")
+              for b in codex_hooks["hooks"]["PreToolUse"] for h in b.get("hooks", [])))
+    check("installer does not duplicate tools under host state",
+          not (fresh / ".claude" / "tools").exists() and not (fresh / ".codex" / "tools").exists())
 
     # --- installer refuses to wire a hook it can't back with a script (anti-brick) -------
     isolated = Path(tempfile.mkdtemp())          # a copy of the installer with NO sibling gate_exec.py
@@ -233,9 +260,24 @@ def main():
     lone = isolated / "lonely_install.py"
     lone.write_text(INSTALL.read_text())
     r = subprocess.run([sys.executable, str(lone), str(isolated)], capture_output=True, text=True)
-    check("installer refuses when gate_exec.py is unavailable", r.returncode == 1)
+    check("installer refuses when required gate tools are unavailable", r.returncode == 1)
     check("no settings.json written on refusal",
           not (isolated / ".claude" / "settings.json").is_file())
+    check("no Codex hooks.json written on refusal",
+          not (isolated / ".codex" / "hooks.json").is_file())
+    check("refused install leaves no partial shared tool tree",
+          not (isolated / ".grillspec").exists())
+
+    missing_checker = Path(tempfile.mkdtemp())
+    shutil.copy2(INSTALL, missing_checker / "install_exec_gates.py")
+    shutil.copy2(GATE, missing_checker / "gate_exec.py")
+    target = missing_checker / "project"
+    target.mkdir()
+    r = subprocess.run([sys.executable, str(missing_checker / "install_exec_gates.py"), str(target)],
+                       capture_output=True, text=True)
+    check("installer refuses a partial source toolset", r.returncode == 1)
+    check("partial source toolset writes no host configs",
+          not (target / ".claude").exists() and not (target / ".codex").exists())
 
     # --- installer is idempotent --------------------------------------------------------
     subprocess.run([sys.executable, str(INSTALL), str(fresh)], capture_output=True, text=True)
@@ -244,7 +286,7 @@ def main():
     check("installer is idempotent (one block)", n == 1)
     s_codex = json.loads((fresh / ".codex" / "hooks.json").read_text())
     codex_n = sum(1 for b in s_codex["hooks"]["PreToolUse"]
-                  if any(h.get("command", "").endswith('.codex/tools/gate_exec.py\" --hook')
+                  if any(h.get("command", "").endswith('.grillspec/tools/gate_exec.py\" --hook')
                          for h in b.get("hooks", [])))
     check("Codex installer is idempotent (one block)", codex_n == 1)
 

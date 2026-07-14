@@ -81,7 +81,7 @@ expect("inline-waiver", run({"tests/unit/a.ts": "vi.mock('../x'); // mock-budget
        must=["0 error(s)"], forbid=["ERROR"])
 
 # allowlist file suppresses by path
-expect("allowlist-file", run({"tests/unit/a.ts": "vi.mock('../x');\n", ".claude/mock-budget-allow.txt": "tests/unit/a.ts\n"}),
+expect("allowlist-file", run({"tests/unit/a.ts": "vi.mock('../x');\n", ".grillspec/mock-budget-allow.txt": "tests/unit/a.ts\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 
 # no contract at all = clean no-op

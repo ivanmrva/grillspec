@@ -14,8 +14,8 @@ A task package and the code it touches.
 Writes its artifact.
 
 ## How to run it
-- **In the bundle plugin:** `/grillspec:prototype`
-- **Standalone:** copy the `prototype/` folder into `~/.claude/skills/`, then run `/prototype`. It works on its own and composes with sibling skills, each writing to its own output folder.
+- **In the bundle plugin:** `/grillspec:prototype` in Claude Code or `$grillspec:prototype` in Codex
+- **Standalone:** copy the `prototype/` folder into `~/.claude/skills/` and run `/prototype` in Claude Code, or into `~/.agents/skills/` and run `$prototype` in Codex. It works on its own and composes with sibling skills, each writing to its own output folder.
 
 ## How to tell it did its job  *(verification)*
 Check the artifact covers its scope above, carries stable IDs, and records any gaps inline in the artifact (with a validation status for bets).

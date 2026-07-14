@@ -23,7 +23,7 @@ _TESTFILE = re.compile(r"[._](?:test|spec)s?\.|(?:^|/)test_|[._](?:e2e|int|integ
 # a case-insensitive match would classify a production 'Latest.java' as a test and blind the gates to it.
 _CAMEL_TEST = re.compile(r"[a-z0-9](?:Test|Tests|Spec|Specs)\.[a-z]+$")
 # directories never worth walking (keeps a co-located src/ scan off vendored/build trees)
-PRUNE = re.compile(r"/(?:node_modules|dist|build|out|coverage|vendor|\.git|\.venv|venv|__pycache__|\.next|target|\.tox)/", re.I)
+PRUNE = re.compile(r"/(?:node_modules|dist|build|out|coverage|vendor|\.git|\.grillspec|\.claude|\.codex|\.venv|venv|__pycache__|\.next|target|\.tox)/", re.I)
 # default roots: test dirs AND common source roots (co-located tests) - the test-file filter keeps production out
 DEFAULT_ROOTS = "tests,test,src,app,apps,lib,libs,packages,e2e"
 CODE_EXT = {".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".go", ".java", ".kt", ".rb", ".cs", ".php",

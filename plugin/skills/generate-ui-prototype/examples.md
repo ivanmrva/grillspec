@@ -2,7 +2,7 @@
 
 A clickable, high-fidelity reference for **one UI slice** — the *customer-details* step of the "book a repair" journey — generated just-in-time for that slice, built from the **real design-system tokens & components**, every interaction state present, wired into the navigation the information architecture defines.
 
-> **Claude:** This slice builds the customer-details screen, so I prototyped just that screen — rendered from the actual component variants (no ad-hoc styling), every interaction state, wired into the IA's nav so it clicks through in context, cross-linked to its `UC-`/`DS-` IDs. No global gallery: the site structure is already the IA spec + the design system, and the app shell is its own slice. Kept + versioned — the reference the coding task builds against, not a throwaway spike.
+> **Agent:** This slice builds the customer-details screen, so I prototyped just that screen — rendered from the actual component variants (no ad-hoc styling), every interaction state, wired into the IA's nav so it clicks through in context, cross-linked to its `UC-`/`DS-` IDs. No global gallery: the site structure is already the IA spec + the design system, and the app shell is its own slice. Kept + versioned — the reference the coding task builds against, not a throwaway spike.
 
 **The slice's screen — `2-customer-details.html`**, all interaction states:
 - **empty** — blank form, primary CTA disabled

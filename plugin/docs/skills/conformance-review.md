@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-The post-task review of generated code against OUR spec — run after each task, before the next. Two lenses: (A) conformance vs spec/architecture/contracts/security/NFR-evidence/traceability (blocking); (B) design health (advisory). The per-task, build-time, self-certifying gate — its own VERDICT becomes the task's conformance gate row. The independent, whole-build, release-time attestation (that the gates across all tasks were genuinely run, cross-task coverage holds, the operate ledger reconciles) is a separate whole-build audit, not this. Complements the native /code-review.
+The post-task review of generated code against OUR spec — run after each task, before the next. Two lenses: (A) conformance vs spec/architecture/contracts/security/NFR-evidence/traceability (blocking); (B) design health (advisory). The per-task, build-time, self-certifying gate — its own VERDICT becomes the task's conformance gate row. The independent, whole-build, release-time attestation (that the gates across all tasks were genuinely run, cross-task coverage holds, the operate ledger reconciles) is a separate whole-build audit, not this. Complements the current agent host's native code-review workflow.
 
 ## What it needs (input)
 A task package and the code it touches.
@@ -14,8 +14,8 @@ A task package and the code it touches.
 Writes its artifact.
 
 ## How to run it
-- **In the bundle plugin:** `/grillspec:conformance-review`
-- **Standalone:** copy the `conformance-review/` folder into `~/.claude/skills/`, then run `/conformance-review`. It works on its own and composes with sibling skills, each writing to its own output folder.
+- **In the bundle plugin:** `/grillspec:conformance-review` in Claude Code or `$grillspec:conformance-review` in Codex
+- **Standalone:** copy the `conformance-review/` folder into `~/.claude/skills/` and run `/conformance-review` in Claude Code, or into `~/.agents/skills/` and run `$conformance-review` in Codex. It works on its own and composes with sibling skills, each writing to its own output folder.
 
 ## How to tell it did its job  *(verification)*
 Check the artifact covers its scope above, carries stable IDs, and records any gaps inline in the artifact (with a validation status for bets).
