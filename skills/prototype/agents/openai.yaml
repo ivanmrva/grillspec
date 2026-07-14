@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prototype"
+  short_description: "Build a throwaway prototype to answer ONE open question\u2026"
+  default_prompt: "Use $prototype to build a throwaway prototype to answer ONE open question empirically \u2014 a runnable terminal app for state/logic, or toggleable UI variations for design. Use\u2026"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Audit Spec"
+  short_description: "Audit an EXISTING spec for completeness, internal\u2026"
+  default_prompt: "Use $audit-spec to audit an EXISTING spec for completeness, internal consistency, contradictions, branch coverage (product \u00b7 domain \u00b7 software), and whether a coding agent can\u2026"
+policy:
+  allow_implicit_invocation: true

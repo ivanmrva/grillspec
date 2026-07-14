@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Growth"
+  short_description: "Pin the post-launch growth model \u2014\u2026"
+  default_prompt: "Use $grill-growth to pin the post-launch growth model \u2014 activation/retention/referral, an experiment backlog, and the analytics events the product must emit to measure it. Use\u2026"
+policy:
+  allow_implicit_invocation: false

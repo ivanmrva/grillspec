@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Observability"
+  short_description: "Derive the observability design \u2014 SLOs/SLIs, telemetry\u2026"
+  default_prompt: "Use $derive-observability to derive the observability design \u2014 SLOs/SLIs, telemetry, alerting, dashboards, runbooks \u2014 the basis for operating a real system. Use when the NFRs\u2026"
+policy:
+  allow_implicit_invocation: false

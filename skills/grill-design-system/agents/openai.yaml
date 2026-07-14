@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Design System"
+  short_description: "Pin the design system as a spec \u2014 design tokens (DTCG\u2026"
+  default_prompt: "Use $grill-design-system to pin the design system as a spec \u2014 design tokens (DTCG, primitive\u2192semantic\u2192component), components-as-contracts (variants \u00b7 states \u00b7 ARIA),\u2026"
+policy:
+  allow_implicit_invocation: false

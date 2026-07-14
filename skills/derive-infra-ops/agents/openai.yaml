@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Infra Ops"
+  short_description: "Design topology, IaC, CI/CD, deploy/release strategy\u2026"
+  default_prompt: "Use $derive-infra-ops to design topology, IaC, CI/CD, deploy/release strategy, environments, scaling/HA, DR/BCP, backup/restore, capacity and cost from the NFRs and\u2026"
+policy:
+  allow_implicit_invocation: false

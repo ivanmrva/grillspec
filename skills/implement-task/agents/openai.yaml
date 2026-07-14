@@ -1,0 +1,6 @@
+interface:
+  display_name: "Implement Task"
+  short_description: "Implement one prepared task as a minimal, tested vertical\u2026"
+  default_prompt: "Use $implement-task to implement one prepared task as a minimal, tested vertical slice \u2014 tests first, within architecture boundaries, code in the source tree (not the spec).\u2026"
+policy:
+  allow_implicit_invocation: false

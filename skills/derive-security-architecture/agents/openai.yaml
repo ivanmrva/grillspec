@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Security Architecture"
+  short_description: "Design authn/authz mechanisms, encryption, secrets and\u2026"
+  default_prompt: "Use $derive-security-architecture to design authn/authz mechanisms, encryption, secrets and identity from the security requirements. Use when the security requirements exist\u2026"
+policy:
+  allow_implicit_invocation: false

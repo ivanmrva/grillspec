@@ -1,0 +1,6 @@
+interface:
+  display_name: "Generate API Reference"
+  short_description: "Generate API reference docs from the API-/EVT- contracts \u2014\u2026"
+  default_prompt: "Use $generate-api-reference to generate API reference docs from the API-/EVT- contracts \u2014 endpoints, schemas, auth, errors, examples \u2014 as static HTML. Embedded in the doc-site\u2026"
+policy:
+  allow_implicit_invocation: false

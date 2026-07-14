@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Monetization"
+  short_description: "Pin the business model & pricing \u2014 model, packaging\u2026"
+  default_prompt: "Use $grill-monetization to pin the business model & pricing \u2014 model, packaging, plans/tiers priced against the entitlement tiers, billing model, unit economics, and the\u2026"
+policy:
+  allow_implicit_invocation: false

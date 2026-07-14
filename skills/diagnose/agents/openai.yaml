@@ -1,0 +1,6 @@
+interface:
+  display_name: "Diagnose"
+  short_description: "Disciplined diagnosis loop for hard bugs and performance\u2026"
+  default_prompt: "Use $diagnose to disciplined diagnosis loop for hard bugs and performance regressions \u2014 build a fast deterministic feedback loop, reproduce, rank falsifiable hypotheses,\u2026"
+policy:
+  allow_implicit_invocation: false

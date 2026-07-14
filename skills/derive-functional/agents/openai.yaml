@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Functional"
+  short_description: "Project the domain model into use-cases (commands \u00d7 actors \u00d7\u2026"
+  default_prompt: "Use $derive-functional to project the domain model into use-cases (commands \u00d7 actors \u00d7 flows) and testable acceptance criteria (invariants/rules/specs/policies). Use when the\u2026"
+policy:
+  allow_implicit_invocation: false

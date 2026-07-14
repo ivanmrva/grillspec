@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Test Strategy"
+  short_description: "Derive the two-tier test architecture \u2014 levels, coverage\u2026"
+  default_prompt: "Use $derive-test-strategy to derive the two-tier test architecture \u2014 levels, coverage, traceability \u2014 and make testing an active edge-case discovery engine, not just\u2026"
+policy:
+  allow_implicit_invocation: false

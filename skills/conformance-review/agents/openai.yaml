@@ -1,0 +1,6 @@
+interface:
+  display_name: "Conformance Review"
+  short_description: "The post-task review of generated code against OUR spec \u2014\u2026"
+  default_prompt: "Use $conformance-review to the post-task review of generated code against OUR spec \u2014 run after each task, before the next. Two lenses: (A) conformance vs\u2026"
+policy:
+  allow_implicit_invocation: false

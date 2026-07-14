@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Goals"
+  short_description: "Define what success means \u2014 a north-star metric with its\u2026"
+  default_prompt: "Use $grill-goals to define what success means \u2014 a north-star metric with its input-metric tree, supporting success metrics, guardrail/counter-metrics, and pre-committed\u2026"
+policy:
+  allow_implicit_invocation: false

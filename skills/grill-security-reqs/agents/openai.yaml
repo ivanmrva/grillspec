@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Security Reqs"
+  short_description: "Build the threat model \u2014 assets, trust boundaries, threat\u2026"
+  default_prompt: "Use $grill-security-reqs to build the threat model \u2014 assets, trust boundaries, threat actors, the authorization policy (actors \u00d7 commands, default-deny), and audit/privacy\u2026"
+policy:
+  allow_implicit_invocation: false

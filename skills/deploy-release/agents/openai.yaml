@@ -1,0 +1,6 @@
+interface:
+  display_name: "Deploy Release"
+  short_description: "Promote a built increment through environments with an\u2026"
+  default_prompt: "Use $deploy-release to promote a built increment through environments with an explicit rollout/rollback strategy and smoke-verify in the target. Use when a merged increment\u2026"
+policy:
+  allow_implicit_invocation: false

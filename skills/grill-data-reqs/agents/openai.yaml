@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Data Reqs"
+  short_description: "Elicit the non-structural data requirements the logical\u2026"
+  default_prompt: "Use $grill-data-reqs to elicit the non-structural data requirements the logical model doesn't carry \u2014 classification, ownership, retention, residency, volume, integrity. Use\u2026"
+policy:
+  allow_implicit_invocation: false

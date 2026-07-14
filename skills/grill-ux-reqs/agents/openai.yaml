@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill UX Reqs"
+  short_description: "Pin the UX requirements \u2014 per-role journeys with their\u2026"
+  default_prompt: "Use $grill-ux-reqs to pin the UX requirements \u2014 per-role journeys with their interaction states, information needs (the information architecture), and accessibility & i18n\u2026"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Compliance"
+  short_description: "Pin which regulatory/legal regimes apply and turn them into\u2026"
+  default_prompt: "Use $grill-compliance to pin which regulatory/legal regimes apply and turn them into concrete, referenceable obligations (`OBL-`) that flow into security, data, and\u2026"
+policy:
+  allow_implicit_invocation: false

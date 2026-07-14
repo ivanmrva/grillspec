@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Architecture"
+  short_description: "Derive the solution architecture \u2014 style, C4 decomposition\u2026"
+  default_prompt: "Use $derive-architecture to derive the solution architecture \u2014 style, C4 decomposition, tech stack, contexts\u2192services, cross-cutting concerns, the module map & seam contracts,\u2026"
+policy:
+  allow_implicit_invocation: false

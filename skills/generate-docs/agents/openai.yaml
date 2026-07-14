@@ -1,0 +1,6 @@
+interface:
+  display_name: "Generate Docs"
+  short_description: "Generate the project's documentation \u2014 a self-contained\u2026"
+  default_prompt: "Use $generate-docs to generate the project's documentation \u2014 a self-contained static HTML doc-site that assembles the **full spec** (every area, discovery \u2192 delivery) plus the\u2026"
+policy:
+  allow_implicit_invocation: false

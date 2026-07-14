@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Impl Design"
+  short_description: "Low-level design of the modules a slice touches \u2014 algorithm\u2026"
+  default_prompt: "Use $derive-impl-design to low-level design of the modules a slice touches \u2014 algorithm, error handling, concurrency \u2014 produced just-in-time for a complex slice, just before it\u2026"
+policy:
+  allow_implicit_invocation: false

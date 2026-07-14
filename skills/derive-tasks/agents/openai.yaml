@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Tasks"
+  short_description: "Break a spec into minimal, vertically-sliced, build-ready\u2026"
+  default_prompt: "Use $derive-tasks to break a spec into minimal, vertically-sliced, build-ready tasks for a coding agent \u2014 each a complete reference manifest, phase-tagged and\u2026"
+policy:
+  allow_implicit_invocation: false

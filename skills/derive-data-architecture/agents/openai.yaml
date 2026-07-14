@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Data Architecture"
+  short_description: "Design schema, storage, consistency, partitioning and\u2026"
+  default_prompt: "Use $derive-data-architecture to design schema, storage, consistency, partitioning and migration from the data requirements and domain model. Use when the data requirements and\u2026"
+policy:
+  allow_implicit_invocation: false

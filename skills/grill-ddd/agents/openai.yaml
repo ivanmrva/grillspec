@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill DDD"
+  short_description: "Turn an idea or existing docs into a complete Domain-Driven\u2026"
+  default_prompt: "Use $grill-ddd to turn an idea or existing docs into a complete Domain-Driven Design model \u2014 subdomains, bounded contexts, aggregates \u2014 building the ubiquitous language and\u2026"
+policy:
+  allow_implicit_invocation: false

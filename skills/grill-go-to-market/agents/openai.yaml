@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Go To Market"
+  short_description: "Pin the go-to-market execution \u2014 ICP, channels & per-channel\u2026"
+  default_prompt: "Use $grill-go-to-market to pin the go-to-market execution \u2014 ICP, channels & per-channel messaging, launch plan, partnerships \u2014 aligned to the product's chosen go-to-market\u2026"
+policy:
+  allow_implicit_invocation: false

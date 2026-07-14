@@ -1,0 +1,6 @@
+interface:
+  display_name: "Derive Conventions"
+  short_description: "Derive the coding agent's standards and runway from the\u2026"
+  default_prompt: "Use $derive-conventions to derive the coding agent's standards and runway from the architecture \u2014 style, boundary rules as fitness checks, workflow, build/run/test/lint\u2026"
+policy:
+  allow_implicit_invocation: false

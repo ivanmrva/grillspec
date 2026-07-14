@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Market"
+  short_description: "Map the competitive landscape \u2014 direct competitors in a\u2026"
+  default_prompt: "Use $grill-market to map the competitive landscape \u2014 direct competitors in a comparison matrix, indirect alternatives incl. status-quo/DIY, defensible differentiation with\u2026"
+policy:
+  allow_implicit_invocation: false

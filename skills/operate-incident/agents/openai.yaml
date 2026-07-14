@@ -1,0 +1,6 @@
+interface:
+  display_name: "Operate Incident"
+  short_description: "Triage a production incident via runbooks, mitigate, and\u2026"
+  default_prompt: "Use $operate-incident to triage a production incident via runbooks, mitigate, and capture every learning as a new assumption or gap that propagates upstream. Use during or just\u2026"
+policy:
+  allow_implicit_invocation: false
