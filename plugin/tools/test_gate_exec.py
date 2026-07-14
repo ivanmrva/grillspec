@@ -108,6 +108,16 @@ def main():
                  env_extra={"GRILLSPEC_GATE_OFF": "1"})
     check("GRILLSPEC_GATE_OFF bypasses RED gate", r.returncode == 0)
 
+    # --- Codex apply_patch payload: same RED gate, including multi-file normalization ---
+    patch = """*** Begin Patch
+*** Update File: src/b.py
+@@
++print('production')
+*** End Patch"""
+    r = run_hook(p2, "apply_patch", {"command": patch})
+    check("Codex apply_patch + active task + no red-log → DENIED", r.returncode == 2)
+    check("Codex deny message points at .codex gate", ".codex/tools/gate_exec.py" in r.stderr)
+
     # --- done-claim gate: status: done with a failing record → DENY ---------------------
     rec_dir = p / "spec" / "10-delivery" / "verification" / "tasks"
     rec_dir.mkdir(parents=True, exist_ok=True)
@@ -193,6 +203,12 @@ def main():
     r = run_hook(g3, "Write", {"file_path": str(tf), "content": "it.skip('x', () => {})\n"},
                  env_extra={"GRILLSPEC_GATE_OFF": "1"})
     check("GRILLSPEC_GATE_OFF bypasses the content gate", r.returncode == 0)
+    codex_skip = """*** Begin Patch
+*** Add File: tests/codex.test.js
++it.skip('codex', () => {})
+*** End Patch"""
+    r = run_hook(g3, "apply_patch", {"command": codex_skip})
+    check("Codex apply_patch skip marker → DENIED", r.returncode == 2)
 
     # --- installer: fresh settings.json -------------------------------------------------
     fresh = Path(tempfile.mkdtemp())
@@ -204,6 +220,12 @@ def main():
     check("installer vendored gate_exec.py", (fresh / ".claude" / "tools" / "gate_exec.py").is_file())
     check("installer vendored check_task_record.py",
           (fresh / ".claude" / "tools" / "check_task_record.py").is_file())
+    codex_hooks = json.loads((fresh / ".codex" / "hooks.json").read_text())
+    check("installer wrote Codex PreToolUse block",
+          any(b.get("matcher") == "apply_patch|Edit|Write"
+              for b in codex_hooks["hooks"]["PreToolUse"]))
+    check("installer vendored Codex gate_exec.py",
+          (fresh / ".codex" / "tools" / "gate_exec.py").is_file())
 
     # --- installer refuses to wire a hook it can't back with a script (anti-brick) -------
     isolated = Path(tempfile.mkdtemp())          # a copy of the installer with NO sibling gate_exec.py
@@ -220,6 +242,11 @@ def main():
     s = json.loads((fresh / ".claude" / "settings.json").read_text())
     n = sum(1 for b in s["hooks"]["PreToolUse"] if b.get("_source") == "grillspec-exec-gate")
     check("installer is idempotent (one block)", n == 1)
+    s_codex = json.loads((fresh / ".codex" / "hooks.json").read_text())
+    codex_n = sum(1 for b in s_codex["hooks"]["PreToolUse"]
+                  if any(h.get("command", "").endswith('.codex/tools/gate_exec.py\" --hook')
+                         for h in b.get("hooks", [])))
+    check("Codex installer is idempotent (one block)", codex_n == 1)
 
     # --- installer preserves an existing unrelated hook + key ---------------------------
     pre = Path(tempfile.mkdtemp())

@@ -1,7 +1,7 @@
 ---
 name: audit-spec
 description: >-
-  The whole-spec audit — verify an EXISTING spec is complete, internally consistent, contradiction-free, covers all branches (product · domain · software), and is good enough that a coding agent can build from it WITHOUT guessing. Two depths: `consistency` (the judgment the linter can't make — semantic contradictions, scope adherence, decision coherence) and `full` (adds the domain/usage completeness pass that finds what's MISSING). Only `full` can declare code-gen readiness. The judgment layer ABOVE the mechanical tools, distinct from the per-task code-vs-spec conformance review. Report-only by default; `--fix` remediates the findings in-session (routed fixes + full propagation through every derived layer, 10-delivery included); `--loop` repeats fix-passes with a parallel read-only auditor fan-out until the spec converges to ZERO findings (K consecutive dry batches). Use --loop when asked to "drive the spec to zero audit findings", "loop the audit until clean", or "exhaustively remediate the spec". Loads the shared exec engine.
+  Audit an EXISTING spec for completeness, internal consistency, contradictions, branch coverage (product · domain · software), and whether a coding agent can build it WITHOUT guessing. Two depths: `consistency` (the judgment the linter can't make — semantic contradictions, scope adherence, decision coherence) and `full` (adds the domain/usage completeness pass that finds what's MISSING). Only `full` can declare code-gen readiness. The judgment layer ABOVE the mechanical tools, distinct from the per-task code-vs-spec conformance review. Report-only by default; `--fix` remediates the findings in-session (routed fixes + full propagation through every derived layer, 10-delivery included); `--loop` repeats fix-passes with a parallel read-only auditor fan-out until the spec converges to ZERO findings (K consecutive dry batches). Use --loop when asked to "drive the spec to zero audit findings", "loop the audit until clean", or "exhaustively remediate the spec". Loads the shared exec engine.
 argument-hint: "[--depth consistency|full] [--scope all|<area>] [--fix] [--loop] — default: --depth full --scope all, report-only"
 ---
 
@@ -56,7 +56,7 @@ neighbours (for a focused re-check after a change).
 `python3 ${CLAUDE_PLUGIN_ROOT}/tools/impact.py <changed-IDs…>` (or `--since <ref>`) → for **every derived
 artifact in the impact set**, re-run its owning derive step — explicitly including the terminal derived
 layer a partial propagation most often strands: `10-delivery/conventions|tasks|impl-design` and root
-`CLAUDE.md`, not just `05`/`09` — → `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <re-derived
+root `AGENTS.md`/`CLAUDE.md`, not just `05`/`09` — → `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <re-derived
 paths>` + `…/check_freshness.py --record <all touched paths>` → re-run the Phase-0 baseline to green. **You
 may not report "fixed" or "clean" while the impact set of your own edits contains a derived artifact that
 was not re-derived** — a computed-but-unprocessed impact set is an unfinished fix, and saying otherwise is
@@ -78,7 +78,7 @@ decision — is parked as an explicit stale hand-off in the report, never silent
 - **Remediation routing (the most common way to corrupt a spec is to fix it in the wrong place):** an
   AUTHORED-zone defect (foundation, `04-domain/ddd`, `06-requirements/*`, `07-design-system`, `08-ux`,
   `11-commercial/*`, glossary/actors/ADRs) is fixed in place; a DERIVED-zone defect (`09-solution/*`,
-  `05-functional-spec/`, `10-delivery/{conventions,tasks,impl-design}/`, root `CLAUDE.md`) is fixed by
+  `05-functional-spec/`, `10-delivery/{conventions,tasks,impl-design}/`, root `AGENTS.md`/`CLAUDE.md`) is fixed by
   editing its UPSTREAM and re-deriving — **never** by hand-editing the derived file. State the route in
   the finding.
 

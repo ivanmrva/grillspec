@@ -31,11 +31,15 @@ errs, warns = [], []
 def err(m): errs.append(m)
 def warn(m): warns.append(m)
 
-# --- 1. manifest -----------------------------------------------------------
-mani = ROOT / ".claude-plugin" / "plugin.json"
-if not mani.exists():
-    err(f"no manifest at {mani} - is {ROOT} a plugin root?")
-else:
+# --- 1. manifests ----------------------------------------------------------
+manifest_versions = {}
+for host, mani in (
+    ("Claude Code", ROOT / ".claude-plugin" / "plugin.json"),
+    ("Codex", ROOT / ".codex-plugin" / "plugin.json"),
+):
+  if not mani.exists():
+    err(f"no {host} manifest at {mani} - is {ROOT} a plugin root?")
+  else:
     try:
         m = json.loads(mani.read_text())
         if "name" not in m or not m["name"]:
@@ -44,10 +48,15 @@ else:
             err(f"plugin.json: 'name' must be kebab-case, no spaces (got {m['name']!r})")
         if "version" not in m:
             warn("plugin.json: no 'version' - updates will key on git SHA (every commit = update)")
+        else:
+            manifest_versions[host] = m["version"]
         if isinstance(m.get("keywords"), str):
             err("plugin.json: 'keywords' must be an array, not a string (load error)")
     except json.JSONDecodeError as e:
-        err(f"plugin.json: invalid JSON - {e}")
+        err(f"{host} plugin.json: invalid JSON - {e}")
+
+if len(set(manifest_versions.values())) > 1:
+    err(f"plugin manifest versions differ: {manifest_versions}")
 
 # only plugin.json belongs in .claude-plugin/
 cp = ROOT / ".claude-plugin"
@@ -56,6 +65,12 @@ if cp.exists():
     if stray:
         err(f".claude-plugin/ must contain ONLY plugin.json; found also: {stray} "
             "(move components to the plugin root)")
+
+codex_plugin = ROOT / ".codex-plugin"
+if codex_plugin.exists():
+    stray = [p.name for p in codex_plugin.iterdir() if p.name != "plugin.json"]
+    if stray:
+        err(f".codex-plugin/ must contain ONLY plugin.json; found also: {stray}")
 
 # components must be at the plugin root, not inside .claude-plugin/
 for d in ("skills", "agents", "hooks", "tools", "grill-shared"):

@@ -1,5 +1,9 @@
 {
   "name": "ivanmrva",
+  "description": "Grill Spec plugins for spec-driven software engineering.",
+  "metadata": {
+    "description": "Grill Spec plugins for spec-driven software engineering."
+  },
   "owner": {
     "name": "Ivan Mrva",
     "url": "https://github.com/ivanmrva"
@@ -7,7 +11,11 @@
   "plugins": [
     {
       "name": "grillspec",
-      "source": "./plugin",
+      "source": {
+        "source": "github",
+        "repo": "ivanmrva/grillspec",
+        "ref": "marketplace"
+      },
       "description": "Spec-driven engineering system: a conductor plus 46 grilling/derivation/execution skills and deterministic spec linters. Turns an idea or existing docs into a complete DDD spec, derives architecture and tasks, and runs the build loop.",
       "keywords": [
         "spec-driven",

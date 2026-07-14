@@ -1,21 +1,21 @@
 ---
 name: derive-conventions
 description: >-
-  Derive the coding agent's standards and runway from the architecture — style, boundary rules as fitness checks, workflow, build/run/test/lint commands, Definition of Done — and generate the root CLAUDE.md. Use when the architecture exists and you need the coding-agent setup. Loads the shared derive engine.
+  Derive the coding agent's standards and runway from the architecture — style, boundary rules as fitness checks, workflow, build/run/test/lint commands, Definition of Done — and generate matching root AGENTS.md and CLAUDE.md entry points. Use when the architecture exists and you need the coding-agent setup. Loads the shared derive engine.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---
 
 # derive-conventions
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md` first and follow it.** This skill applies that method to **Coding conventions & agent setup** — the instruction-set Claude Code follows to produce code, plus its entry point.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md` first and follow it.** This skill applies that method to **Coding conventions & agent setup** — the instruction set Codex and Claude Code follow to produce code, plus their entry points.
 
 ## Method
 1. confirm language/framework (from the architecture) → naming/style/error-handling
 2. layering & dependency (boundary) rules → test approach
 3. engineering workflow (branch-per-task · MR · hooks · CI gates · review)
 4. the exact commands → the Definition of Done
-5. the CODE pre-commit hooks (incl. a fast SAST pass + a dependency-audit / lockfile-integrity step) + a commit-msg hook validating Conventional Commits + the build-provenance / artifact-signing convention + design-token pipeline governance → generate root `CLAUDE.md`
+5. the CODE pre-commit hooks (incl. a fast SAST pass + a dependency-audit / lockfile-integrity step) + a commit-msg hook validating Conventional Commits + the build-provenance / artifact-signing convention + design-token pipeline governance → generate matching root `AGENTS.md` and `CLAUDE.md`
 
 ## Rules
 - standards set; dependency/boundary rules explicit and expressed as **enforceable fitness rules**; **no unpinned deps, lockfile committed** is one such rule (audited in-hook)
@@ -31,7 +31,7 @@ argument-hint: a recorded spec or design docs
 - **the deploy + migration surface is gated for fakes too** — `check_deploy_real.py` (a `# TODO`/placeholder in a CI/deploy artifact — GitHub/GitLab/etc. config · shell script · Dockerfile · `package.json`/`Makefile` deploy target — is an ERROR; a disabled or command-less deploy is a WARN; `.claude/deploy-real-allow.txt` waives) and `check_migration_real.py` (a placeholder/empty/DDL-less migration; `.claude/migration-real-allow.txt` waives) extend the production-only bar to the deploy scripts/CI/IaC and the schema migrations — the same no-fakes discipline `check_no_fakes.py` brings to `src/`. The authoritative deploy proof remains the e2e/smoke against the real deployed env; these are the cheap static backstop
 - **the test suite is gated against the tier contract** — the machine-readable tier contract in `test/levels.md` (per tier: real-deps · may-mock · mock-ceiling · target-env · bars) is enforced mechanically: `check_mock_budget.py` (a mock beyond a tier's ceiling — a double at a `none` tier, or a mocked real dependency at an `boundary-only` integration tier — is an ERROR; `.claude/mock-budget-allow.txt` waives), `check_test_tiers.py` (a declared tier with no suite is a WARN per-commit — the build is incremental, tiers land with their tasks, so a per-commit gate must not go red on a not-yet-due tier — and an ERROR at release under `--require-all-tiers`, which audit-build / the release gate pass; the gates classify tests by tier directory OR filename suffix, so co-located `src/**/*.test.ts` layouts work; the pre-commit invocation omits `--require-all-tiers`), `check_e2e_target.py` (an `e2e`-tier test hard-referencing `localhost`/`docker-compose`/`testcontainers` is an ERROR — integration mislabelled as e2e; `.claude/e2e-target-allow.txt` waives), `check_no_skips.py` (a `skip`/`xfail`/`ignore` marker or a `.only`/`fit` suite-shrinker in a test, or a CI test step that swallows a red — `npm test || true`, `ignoreFailures = true` — is an ERROR; `.claude/no-skips-allow.txt` waives the rare quarantine, always with a reason; audit-build re-runs it `--strict` at release so a declared deferral can't live forever). These make "the tests mock only where allowed, sit at the right tier, and hit the real env for e2e" mechanical, beside the conformance review's semantic judgment
 - **the app exposes a `preflight` (a.k.a. `doctor`) command and health/readiness endpoints** — fitness rules both. `preflight` verifies the *running environment* before serving: every required env var present and non-empty · each backing dependency (DB/broker/cache/third-party) reachable and authenticating · migrations applied · returns non-zero with a precise "missing X / can't reach Y". Health (`/healthz` liveness) + readiness (`/readyz` — dependencies ok) endpoints exist so the platform and the deploy smoke-check can gate traffic. This is the operator's "did my setup actually work?" check, the deploy analogue of the per-task report
-- CLAUDE.md generated — and it MUST carry the **final-code-only block** (three rules, verbatim intent): *no fakes outside `tests/`* (no stub/mock/double/canned response in `src/` or the deploy/CI surface) · *no `skip`/`xfail`/`.only` markers, ever* · *a test failing because a dependency isn't ready is the CORRECT state — report the blocker, never code around it*. CLAUDE.md is the only instruction present in EVERY session in the project — including ad-hoc fixes and subagents that never load a skill — so this is the one prose net that covers work outside the exec loop; the tripwires and the exec-gate remain the mechanical enforcement
+- `AGENTS.md` and `CLAUDE.md` generated from the same content — and both MUST carry the **final-code-only block** (three rules, verbatim intent): *no fakes outside `tests/`* (no stub/mock/double/canned response in `src/` or the deploy/CI surface) · *no `skip`/`xfail`/`.only` markers, ever* · *a test failing because a dependency isn't ready is the CORRECT state — report the blocker, never code around it*. These are the host entry points present in ordinary sessions — including ad-hoc fixes and subagents that never load a skill — so they are the prose net that covers work outside the exec loop; the tripwires and the exec-gate remain the mechanical enforcement
 
 ## Output
 Written under `delivery/conventions/`:
@@ -45,7 +45,7 @@ Written under `delivery/conventions/`:
 | `pre-commit-hooks.md` | the CODE hooks (src/+tests/ + the deploy/CI + migration artifacts): format · lint · type · secret-scan · fast SAST · dependency-audit / lockfile-integrity · fast unit · **no-fakes tripwire (`check_no_fakes.py`)** · **deploy-real (`check_deploy_real.py`)** · **migration-real (`check_migration_real.py`)** · **config-drift (`check_config_drift.py`)** · **mock-budget (`check_mock_budget.py`)** · **test-tiers (`check_test_tiers.py`)** · **e2e-target (`check_e2e_target.py`)** · **no-skips (`check_no_skips.py`)** · mechanical conformance subset; + a commit-msg hook validating Conventional Commits — all invoked through the **one** `verify` target CI also calls | commands as code blocks |
 | `runtime-contract.md` | what the built artifact needs to run: required env vars (→ `environments.md`) · backing services · the `preflight`/`doctor` command · health (`/healthz`) + readiness (`/readyz`) endpoints · ports · the migrate→seed→flags startup order | typed: runtime requirement sections |
 
-Also emits root `CLAUDE.md` — the agent's entry point: spec map · conventions · workflow · task index · how to work a task · DoD · the final-code-only block (no fakes outside `tests/` · no skip/xfail/.only · red-on-unready-dependency is correct, report it); a tight pointer file
+Also emits matching root `AGENTS.md` and `CLAUDE.md` — the Codex and Claude Code entry points: spec map · conventions · workflow · task index · how to work a task · DoD · the final-code-only block (no fakes outside `tests/` · no skip/xfail/.only · red-on-unready-dependency is correct, report it); tight pointer files
 ADRs → `adr/ADR-CONV-NNN.md`
 *(DERIVED & regenerate-only)*
 Consumes: the architecture — its stack choice, layering, and boundaries; and the test strategy's two tiers.

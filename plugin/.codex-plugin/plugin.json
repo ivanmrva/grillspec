@@ -1,0 +1,36 @@
+{
+  "name": "grillspec",
+  "version": "4.15.0",
+  "description": "Spec-driven engineering from idea and requirements through architecture, tasks, implementation, verification, and release.",
+  "author": {
+    "name": "Ivan Mrva",
+    "url": "https://github.com/ivanmrva"
+  },
+  "homepage": "https://github.com/ivanmrva/grillspec",
+  "repository": "https://github.com/ivanmrva/grillspec",
+  "license": "Apache-2.0",
+  "keywords": [
+    "spec-driven",
+    "domain-driven-design",
+    "requirements",
+    "architecture"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Grill Spec System",
+    "shortDescription": "Turn ideas into implementation-ready specifications",
+    "longDescription": "Spec-driven engineering from idea and requirements through architecture, tasks, implementation, verification, and release.",
+    "developerName": "Ivan Mrva",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/ivanmrva/grillspec",
+    "defaultPrompt": [
+      "Turn this idea into an implementation-ready specification.",
+      "Derive the architecture and task plan from the current spec.",
+      "Continue the next ready Grill Spec workflow step."
+    ]
+  }
+}

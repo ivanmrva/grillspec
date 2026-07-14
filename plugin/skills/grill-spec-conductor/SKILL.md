@@ -34,7 +34,7 @@ Invoke this to begin. On invocation:
 3. **Run the chosen area yourself.** The area skills are reference docs (`disable-model-invocation: true`), **not dispatchable agents** — there is no handoff. You **load that skill's `SKILL.md` + its shared engine and execute the interview/derivation in-line** (or delegate to a subagent you spawn with that skill text as its brief), handing it its input and its target slot. **One focus per session;** finish or park, then re-run.
 **Never silently start an area the user didn't choose.** Don't dump all areas — surface the few.
 
-**Parallel sessions.** The user may run several Claude Code sessions at once. Keep them safe: **one area
+**Parallel sessions.** The user may run several Codex or Claude Code sessions at once. Keep them safe: **one area
 per session** (above), **prefer a branch per session/area**, and since **each area owns its own output folder**, parallel areas don't contend on shared files. Real conflicts resolve at **git merge**; on the next run after a merge you **recompute the cross-area state from the repo** (each area's output is the record). See `${CLAUDE_PLUGIN_ROOT}/grill-shared/operator-map.md`.
 
 ## You own the structure; the skills don't - hand each its input and its target
@@ -84,7 +84,7 @@ STAGE 5 · SOLUTION (the how)
         (architecture fixes the module map + seam contracts; module INTERNALS are designed per-slice in execution — derive-impl-design is JIT, its output landing in 10-delivery/impl-design/ downstream of tasks, NOT a solution area)
         ───────────────── IMPLEMENTATION-READINESS GATE ─────────────────
 STAGE 6 · DELIVERY PREP (build the agent's runway)
-        derive-conventions   standards · dependency/boundary rules · DoD · build/test cmds · CLAUDE.md → 10-delivery/conventions/
+        derive-conventions   standards · dependency/boundary rules · DoD · build/test cmds · AGENTS.md/CLAUDE.md → 10-delivery/conventions/
         derive-tasks         minimal vertical slices (T-NNN) · walking-skeleton first · build-order DAG  → 10-delivery/tasks/
         ───────────────── DELIVERY-READINESS GATE ─────────────────
 STAGE 7 · EXECUTION (per task, in build-order; CODE lives in the repo, NOT spec/)
@@ -140,7 +140,7 @@ function exists.** Mechanism (reuses Deferred, pointed at sequencing):
    designed per-slice in execution via `derive-impl-design`, not gated here). The spec is now
    buildable — proceed to **delivery prep**.
 4. **Delivery-readiness gate (delivery prep → execution):** `derive-conventions` done (standards,
-   dependency/boundary rules, build/test/lint commands, DoD, `CLAUDE.md`) **and** `derive-tasks`
+   dependency/boundary rules, build/test/lint commands, DoD, `AGENTS.md`/`CLAUDE.md`) **and** `derive-tasks`
    done — a walking-skeleton task exists and is first, every in-scope use-case is covered by ≥1 task,
    every task traces to spec IDs + has acceptance + DoD + dependencies, and `build-order` is acyclic.
    → ready to code.
@@ -228,7 +228,7 @@ dependency graph.
    re-derive (reading existing ADRs, applying a delta) → re-finalize affected tasks → re-run execution
    for affected code. Nothing outside the set is touched. **When a re-derivation rewrites a derived
    artifact** (anything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions|tasks|impl-design/`, or
-   `CLAUDE.md`), **run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <those paths>`** so the
+   root `AGENTS.md`/`CLAUDE.md`), **run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <those paths>`** so the
    derived-guard sees a legitimate regeneration and doesn't false-block the commit. **After writing or
    reconciling ANY area — grilled or derived — also run `python3
    ${CLAUDE_PLUGIN_ROOT}/tools/check_freshness.py --record <those paths>`** so the freshness baseline

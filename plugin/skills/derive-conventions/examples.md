@@ -43,4 +43,4 @@ RULE fe-03  "token pipeline: one DTCG source-of-truth → Style Dictionary → C
 `delivery/conventions/workflow.md` — workflow + build provenance:
 > trunk-based · branch per task · one MR/PR per task · Conventional Commits (commit-msg hook). **Provenance:** target **SLSA Build L3** · sign artifacts (cosign) · **≥2-person review + branch protection** on `main`. DoD: AC green · in-boundary · CI green · merged.
 
-Root `CLAUDE.md` emitted: spec map · these conventions · trunk-based + branch-per-task workflow · task index · DoD ("merged via green CI"). The *checks* are non-optional; the *release* decision stays the team's.
+Matching root `AGENTS.md` and `CLAUDE.md` emitted: spec map · these conventions · trunk-based + branch-per-task workflow · task index · DoD ("merged via green CI"). The *checks* are non-optional; the *release* decision stays the team's.

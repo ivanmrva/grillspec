@@ -1,0 +1,21 @@
+{
+  "name": "ivanmrva",
+  "interface": {
+    "displayName": "Ivan Mrva"
+  },
+  "plugins": [
+    {
+      "name": "grillspec",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/ivanmrva/grillspec.git",
+        "ref": "marketplace"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

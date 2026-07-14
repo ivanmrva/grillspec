@@ -1,7 +1,7 @@
 # Operator map — how to drive this system (one page)
 
 ## Start here (the 60-second version)
-You drive this from Claude Code by talking to the **`grill-spec-conductor`** — it scans state and tells
+You drive this from Codex or Claude Code by invoking the **`grill-spec-conductor`** — it scans state and tells
 you the few sensible next moves. You don't memorise the skills; the conductor routes. Loop:
 **(1)** open a session → ask the conductor "what's next?"; **(2)** it hands you one area/skill; **(3)**
 answer its questions or let it derive; **(4)** it auto-propagates and updates the dashboards; repeat.
@@ -47,7 +47,7 @@ Five state records, five *distinct questions* — they deliberately don't merge 
 DVF/validation, provenance, or audit machinery each carries). The load is a *routing* problem, not an
 overlap problem: when in doubt it's an **open question**, and the conductor re-routes on its next pass.
 
-## Parallel Claude Code sessions (you, across multiple sessions)
+## Parallel agent sessions (you, across multiple Codex or Claude Code sessions)
 - **One area per session** (the engine enforces one focus). **Prefer a branch per session/area.**
 - The shared `adr/` folder is **one file per ADR**, so parallel sessions never collide there; every other artifact is owned by exactly one skill — **re-read before writing** so you build on current content.
 - Real conflicts resolve at **git merge**; the **conductor recomputes the true state** on its next run
@@ -57,7 +57,7 @@ overlap problem: when in doubt it's an **open question**, and the conductor re-r
 The repo holds two different things; govern them separately (scope hooks by path):
 
 **A. Application / code** (`src/`, `tests/`)
-- *Instructions:* `derive-conventions` + `CLAUDE.md` (how Claude writes code).
+- *Instructions:* `derive-conventions` + matching `AGENTS.md`/`CLAUDE.md` (how the coding agent writes code).
 - *Code pre-commit hooks:* format · lint · type · secret-scan · fast tests · **code fitness functions**
   (boundary/dependency rules) on the changed scope.
 - *App CI/CD pipeline (`infra-ops`) = **GitHub Actions***: `.github/workflows/code-ci.yml` on PR
@@ -67,7 +67,7 @@ The repo holds two different things; govern them separately (scope hooks by path
 **B. Specification / documentation** (`spec/`, the doc-site) — framework-level, ships with the system
 - *Instructions:* the skills/engines.
 - *Spec governance (GitHub Actions, ships ready-to-run):* `.github/workflows/spec-governance.yml` runs **`lint_spec.py`** + **`guard_derived.py`** on every PR touching the spec. (Also a pre-commit hook locally.)
-- *Derived artifacts are regenerate-only:* everything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions/`, `10-delivery/tasks/`, and root `CLAUDE.md` changes **only** by re-running its derive-* skill (which records its hash). The guard fails any derived file edited by hand; change the **upstream** and re-derive instead.
+- *Derived artifacts are regenerate-only:* everything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions/`, `10-delivery/tasks/`, and root `AGENTS.md`/`CLAUDE.md` changes **only** by re-running its derive-* skill (which records its hash). The guard fails any derived file edited by hand; change the **upstream** and re-derive instead.
 - *Publish:* **`generate-docs`** + **`generate-api-reference`** build the doc-site; `.github/workflows/docs-site.yml` deploys it to Pages on push to main.
 - *Propagation-miss backup (see below).*
 

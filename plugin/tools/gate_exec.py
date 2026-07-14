@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exec-loop process gate — a PROJECT-LOCAL Claude Code PreToolUse hook for a grillspec project.
+"""Exec-loop process gate — a PROJECT-LOCAL Claude Code/Codex PreToolUse hook.
 
 This is the tool-call-time sibling of the commit-time `spec_governance_hook.sh`. The commit/CI
 checkers verify the END STATE of a task; this gate verifies the ORDER of the work WHILE it happens,
@@ -21,8 +21,8 @@ on its own can't be proven after the fact"). It enforces three transitions of th
      bootstrap work before the first task branch. Only newly-introduced lines trigger it; a line
      carrying the inline waiver (`no-skips: allow …` / `no-fakes: allow …`) passes.
 
-It is PROJECT-LOCAL: the walking-skeleton wires it into THIS repo's `.claude/settings.json` (see
-`install_exec_gates.py`), exactly like the git pre-commit hook is wired into THIS repo's `.git/hooks/`.
+It is PROJECT-LOCAL: the walking-skeleton wires it into THIS repo's `.claude/settings.json` and/or
+`.codex/hooks.json` (see `install_exec_gates.py`), like the git pre-commit hook in `.git/hooks/`.
 It is NOT a global hook and never fires on other projects or the user's `~/.claude` config.
 
   Fail-OPEN by design: any internal error allows the tool call (a bug in the gate must never brick the
@@ -104,12 +104,13 @@ def ensure_gate_dir(root: Path) -> Path:
 
 
 def config(root: Path) -> dict:
-    p = root / ".claude" / "grillspec-gate.json"
-    if p.is_file():
-        try:
-            return json.loads(p.read_text())
-        except Exception:
-            pass
+    for p in (root / ".claude" / "grillspec-gate.json",
+              root / ".codex" / "grillspec-gate.json"):
+        if p.is_file():
+            try:
+                return json.loads(p.read_text())
+            except Exception:
+                pass
     return {}
 
 
@@ -222,6 +223,50 @@ def deny(reason: str) -> int:
     return 2
 
 
+def codex_patch_edits(command: str, root: Path) -> list:
+    """Translate Codex `apply_patch` input into the edit shape used by the Claude hook path.
+
+    Codex sends one patch command that may touch several files. Only added lines participate in the
+    skip/fake/done checks, while every touched production path participates in RED-before-GREEN.
+    """
+    edits = []
+    current = None
+    added = []
+
+    def flush():
+        nonlocal current, added
+        if current:
+            path = Path(current)
+            if not path.is_absolute():
+                path = root / path
+            edits.append((str(path), {
+                "old_string": "",
+                "new_string": "\n".join(added),
+                "_codex_patch": True,
+            }))
+        current, added = None, []
+
+    for line in (command or "").splitlines():
+        match = re.match(r"^\*\*\* (?:Add|Update|Delete) File: (.+?)\s*$", line)
+        if match:
+            flush()
+            current = match.group(1).strip()
+            continue
+        if current and line.startswith("+") and not line.startswith("+++"):
+            added.append(line[1:])
+    flush()
+    return edits
+
+
+def normalized_edits(payload: dict, root: Path) -> list:
+    """Return `(absolute file path, Claude-shaped tool input)` entries for either host."""
+    tool_input = payload.get("tool_input", {}) or {}
+    if payload.get("tool_name") == "apply_patch" and isinstance(tool_input.get("command"), str):
+        return codex_patch_edits(tool_input["command"], root)
+    file_path = tool_input.get("file_path", "") or ""
+    return [(file_path, tool_input)] if file_path else []
+
+
 def introduces_done(tool_input: dict) -> bool:
     """True if this Write/Edit/MultiEdit sets `status: done` where it wasn't already."""
     pat = re.compile(r"status\s*:\s*(done|complete)\b", re.I)
@@ -311,50 +356,52 @@ def cmd_hook() -> int:
     root = project_root()
     if not (root / "spec").is_dir():                             # not a grillspec project → no-op
         return 0
-    tool_input = payload.get("tool_input", {}) or {}
-    file_path = tool_input.get("file_path", "") or ""
-
-    # Gate 2 — no hollow done-claim. A task record flipped to `status: done` must already pass its
-    # verification record. Runs the existing checker; denies on any non-zero.
-    if "verification" in file_path.replace(os.sep, "/") and introduces_done(tool_input):
-        tid = task_id_from_path(file_path)
-        if tid:
-            checker = root / ".claude" / "tools" / "check_task_record.py"
-            if not checker.is_file():
-                checker = Path(__file__).resolve().parent / "check_task_record.py"
-            spec = root / "spec"
-            res = subprocess.run([sys.executable, str(checker), str(spec), "--task", tid,
-                                  "--assume-done"], capture_output=True, text=True)
-            if res.returncode != 0:
-                return deny(
-                    "%s is being marked `status: done` but its Verification Record is not green:\n%s\n"
-                    "Fill the unmet obligations (tests-first traced · independent VERDICT: PASS · no "
-                    "fakes) before claiming done, or override with GRILLSPEC_GATE_OFF=1."
-                    % (tid, (res.stdout + res.stderr).strip()))
+    edits = normalized_edits(payload, root)
+    if not edits:                                                # unsupported input → fail open
         return 0
 
-    # Gate 3 — no cheat at the keystroke. Task-independent on purpose: a skip in a test or a fake in
-    # src/ is wrong during setup/bootstrap work too — exactly the window before the first task branch,
-    # where "X isn't ready yet" is most tempting and no other gate is live yet.
-    violation = content_violation(root, tool_input, file_path)
-    if violation:
-        return deny(violation)
+    for file_path, tool_input in edits:
+        # Gate 2 — no hollow done-claim.
+        if "verification" in file_path.replace(os.sep, "/") and introduces_done(tool_input):
+            tid = task_id_from_path(file_path)
+            if tid:
+                checker = root / ".claude" / "tools" / "check_task_record.py"
+                if not checker.is_file():
+                    checker = root / ".codex" / "tools" / "check_task_record.py"
+                if not checker.is_file():
+                    checker = Path(__file__).resolve().parent / "check_task_record.py"
+                spec = root / "spec"
+                res = subprocess.run([sys.executable, str(checker), str(spec), "--task", tid,
+                                      "--assume-done"], capture_output=True, text=True)
+                if res.returncode != 0:
+                    return deny(
+                        "%s is being marked `status: done` but its Verification Record is not green:\n%s\n"
+                        "Fill the unmet obligations (tests-first traced · independent VERDICT: PASS · "
+                        "no fakes) before claiming done, or override with GRILLSPEC_GATE_OFF=1."
+                        % (tid, (res.stdout + res.stderr).strip()))
+            continue
 
-    # Gate 1 — RED before GREEN. A production-tree edit needs a recorded failing test for the active
-    # task. No active task → not inside an exec loop → not gated (walking-skeleton/ad-hoc edits pass).
-    if is_production_path(root, file_path):
-        task = active_task(root)
-        if not task:
-            return 0
-        red = gate_dir(root) / "red" / (task + ".json")
-        if red.is_file():
-            return 0
-        return deny(
-            "no failing test recorded for the active task %s — write ONE small failing test for the "
-            "next behavior and watch it fail (`python3 .claude/tools/gate_exec.py --red --test "
-            "\"<your test command>\"`) BEFORE writing production code in %s. This is the red→green "
-            "micro-cycle; don't batch all code then back-fill tests. Override: GRILLSPEC_GATE_OFF=1."
-            % (task, os.path.relpath(file_path, root) if file_path else "src/"))
+        # Gate 3 — no cheat at the keystroke.
+        violation = content_violation(root, tool_input, file_path)
+        if violation:
+            return deny(violation)
+
+        # Gate 1 — RED before GREEN.
+        if is_production_path(root, file_path):
+            task = active_task(root)
+            if not task:
+                continue
+            red = gate_dir(root) / "red" / (task + ".json")
+            if red.is_file():
+                continue
+            host_dir = ".codex" if payload.get("tool_name") == "apply_patch" else ".claude"
+            return deny(
+                "no failing test recorded for the active task %s — write ONE small failing test for "
+                "the next behavior and watch it fail (`python3 %s/tools/gate_exec.py --red --test "
+                "\"<your test command>\"`) BEFORE writing production code in %s. This is the "
+                "red→green micro-cycle; don't batch all code then back-fill tests. Override: "
+                "GRILLSPEC_GATE_OFF=1."
+                % (task, host_dir, os.path.relpath(file_path, root) if file_path else "src/"))
     return 0
 
 

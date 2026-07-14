@@ -62,5 +62,11 @@ jobs:
       - name: e2e gate-chain — the accountability gates compose on a realistic project
         run: python3 plugin/tools/test_e2e_gates.py
 
+      - name: project exec-gate — Claude Code and Codex hook adapters stay equivalent
+        run: python3 plugin/tools/test_gate_exec.py
+
       - name: build — all distribution artifacts compile
         run: python3 build/build.py
+
+      - name: release artifacts — dual manifests, portable skills, and versions agree
+        run: python3 build/check_dist.py

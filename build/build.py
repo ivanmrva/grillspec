@@ -11,10 +11,12 @@ engines instead of duplicating them in source:
                       loads, bundled as a sibling). MIT. Push these into the public
                       skills repo; the pipeline regenerates / overrides that directory.
 
-  dist/full-system/   the whole system as ONE installable plugin + marketplace
-                      (the conductor + all workers + engines + tools + agents +
-                      hooks). Apache-2.0. This is plugin/ verbatim under a marketplace
-                      wrapper, so it stays byte-identical to the working plugin.
+  dist/claude/        the whole system as a Claude Code plugin + marketplace.
+
+  dist/codex/         the same system as a Codex plugin + native marketplace.
+
+  dist/marketplace/   the recommended release repo: both marketplace manifests point
+                      at one dual-host portable plugin bundle.
 
   dist/plugins/<c>/   OPTIONAL per-cluster plugins (e.g. one per blog post). MIT.
                       Same content as the matching skill-database entries, but packaged
@@ -24,7 +26,10 @@ engines instead of duplicating them in source:
 Usage:
   python build/build.py                # build every target
   python build/build.py skills         # just the skill database
-  python build/build.py full           # just the full-system plugin
+  python build/build.py claude         # just the Claude Code plugin
+  python build/build.py codex          # just the Codex plugin
+  python build/build.py marketplace    # combined Claude Code + Codex release repo
+  python build/build.py full           # compatibility alias: both full plugins
   python build/build.py plugins        # just the cluster plugins
   python build/build.py all --zip      # build everything and zip each artifact
 """
@@ -49,8 +54,18 @@ CLUSTERS = {
     "implement-and-review": ["implement-task", "run-tests", "conformance-review"],
 }
 
-SHARED_REF   = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/([A-Za-z0-9_-]+\.md)")
+SHARED_REF   = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/([A-Za-z0-9_-]+\.(?:md|json))")
 SHARED_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/")
+TOOL_PREFIX   = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/tools/")
+DOC_PREFIX    = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/docs/")
+
+# Standalone skills cannot depend on a plugin install root. These are the deterministic tools
+# referenced by the skill profiles and shared engines. At 160 KB total, bundling the set into a
+# skill that needs tooling is smaller and safer than maintaining a fragile Python-import resolver.
+PORTABLE_TOOLS = (
+    "check_freshness.py", "check_task_record.py", "gate_exec.py", "guard_derived.py",
+    "impact.py", "install_exec_gates.py", "lint_spec.py", "plugin_feedback.py",
+)
 
 def version():
     return json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
@@ -71,9 +86,75 @@ def transitive_shared(seeds):
 def workers():
     return sorted(d.name for d in SKILLS.iterdir() if d.is_dir() and d.name != CONDUCTOR)
 
+def all_skills():
+    return sorted(d.name for d in SKILLS.iterdir() if d.is_dir())
+
 def to_sibling(text):
     """Rewrite ${CLAUDE_PLUGIN_ROOT}/grill-shared/X.md -> X.md (engine bundled alongside)."""
     return SHARED_PREFIX.sub("", text)
+
+def portable_frontmatter(text):
+    """Keep the Agent Skills standard core; product-specific policy is emitted separately."""
+    lines = text.splitlines()
+    if not lines or lines[0] != "---":
+        return text
+    out = [lines[0]]
+    i = 1
+    while i < len(lines):
+        line = lines[i]
+        if line == "---":
+            out.extend(lines[i:])
+            return "\n".join(out) + ("\n" if text.endswith("\n") else "")
+        if re.match(r"^(argument-hint|disable-model-invocation):", line):
+            i += 1
+            continue
+        out.append(line)
+        i += 1
+    return text
+
+def portable_text(text):
+    """Render plugin-root references as resources relative to the installed skill root."""
+    text = portable_frontmatter(text)
+    text = SHARED_PREFIX.sub("references/", text)
+    text = TOOL_PREFIX.sub("scripts/", text)
+    text = DOC_PREFIX.sub("references/", text)
+    return text
+
+def _resource_note(text):
+    marker = "<!-- grillspec-portable-resources -->"
+    if marker in text:
+        return text
+    m = re.match(r"^(---\n.*?\n---\n)", text, re.S)
+    if not m:
+        return text
+    note = ("\n" + marker + "\n"
+            "> Resource paths in this skill are relative to this installed skill directory. "
+            "Resolve `references/...` and `scripts/...` from that directory, not from the project "
+            "working directory; use an absolute path when executing a bundled script.\n")
+    return text[:m.end()] + note + text[m.end():]
+
+def _display_name(name):
+    return " ".join(p.upper() if p in {"api", "ddd", "ml", "ui", "ux"} else p.title()
+                    for p in name.split("-"))
+
+def _short_description(description):
+    plain = re.sub(r"[`*_#]", "", description).strip()
+    if len(plain) > 61:
+        plain = plain[:61].rsplit(" ", 1)[0].rstrip(".,;:") + "…"
+    if len(plain) < 25:
+        plain = (plain + " workflow for Grill Spec").strip()
+    return plain[:64]
+
+def openai_yaml(name, description, allow_implicit):
+    prompt = f"Use ${name} to {description[:1].lower() + description[1:]}"
+    if len(prompt) > 180:
+        prompt = prompt[:177].rsplit(" ", 1)[0] + "…"
+    return ("interface:\n"
+            f"  display_name: {json.dumps(_display_name(name))}\n"
+            f"  short_description: {json.dumps(_short_description(description))}\n"
+            f"  default_prompt: {json.dumps(prompt)}\n"
+            "policy:\n"
+            f"  allow_implicit_invocation: {'true' if allow_implicit else 'false'}\n")
 
 # --------------------------------------------------------------------- guides
 def engine_of(name):
@@ -131,15 +212,19 @@ Every artifact is produced from the single source in `plugin/` by one command:
 python build/build.py            # build all targets into dist/
 python build/build.py --zip      # ...and zip each one
 python build/build.py skills     # only the skill database
-python build/build.py full       # only the full-system plugin
+python build/build.py claude     # only the Claude Code plugin
+python build/build.py codex      # only the Codex plugin
+python build/build.py full       # both full-system plugins
 python build/build.py plugins    # only the cluster plugins
 ```
 
-| Target  | Output              | What it is                                               | License    |
-| :------ | :------------------ | :------------------------------------------------------- | :--------- |
-| skills  | `dist/skills/`      | every worker skill as a standalone, copyable plain skill | MIT        |
-| full    | `dist/full-system/` | the whole system as one installable plugin + marketplace | Apache-2.0 |
-| plugins | `dist/plugins/<c>/` | optional per-cluster plugins (one per blog post)         | MIT        |
+| Target  | Output              | What it is                                                   | License    |
+| :------ | :------------------ | :----------------------------------------------------------- | :--------- |
+| skills  | `dist/skills/`      | portable standalone Agent Skills for Claude Code and Codex   | MIT        |
+| claude  | `dist/claude/`      | the whole system as a Claude Code plugin + marketplace       | Apache-2.0 |
+| codex   | `dist/codex/`       | the whole system as a Codex plugin + native marketplace      | Apache-2.0 |
+| marketplace | `dist/marketplace/` | recommended dual-host marketplace release repo        | Apache-2.0 |
+| plugins | `dist/plugins/<c>/` | optional dual-host per-cluster plugins (one per blog post) | MIT        |
 
 Source lives under `plugin/` - skills in `plugin/skills/`, the three method engines in
 `plugin/grill-shared/`. Edit there and rebuild; the engines are defined once and reused by every
@@ -168,7 +253,7 @@ The conductor enforces the ordering and the readiness gates; any skill can also 
 def master_guide(names):
     return f"""# Grill Spec System - User Guide
 
-Spec-driven engineering for Claude Code: interview an idea (or existing docs) into a complete
+Spec-driven engineering for Claude Code and Codex: interview an idea (or existing docs) into a complete
 Domain-Driven Design spec, derive the architecture and task breakdown from it, then run the build
 loop. One conductor orchestrates {len(names)} worker skills; deterministic tools keep the spec
 consistent. Apache-2.0 (system) / MIT (public skills).
@@ -180,24 +265,29 @@ This guide covers **how to generate** every artifact and **how to use** each one
 
 **1. Individual skills** (the skill database, `dist/skills/`). Copy one folder and use it alone:
 ```
-cp -r dist/skills/grill-ddd ~/.claude/skills/        # personal
-# or into a repo:  cp -r dist/skills/grill-ddd <repo>/.claude/skills/
+cp -r dist/skills/grill-ddd ~/.claude/skills/        # Claude Code, personal
+cp -r dist/skills/grill-ddd ~/.agents/skills/        # Codex, personal
 ```
-Each folder is self-contained (`SKILL.md` + its method engine). Invoke with `/grill-ddd` or let
-Claude load it by description. No plugin required.
+Each folder is self-contained (`SKILL.md` + references/scripts). Invoke with `/grill-ddd` in
+Claude Code or `$grill-ddd` in Codex. No plugin required.
 
-**2. The whole system** (the full-system plugin, `dist/full-system/`). Install once:
+**2. The whole system** (`dist/claude/` or `dist/codex/`). Install once:
 ```
+# Claude Code
 /plugin marketplace add ivanmrva/grillspec
 /plugin install grillspec@ivanmrva
 /reload-plugins
+
+# Codex CLI: add the source, then open /plugins and install Grill Spec
+codex plugin marketplace add ivanmrva/grillspec
 ```
-Then drive everything through the conductor - `/grillspec:grill-spec-conductor` - which scans the
+Then drive everything through the conductor - `/grillspec:grill-spec-conductor` in Claude Code or
+`$grillspec:grill-spec-conductor` in Codex - which scans the
 spec, recommends the next step, hands each worker its input and target, runs the linters, and
 propagates changes.
 
-**3. A blog-post cluster** (optional plugins, `dist/plugins/<c>/`). The same skills, packaged for
-`/plugin install` with slash commands - use when you want a one-command install for a post's skills.
+**3. A blog-post cluster** (optional plugins, `dist/plugins/<c>/`). The same skills, packaged as
+dual-host plugins for a narrower install.
 
 {_WORKFLOW_MD}
 ## Reference - every skill
@@ -208,16 +298,18 @@ propagates changes.
 def skills_guide(names):
     return f"""# Skill Collection - User Guide
 
-{len(names)} standalone, individually-usable Claude Code skills for spec-driven engineering. Each
-folder is self-contained: a `SKILL.md` plus the method engine it loads. MIT (copy-and-own).
+{len(names)} standalone, individually-usable Agent Skills for Claude Code and Codex. Each folder is
+self-contained: `SKILL.md`, references, required scripts, and product metadata. MIT (copy-and-own).
 
 ## Use a skill
 ```
-cp -r <skill-folder> ~/.claude/skills/               # personal, every project
-# or:  cp -r <skill-folder> <repo>/.claude/skills/    # project, shared via the repo
+cp -r <skill-folder> ~/.claude/skills/               # Claude Code, personal
+cp -r <skill-folder> <repo>/.claude/skills/          # Claude Code, project
+cp -r <skill-folder> ~/.agents/skills/               # Codex, personal
+cp -r <skill-folder> <repo>/.agents/skills/          # Codex, project
 ```
-In Claude Code, invoke it with `/<skill>` (e.g. `/grill-ddd`), or just describe your task and Claude
-loads it from its description. Hand a skill the upstream artifact(s) it needs and it produces its one
+Invoke it with `/<skill>` in Claude Code or `$<skill>` in Codex, or describe the task and let the
+agent match its description. Hand a skill the upstream artifact(s) it needs and it produces its one
 output. No plugin and no other skills required.
 
 ## Chain them by hand
@@ -231,7 +323,7 @@ and propagation, use the full-system plugin instead.
 """
 
 def full_guide(names):
-    return f"""# Grill Spec System (full plugin) - User Guide
+    return f"""# Grill Spec System for Claude Code - User Guide
 
 The complete spec-driven engineering system: one conductor orchestrating {len(names)} worker skills,
 three shared method engines, deterministic spec linters, two subagents, and governance hooks.
@@ -259,6 +351,34 @@ consistent. Any individual skill can also be invoked directly with `/grillspec:<
 {_catalog(names)}
 """
 
+def codex_guide(names):
+    return f"""# Grill Spec System for Codex - User Guide
+
+The complete spec-driven engineering system: one conductor orchestrating {len(names)} worker skills,
+portable bundled references and deterministic tools. Apache-2.0.
+
+## Install
+```bash
+codex plugin marketplace add ivanmrva/grillspec
+```
+
+Open `/plugins` in Codex CLI (or Settings > Plugins in the IDE), select the marketplace, and install
+Grill Spec. Start a new session after installation.
+
+Start a new task after installation or update, then invoke the conductor:
+```text
+$grillspec:grill-spec-conductor
+```
+
+Worker skills remain explicitly invocable, for example `$grillspec:grill-ddd`. Resource and script
+paths in the Codex bundle are resolved from each installed skill directory.
+
+{_WORKFLOW_MD}
+## Reference - every skill
+
+{_catalog(names)}
+"""
+
 def cluster_guide(cluster, skills):
     cat = "\n".join(
         f"- **`{s}`** - {_description((SKILLS / s / 'SKILL.md').read_text(encoding='utf-8'))}"
@@ -266,7 +386,7 @@ def cluster_guide(cluster, skills):
     first = skills[0]
     return f"""# {cluster} - User Guide
 
-Standalone Claude Code plugin bundling: {', '.join('`' + s + '`' for s in skills)}. MIT.
+Standalone dual-host plugin bundling: {', '.join('`' + s + '`' for s in skills)}. MIT.
 
 ## Install
 ```
@@ -274,11 +394,12 @@ Standalone Claude Code plugin bundling: {', '.join('`' + s + '`' for s in skills
 /plugin install {cluster}@<owner>
 /reload-plugins
 ```
-Or load locally to test: `claude --plugin-dir dist/plugins/{cluster}`.
+Or load locally to test: `claude --plugin-dir dist/plugins/{cluster}`. For Codex, add the containing
+marketplace or place the plugin in a local marketplace, then install it through `/plugins`.
 
 ## Use
-Invoke a skill with `/{cluster}:<skill>` (e.g. `/{cluster}:{first}`), or describe your task and Claude
-picks it up. Each skill loads its method engine from the bundled `grill-shared/`.
+Invoke a skill with `/{cluster}:<skill>` in Claude Code or `${cluster}:<skill>` in Codex (for example,
+`/{cluster}:{first}` or `${cluster}:{first}`). Each skill contains its required references and scripts.
 
 ## Skills in this plugin
 {cat}
@@ -290,28 +411,73 @@ def fresh(d):
     return d
 
 # ---------------------------------------------------------------- skill database
+def build_portable_skill(name, out):
+    """Render one self-contained, open-standard skill from the canonical plugin sources."""
+    src = SKILLS / name
+    source_text = (src / "SKILL.md").read_text(encoding="utf-8")
+    bundled = transitive_shared(shared_refs(source_text))
+    shared_text = "\n".join(
+        (SHARED / f).read_text(encoding="utf-8") for f in bundled if (SHARED / f).is_file())
+    extras_text = "\n".join(
+        p.read_text(encoding="utf-8") for p in src.rglob("*.md") if p.name != "SKILL.md")
+    combined = source_text + "\n" + shared_text + "\n" + extras_text
+
+    d = out / name
+    d.mkdir(parents=True, exist_ok=True)
+    rendered = _resource_note(portable_text(source_text))
+    (d / "SKILL.md").write_text(rendered, encoding="utf-8")
+
+    if bundled:
+        refs = d / "references"
+        refs.mkdir()
+        for f in bundled:
+            sp = SHARED / f
+            if sp.is_file():
+                (refs / f).write_text(portable_text(sp.read_text(encoding="utf-8")),
+                                      encoding="utf-8")
+
+    for extra in sorted(src.iterdir()):
+        if extra.name in {"SKILL.md", "agents"}:
+            continue
+        target = d / extra.name
+        if extra.is_dir():
+            shutil.copytree(extra, target)
+            for md in target.rglob("*.md"):
+                md.write_text(portable_text(md.read_text(encoding="utf-8")), encoding="utf-8")
+        elif extra.suffix == ".md":
+            target.write_text(portable_text(extra.read_text(encoding="utf-8")), encoding="utf-8")
+        else:
+            shutil.copy2(extra, target)
+
+    if "${CLAUDE_PLUGIN_ROOT}/tools/" in combined:
+        scripts = d / "scripts"
+        scripts.mkdir()
+        for fn in PORTABLE_TOOLS:
+            shutil.copy2(PLUGIN / "tools" / fn, scripts / fn)
+
+    if "${CLAUDE_PLUGIN_ROOT}/docs/DEPENDENCY-GRAPH.md" in combined:
+        refs = d / "references"
+        refs.mkdir(exist_ok=True)
+        shutil.copy2(PLUGIN / "docs" / "DEPENDENCY-GRAPH.md", refs / "DEPENDENCY-GRAPH.md")
+
+    agents = d / "agents"
+    agents.mkdir(exist_ok=True)
+    description = _description(source_text)
+    allow_implicit = "disable-model-invocation: true" not in source_text
+    (agents / "openai.yaml").write_text(
+        openai_yaml(name, description, allow_implicit), encoding="utf-8")
+    (d / "LICENSE").write_text(MIT, encoding="utf-8")
+
+    residual = [str(p.relative_to(d)) for p in d.rglob("*.md")
+                if "${CLAUDE_PLUGIN_ROOT}" in p.read_text(encoding="utf-8")]
+    if residual:
+        raise RuntimeError(f"portable skill {name} retains plugin-root references: {residual}")
+
 def build_skills():
     out = fresh(DIST / "skills")
     names = workers()
     for name in names:
-        src = SKILLS / name
-        skill_text = (src / "SKILL.md").read_text(encoding="utf-8")
-        bundled = transitive_shared(shared_refs(skill_text))   # the engine(s) it loads
-        d = out / name; d.mkdir()
-        (d / "SKILL.md").write_text(to_sibling(skill_text), encoding="utf-8")
-        for f in bundled:
-            sp = SHARED / f
-            if sp.exists():
-                (d / f).write_text(to_sibling(sp.read_text(encoding="utf-8")), encoding="utf-8")
-        for extra in sorted(src.glob("*.md")):        # every sibling resource (examples, mode protocols, ...)
-            if extra.name != "SKILL.md":
-                (d / extra.name).write_text(to_sibling(extra.read_text(encoding="utf-8")), encoding="utf-8")
-        (d / "LICENSE").write_text(MIT, encoding="utf-8")
-        # safety net: nothing should still point at a plugin-only path
-        residual = [p.name for p in d.glob("*.md")
-                    if "${CLAUDE_PLUGIN_ROOT}" in p.read_text(encoding="utf-8")]
-        if residual:
-            print(f"  WARN  {name}: residual ${{CLAUDE_PLUGIN_ROOT}} in {residual}")
+        build_portable_skill(name, out)
     (out / "LICENSE").write_text(MIT, encoding="utf-8")
     (out / "README.md").write_text(_skills_readme(names), encoding="utf-8")
     (out / "GUIDE.md").write_text(skills_guide(names), encoding="utf-8")
@@ -319,37 +485,74 @@ def build_skills():
 
 def _skills_readme(names):
     L = ["# Grill Spec - Skill Collection", "",
-         "Standalone, individually-usable Claude Code skills for spec-driven engineering.",
-         "Each folder is self-contained: a `SKILL.md` plus the method engine it loads. Copy any",
-         "single folder into `~/.claude/skills/` (personal) or a repo's `.claude/skills/` (project)",
-         "and it works on its own - no plugin and no other skills required.", "",
+         "Portable, standalone Agent Skills for Claude Code and Codex.",
+         "Each folder is self-contained: `SKILL.md`, references, required scripts, and metadata.",
+         "Copy any one folder into the skills directory for your agent and it works on its own.", "",
          "MIT licensed (copy-and-own).", "",
          f"## Skills ({len(names)})", ""]
     L += [f"- `{n}/`" for n in names]
-    L += ["", "## Use one", "```", "cp -r <skill-folder> ~/.claude/skills/", "```",
-          "Then invoke it in Claude Code with `/<skill>`, or let Claude pick it up from its description.",
+    L += ["", "## Use one", "```bash", "cp -r <skill-folder> ~/.claude/skills/  # Claude Code",
+          "cp -r <skill-folder> ~/.agents/skills/  # Codex", "```",
+          "Invoke it with `/<skill>` in Claude Code or `$<skill>` in Codex.",
           "", "_Generated by `build/build.py` in the Grill Spec source project - do not hand-edit._"]
     return "\n".join(L) + "\n"
 
-# ------------------------------------------------------------ full-system plugin
-def build_full():
-    out = fresh(DIST / "full-system")
-    shutil.copytree(PLUGIN, out / PLUGIN_NAME,
-                    ignore=shutil.ignore_patterns("__pycache__", "dist", ".git"))
-    ver = version()
-    marketplace = {
+# ------------------------------------------------------------ full-system plugins
+def claude_marketplace(ver, source):
+    return {
         "name": OWNER,
+        "description": "Grill Spec plugins for spec-driven software engineering.",
+        "metadata": {"description": "Grill Spec plugins for spec-driven software engineering."},
         "owner": {"name": "Ivan Mrva", "url": f"https://github.com/{OWNER}"},
         "plugins": [{
             "name": PLUGIN_NAME,
-            "source": f"./{PLUGIN_NAME}",
+            "source": source,
             "version": ver,
-            "description": (f"Spec-driven engineering system: a conductor plus {len(workers())} grilling/derivation "
-                            "skills and deterministic spec linters. Turns an idea or existing docs into "
-                            "a complete DDD spec, derives architecture and tasks, and runs the build loop."),
+            "description": (f"Spec-driven engineering system: a conductor plus {len(workers())} "
+                            "grilling/derivation/execution skills and deterministic spec linters. "
+                            "Turns an idea or existing docs into a complete DDD spec, derives "
+                            "architecture and tasks, and runs the build loop."),
             "keywords": ["spec-driven", "domain-driven-design", "requirements", "architecture"],
         }],
     }
+
+def codex_manifest(name=PLUGIN_NAME, ver=None, description=None, license_id="Apache-2.0"):
+    ver = ver or version()
+    description = description or (
+        "Spec-driven engineering from idea and requirements through architecture, tasks, "
+        "implementation, verification, and release.")
+    return {
+        "name": name,
+        "version": ver,
+        "description": description,
+        "author": {"name": "Ivan Mrva", "url": f"https://github.com/{OWNER}"},
+        "homepage": f"https://github.com/{OWNER}/{PLUGIN_NAME}",
+        "repository": f"https://github.com/{OWNER}/{PLUGIN_NAME}",
+        "license": license_id,
+        "keywords": ["spec-driven", "domain-driven-design", "requirements", "architecture"],
+        "skills": "./skills/",
+        "interface": {
+            "displayName": "Grill Spec System" if name == PLUGIN_NAME else _display_name(name),
+            "shortDescription": "Turn ideas into implementation-ready specifications",
+            "longDescription": description,
+            "developerName": "Ivan Mrva",
+            "category": "Productivity",
+            "capabilities": ["Read", "Write"],
+            "websiteURL": f"https://github.com/{OWNER}/{PLUGIN_NAME}",
+            "defaultPrompt": [
+                "Turn this idea into an implementation-ready specification.",
+                "Derive the architecture and task plan from the current spec.",
+                "Continue the next ready Grill Spec workflow step.",
+            ],
+        },
+    }
+
+def build_claude():
+    out = fresh(DIST / "claude")
+    shutil.copytree(PLUGIN, out / PLUGIN_NAME,
+                    ignore=shutil.ignore_patterns("__pycache__", "dist", ".git"))
+    ver = version()
+    marketplace = claude_marketplace(ver, f"./{PLUGIN_NAME}")
     (out / ".claude-plugin").mkdir()
     (out / ".claude-plugin" / "marketplace.json").write_text(
         json.dumps(marketplace, indent=2) + "\n", encoding="utf-8")
@@ -357,7 +560,80 @@ def build_full():
         shutil.copy2(PLUGIN / "LICENSE", out / "LICENSE")
     (out / "README.md").write_text(_full_readme(ver), encoding="utf-8")
     (out / "GUIDE.md").write_text(full_guide(workers()), encoding="utf-8")
-    print(f"  full-system plugin (v{ver}, Apache-2.0, + GUIDE.md) -> {out}")
+    print(f"  Claude plugin (v{ver}, Apache-2.0, + GUIDE.md) -> {out}")
+
+def build_codex():
+    out = fresh(DIST / "codex")
+    plugin_out = out / "plugins" / PLUGIN_NAME
+    shutil.copytree(PLUGIN, plugin_out, ignore=shutil.ignore_patterns(
+        "__pycache__", "dist", ".git", "skills", "agents", ".claude-plugin", ".codex-plugin"))
+    skills_out = plugin_out / "skills"
+    skills_out.mkdir()
+    for name in all_skills():
+        build_portable_skill(name, skills_out)
+
+    manifest_dir = plugin_out / ".codex-plugin"
+    manifest_dir.mkdir()
+    manifest_dir.joinpath("plugin.json").write_text(
+        json.dumps(codex_manifest(), indent=2) + "\n", encoding="utf-8")
+
+    marketplace_dir = out / ".agents" / "plugins"
+    marketplace_dir.mkdir(parents=True)
+    marketplace = {
+        "name": OWNER,
+        "interface": {"displayName": "Ivan Mrva"},
+        "plugins": [{
+            "name": PLUGIN_NAME,
+            "source": {"source": "local", "path": f"./plugins/{PLUGIN_NAME}"},
+            "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+            "category": "Productivity",
+        }],
+    }
+    marketplace_dir.joinpath("marketplace.json").write_text(
+        json.dumps(marketplace, indent=2) + "\n", encoding="utf-8")
+    shutil.copy2(PLUGIN / "LICENSE", out / "LICENSE")
+    (out / "README.md").write_text(_codex_readme(version()), encoding="utf-8")
+    (out / "GUIDE.md").write_text(codex_guide(workers()), encoding="utf-8")
+    print(f"  Codex plugin (v{version()}, Apache-2.0, + GUIDE.md) -> {out}")
+
+def build_marketplace():
+    """Build one publishable repository consumed by both Claude Code and Codex."""
+    out = fresh(DIST / "marketplace")
+    plugin_out = out / "plugins" / PLUGIN_NAME
+    shutil.copytree(PLUGIN, plugin_out, ignore=shutil.ignore_patterns(
+        "__pycache__", "dist", ".git", "skills", ".claude-plugin", ".codex-plugin"))
+    skills_out = plugin_out / "skills"
+    skills_out.mkdir()
+    for name in all_skills():
+        build_portable_skill(name, skills_out)
+
+    shutil.copytree(PLUGIN / ".claude-plugin", plugin_out / ".claude-plugin")
+    codex_dir = plugin_out / ".codex-plugin"
+    codex_dir.mkdir()
+    codex_dir.joinpath("plugin.json").write_text(
+        json.dumps(codex_manifest(), indent=2) + "\n", encoding="utf-8")
+
+    claude_dir = out / ".claude-plugin"
+    claude_dir.mkdir()
+    claude_dir.joinpath("marketplace.json").write_text(
+        json.dumps(claude_marketplace(version(), f"./plugins/{PLUGIN_NAME}"), indent=2) + "\n",
+        encoding="utf-8")
+    codex_market = out / ".agents" / "plugins"
+    codex_market.mkdir(parents=True)
+    codex_market.joinpath("marketplace.json").write_text(json.dumps({
+        "name": OWNER,
+        "interface": {"displayName": "Ivan Mrva"},
+        "plugins": [{
+            "name": PLUGIN_NAME,
+            "source": {"source": "local", "path": f"./plugins/{PLUGIN_NAME}"},
+            "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+            "category": "Productivity",
+        }],
+    }, indent=2) + "\n", encoding="utf-8")
+    shutil.copy2(PLUGIN / "LICENSE", out / "LICENSE")
+    (out / "README.md").write_text(_marketplace_readme(version()), encoding="utf-8")
+    (out / "GUIDE.md").write_text(master_guide(workers()), encoding="utf-8")
+    print(f"  dual-host marketplace (v{version()}, Apache-2.0) -> {out}")
 
 def _full_readme(ver):
     return (f"# Grill Spec System (`{PLUGIN_NAME}`)\n\n"
@@ -372,37 +648,60 @@ def _full_readme(ver):
             f"/{PLUGIN_NAME}:grill-spec-conductor\n```\n\n"
             f"Version {ver}. Apache-2.0.\n")
 
+def _codex_readme(ver):
+    return (f"# Grill Spec System (`{PLUGIN_NAME}`) for Codex\n\n"
+            "The complete spec-driven engineering system as a Codex plugin: one conductor, "
+            f"{len(workers())} worker skills, bundled references, and deterministic tools.\n\n"
+            "## Install\n```bash\n"
+            f"codex plugin marketplace add {OWNER}/{PLUGIN_NAME}\n"
+            "```\n\n"
+            "Then open `/plugins` in Codex CLI (or Settings > Plugins in the IDE), select this "
+            "marketplace, and install Grill Spec. Start a new session after installation.\n\n"
+            "## Use\n```text\n"
+            f"${PLUGIN_NAME}:grill-spec-conductor\n"
+            "```\n\n"
+            f"Version {ver}. Apache-2.0.\n")
+
+def _marketplace_readme(ver):
+    return (f"# Grill Spec dual-host marketplace\n\n"
+            "One portable plugin bundle for Claude Code and Codex, generated from the same canonical "
+            "skills.\n\n"
+            "## Claude Code\n```text\n"
+            f"/plugin marketplace add {OWNER}/{PLUGIN_NAME}\n"
+            f"/plugin install {PLUGIN_NAME}@{OWNER}\n"
+            "/reload-plugins\n```\n\n"
+            "## Codex\n```bash\n"
+            f"codex plugin marketplace add {OWNER}/{PLUGIN_NAME}\n"
+            "```\n"
+            "Then open `/plugins` in Codex CLI (or Settings > Plugins in the IDE), install Grill Spec, "
+            "and start a new session.\n\n"
+            f"Version {ver}. Apache-2.0.\n")
+
 # ------------------------------------------------------------ per-cluster plugins
 def build_plugins():
     base = fresh(DIST / "plugins")
     for cluster, skills in CLUSTERS.items():
         out = base / cluster
         (out / ".claude-plugin").mkdir(parents=True)
-        seed = set()
+        (out / ".codex-plugin").mkdir(parents=True)
         for s in skills:
             src = SKILLS / s
             if not (src / "SKILL.md").exists():
                 sys.exit(f"ERROR: cluster '{cluster}' names unknown skill '{s}'")
-            dst = out / "skills" / s; dst.mkdir(parents=True)
-            for fn in ("SKILL.md", "examples.md"):
-                if (src / fn).exists():
-                    shutil.copy2(src / fn, dst / fn)
-            seed |= shared_refs((src / "SKILL.md").read_text(encoding="utf-8"))
-        bundled = transitive_shared(seed)
-        if bundled:
-            (out / "grill-shared").mkdir(parents=True)
-            for f in bundled:
-                shutil.copy2(SHARED / f, out / "grill-shared" / f)
+            build_portable_skill(s, out / "skills")
         (out / ".claude-plugin" / "plugin.json").write_text(json.dumps({
             "name": cluster, "version": "1.0.0",
             "description": f"Spec-driven engineering skill(s): {', '.join(skills)}.",
             "keywords": ["spec-driven", "ddd", "claude-code", "skills"],
             "license": "MIT",
         }, indent=2) + "\n", encoding="utf-8")
+        (out / ".codex-plugin" / "plugin.json").write_text(json.dumps(
+            codex_manifest(cluster, "1.0.0", f"Spec-driven engineering skill(s): {', '.join(skills)}.", "MIT"),
+            indent=2) + "\n", encoding="utf-8")
         (out / "LICENSE").write_text(MIT, encoding="utf-8")
         (out / "README.md").write_text(
-            f"# {cluster}\n\nStandalone Claude Code plugin: **{', '.join(skills)}**.\n"
-            "Each skill loads its method engine from `grill-shared/`. MIT licensed. See GUIDE.md.\n",
+            f"# {cluster}\n\nStandalone Claude Code and Codex plugin: **{', '.join(skills)}**.\n"
+            "Each skill bundles its required references and scripts. MIT licensed. See GUIDE.md.\n",
             encoding="utf-8")
         (out / "GUIDE.md").write_text(cluster_guide(cluster, skills), encoding="utf-8")
         print(f"  cluster plugin '{cluster}' ({', '.join(skills)}, + GUIDE.md) -> {out}")
@@ -420,15 +719,22 @@ def main(argv):
     do_zip = "--zip" in argv
     DIST.mkdir(exist_ok=True)
     if targets & {"all", "skills"}:  build_skills()
-    if targets & {"all", "full"}:    build_full()
+    if targets & {"all", "full", "claude"}: build_claude()
+    if targets & {"all", "full", "codex"}:  build_codex()
+    if targets & {"all", "full", "marketplace"}: build_marketplace()
     if targets & {"all", "plugins"}: build_plugins()
     (DIST / "GUIDE.md").write_text(master_guide(workers()), encoding="utf-8")
     print(f"  master user guide -> {DIST / 'GUIDE.md'}")
     if do_zip:
         if (DIST / "skills").exists():
             zip_tree(DIST / "skills", DIST / "grillspec-skills.zip")
-        if (DIST / "full-system").exists():
-            zip_tree(DIST / "full-system", DIST / "grillspec-full-system.zip")
+        if (DIST / "claude").exists():
+            zip_tree(DIST / "claude", DIST / "grillspec-claude-plugin.zip")
+            zip_tree(DIST / "claude", DIST / "grillspec-full-system.zip")
+        if (DIST / "codex").exists():
+            zip_tree(DIST / "codex", DIST / "grillspec-codex-plugin.zip")
+        if (DIST / "marketplace").exists():
+            zip_tree(DIST / "marketplace", DIST / "grillspec-marketplace.zip")
         if (DIST / "plugins").exists():
             for c in sorted((DIST / "plugins").iterdir()):
                 if c.is_dir():

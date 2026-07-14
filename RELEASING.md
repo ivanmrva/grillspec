@@ -1,7 +1,7 @@
 # Releasing
 
-Everything ships from `dist/`, produced by `python build/build.py --zip`. Two repos, plus
-optional per-post plugins.
+Everything ships from `dist/`, produced by `python build/build.py --zip`. The recommended setup is
+one dual-host marketplace repo plus, optionally, a separate public skill collection.
 
 ## 1. Public skills repo (the skill database — MIT)
 
@@ -13,15 +13,16 @@ rm -rf <skills-repo>/skills && cp -r dist/skills/. <skills-repo>/skills/
 cd <skills-repo> && git add -A && git commit -m "regenerate skills" && git push
 ```
 
-Readers copy any single folder into `~/.claude/skills/` and invoke `/<skill>`.
+Readers copy any single folder into `~/.claude/skills/` and invoke `/<skill>` in Claude Code, or
+into `~/.agents/skills/` and invoke `$<skill>` in Codex.
 
-## 2. Marketplace / full-system plugin (Apache-2.0)
+## 2. Dual-host marketplace / full-system plugin (Apache-2.0)
 
 The whole orchestrated system, installed once.
 
 ```
-python build/build.py full
-# dist/full-system/ is the marketplace repo: push its contents to github.com/<owner>/grillspec
+python build/build.py marketplace
+# Push the contents of dist/marketplace/ to github.com/<owner>/grillspec
 ```
 
 Install:
@@ -32,16 +33,25 @@ Install:
 /reload-plugins
 ```
 
-Bump `plugin/.claude-plugin/plugin.json` `version` before each release, or users keep the cached
-copy (Claude Code uses the version as the update key). Note the change in `plugin/CHANGELOG.md`.
+Codex:
+
+```bash
+codex plugin marketplace add <owner>/grillspec
+```
+
+Then open `/plugins` in Codex CLI (or Settings > Plugins in the IDE), select that marketplace, and
+install Grill Spec. Start a new session and invoke `$grillspec:grill-spec-conductor`.
+
+Bump both `plugin/.claude-plugin/plugin.json` and `plugin/.codex-plugin/plugin.json` to the same
+version before each release, and note the change in `plugin/CHANGELOG.md`.
 
 ## 3. Per-cluster plugins (optional — MIT)
 
-Only if you want a managed `/plugin install` path for a blog post's skills.
+Only if you want a narrower managed plugin for a blog post's skills.
 
 ```
 python build/build.py plugins      # builds every entry in CLUSTERS (build.py)
-# dist/plugins/<cluster>/ is a standalone plugin — publish per repo, or add to a marketplace
+# dist/plugins/<cluster>/ is a dual-host standalone plugin — publish or add to a marketplace
 ```
 
 Default clusters (edit `CLUSTERS` in `build.py`): `grill-ddd`, `derive-tasks`,
@@ -49,7 +59,7 @@ Default clusters (edit `CLUSTERS` in `build.py`): `grill-ddd`, `derive-tasks`,
 
 ## Licensing
 
-- Full system (`plugin/`, `dist/full-system/`): **Apache-2.0**.
+- Full system (`plugin/`, `dist/marketplace/`, host-specific builds): **Apache-2.0**.
 - Public skills and cluster plugins (`dist/skills/`, `dist/plugins/`): **MIT** (copy-and-own),
   written by the pipeline from `build/licenses/MIT.txt`.
 

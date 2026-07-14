@@ -2,7 +2,18 @@
 
 All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
-`.claude-plugin/plugin.json` to release.
+`.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
+
+## 4.15.0
+
+### Added — one source, dual-host releases for Claude Code and Codex
+
+- The build now emits portable Agent Skills, host-specific plugin artifacts, and a recommended
+  `dist/marketplace/` repository whose Claude Code and Codex catalogs point at the same plugin folder.
+- Codex manifests, per-skill `agents/openai.yaml` metadata, project-local `.codex/hooks.json` exec
+  gates, and `AGENTS.md` generation now mirror the existing Claude Code behavior.
+- Release validation checks skill portability, manifest/version agreement, resource closure, and
+  expected skill counts; CI exercises both hook adapters and the generated release.
 
 ## 4.14.0
 
