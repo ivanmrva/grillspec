@@ -4,6 +4,20 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.15.1
+
+### Fixed — task-record AC coverage and two evidence-parser false positives
+
+- **`check_task_record.py` now hard-gates every task-declared AC against the actual test tree.** It reads both
+  legacy `field: value` task manifests and the current two-column `field | value` table (including ACs declared
+  only in the `tests` cell), then requires a literal `@covers AC-...` tag in a recognizable source containing a
+  runnable test declaration. A raw AC mention in a comment/file or a self-authored traceability row no longer
+  discharges the gate; a declared-but-uncovered AC is an ERROR.
+- **Formatted human-prereq N/A values stay N/A.** `lint_spec.py` removes Markdown backticks/asterisks/underscores
+  before its `n/a|none` check, so cells such as `` `N/A` — no new credential `` no longer false-WARN.
+- **Coverage/mutation bar keywords no longer match hyphenated module names.** `floor` in
+  `promotion-floor.ts 90.91%` cannot hijack that module score as the bar; the real `threshold 70%` is parsed.
+
 ## 4.15.0
 
 ### Added — one source, dual-host releases for Claude Code and Codex

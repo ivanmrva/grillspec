@@ -17,6 +17,17 @@ TASK = (
     "nfr:         ASR-002\n"
     "depends:     T-002\n"
 )
+TASK_TABLE = (
+    "# T-014 — Pay an order\n\n"
+    "| field | value |\n"
+    "|---|---|\n"
+    "| behavior | UC-014 pay an order<br>AC-014a accepts a valid payment |\n"
+    "| tests | AC-014a — unit — accepts a valid payment<br>AC-014b — integration — rejects an invalid payment |\n"
+    "| api | API-Pay |\n"
+    "| security | SEC-03 |\n"
+    "| nfr | ASR-002 |\n"
+    "| depends | T-002 |\n"
+)
 TRACE_OK = (
     "| spec ID | T- | code | test | pass |\n|---|---|---|---|---|\n"
     "| AC-014a | T-014 | src/billing.js | t::AC-014a | ✓ |\n"
@@ -55,17 +66,17 @@ def record(status="done", rows=None, drop=()):
         lines.append("| %s | x | y | %s | %s |" % (key, ev, st))
     return "\n".join(lines) + "\n"
 
-# test files carry the @covers tags (the AC ids literally appear in the test tree) so the source-coverage
-# check passes by default; a scenario that wants the hole drops the tag via `covers=`.
+# A real test source carries the @covers tags and a runnable test declaration by default; scenarios that want
+# a hole replace that source via `covers=`. A text file or a bare AC mention must never discharge this gate.
 def run(files, args=("--task", "T-014"),
         evidence=("tests/e2e/pay.js", "tests/contract/pay.json", "src/billing.js", ".github/workflows/deploy.yml"),
-        covers="@covers AC-014a AC-014b API-Pay"):
+        covers="// @covers AC-014a AC-014b API-Pay\nit('pays an order', () => { throw new Error('assertion sentinel'); });\n"):
     d = pathlib.Path(tempfile.mkdtemp(prefix="trectest_"))
     try:
         for ev in evidence:
             p = d / ev; p.parent.mkdir(parents=True, exist_ok=True); p.write_text("x")
         if covers is not None:
-            (d / "tests" / "covers.txt").write_text(covers, encoding="utf-8")
+            (d / "tests" / "e2e" / "pay.js").write_text(covers, encoding="utf-8")
         for rel, content in files.items():
             p = d / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(content, encoding="utf-8")
         out = subprocess.run([sys.executable, str(TOOL), str(d / "spec"), *args], capture_output=True, text=True)
@@ -162,6 +173,15 @@ expect("bar-keyword-not-substring", run(proj(record(rows={"coverage":
 expect("bar-keyword-not-substring-below-caught", run(proj(record(rows={"coverage":
         ("deterministic run — 61% overall (bar 80%)", "PASS")}))),
        must=["ERROR", "61 is below its bar 80"])
+# a hyphenated module-name segment is not a bar keyword: `promotion-floor.ts 90.91%` must leave the actual
+# `threshold 70` as the bar, rather than treating 90.91 as the bar and 70 as the measured score.
+expect("bar-keyword-not-hyphenated-module", run(proj(record(rows={"mutation":
+        ("test:mutation (Stryker) — promotion-floor.ts 90.91% killed · break threshold 70", "PASS")}))),
+       must=["0 error(s)"], forbid=["ERROR", "below its bar"])
+# the standalone word `floor` remains a supported bar spelling.
+expect("bar-floor-still-enforced", run(proj(record(rows={"coverage":
+        ("61% overall (floor 80%)", "PASS")}))),
+       must=["ERROR", "61 is below its bar 80"])
 
 # ── a done-claim that OMITS the deploy row fails (silent scope reduction) ───
 expect("missing-deploy-row", run(proj(record(drop=("deploy",)))),
@@ -188,8 +208,28 @@ expect("deploy-fabricated-artifact", run(proj(record(rows={"deploy": (".github/w
        must=["ERROR", "GHOST", "does not exist"])
 
 # ── matrix claims a test the SOURCE tree doesn't contain (the @covers hole) ──
-expect("ac-claimed-not-in-source", run(proj(record()), covers="@covers AC-014a API-Pay"),
-       must=["ERROR", "AC-014b", "no file under tests/"])
+expect("ac-claimed-not-in-source", run(proj(record()),
+        covers="// @covers AC-014a API-Pay\nit('pays', () => {});\n"),
+       must=["ERROR", "AC-014b", "no failing-capable test source"])
+
+# A bare AC mention in a real test source is documentation, not the required @covers tag. This is the exact
+# hole that previously let a source comment satisfy the check because it searched only for the raw AC token.
+expect("ac-source-comment-is-not-covers-tag", run(proj(record()),
+        covers="// AC-014a and AC-014b are exercised here\nit('pays', () => {});\n"),
+       must=["ERROR", "AC-014a", "@covers AC-014a", "AC-014b", "@covers AC-014b"])
+
+# A tag in a source-shaped file with no runnable test declaration is not failing-capable evidence.
+expect("ac-tag-without-test-is-not-capable", run(proj(record()),
+        covers="// @covers AC-014a AC-014b\nexport const fixture = {};\n"),
+       must=["ERROR", "AC-014a", "no failing-capable test source"])
+
+# Current derive-tasks output is a two-column field table. An AC declared only in its `tests` cell must still
+# become an obligation and require its own source tag; legacy `field: value` parsing cannot silently skip it.
+expect("table-tests-cell-ac-requires-source-tag", run(proj(record(), task=TASK_TABLE),
+        covers="// @covers AC-014a API-Pay\n// AC-014b integration intent\nit('pays', () => {});\n"),
+       must=["ERROR", "AC-014b", "@covers AC-014b"])
+expect("table-task-with-tags-passes", run(proj(record(), task=TASK_TABLE)),
+       must=["done — 6 obligations", "0 error(s)"], forbid=["ERROR"])
 
 # ── claim done with no record at all ───────────────────────────────────────
 expect("missing-record", run(proj(rec=None)),
