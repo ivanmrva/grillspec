@@ -73,7 +73,8 @@ python3 ../build/build.py --zip
 ```
 
 Keep `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` on the same version, update
-`CHANGELOG.md`, and publish the contents of `dist/marketplace/`.
+`CHANGELOG.md`, and publish `dist/marketplace/plugins/grillspec/` at the root of the repository's
+`marketplace` branch. The marketplace catalogs stay on `main`.
 
 ## Docs
 
