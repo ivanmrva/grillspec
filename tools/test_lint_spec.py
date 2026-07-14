@@ -284,6 +284,16 @@ expect("afk-eligible-na-prereq-ok", run(LINT, {
     "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
     "10-delivery/tasks/T-046.md": taskf("MVP · afk: eligible", "N/A"),
 }), forbid=["human-prereq"])
+# Markdown formatting around the N/A token is presentation only. In particular, derive-tasks commonly emits
+# inline code for this cell; the backtick must not turn a satisfied prereq into a non-N/A warning.
+expect("afk-eligible-inline-code-na-prereq-ok", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "10-delivery/tasks/T-046.md": taskf("MVP · afk: eligible", "`N/A` — no new credential"),
+}), forbid=["human-prereq", "PARK"])
+expect("afk-eligible-emphasis-na-prereq-ok", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),
+    "10-delivery/tasks/T-046.md": taskf("MVP · afk: eligible", "_N/A_ — no external access"),
+}), forbid=["human-prereq", "PARK"])
 # a task that is afk:blocked may carry a real human-prereq (that's the correct state) - NOT flagged
 expect("afk-blocked-prereq-ok", run(LINT, {
     "05-functional-spec/uc.md": idtable(("UC-1", "Notify")),

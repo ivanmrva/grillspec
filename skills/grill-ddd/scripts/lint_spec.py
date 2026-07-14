@@ -1084,7 +1084,7 @@ def task_human_prereq(text):                                 # the human-prereq 
             return cells[1]
     return None
 def is_na(cell):                                             # a satisfied / not-applicable prereq cell (EMPTY_CELL is exact-match; a prereq may read 'N/A — headless')
-    c = cell.strip().lower()
+    c = re.sub(r"[*`_]", "", cell).strip().lower()           # presentation markdown (`N/A`, **none**, _N/A_) is not semantic content
     return c in EMPTY_CELL or re.match(r"n/?a\b|none\b", c) is not None
 # the credential-provisioning register (part a+c): a spec-root, LAYER-FREE authored file (`_provisioning.md`)
 # that both maps each credential/config key to its owner + consuming tasks AND carries the LIVE provisioned/

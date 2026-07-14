@@ -11,7 +11,8 @@
 #   - the record OMITS any standard gate row (tests-first/tests:layers/coverage/mutation/fitness*/spec-lint/
 #     deploy/traceability) — a required artifact or check silently dropped rather than shipped real or `N/A — why`;
 #   - the conformance row is not PASS, or no independent `VERDICT: PASS` for this T- exists on disk;
-#   - an AC-/API-/EVT- obligation has no passing row in the traceability matrix (tests-first, evidenced);
+#   - an AC-/API-/EVT- obligation has no passing row in the traceability matrix (tests-first, evidenced), or a
+#     task-declared AC has no `@covers AC-...` tag in a failing-capable test source;
 #   - an evidence cell points at a path that does not exist (fabricated evidence);
 #   - a coverage/mutation number is below its stated bar.
 # An in-progress record (`status: in-progress`) is reported, never blocked - mid-flight work is fine; only a
@@ -26,7 +27,7 @@
 #   python3 tools/check_task_record.py [spec_dir] --task   T-014   # check one task's record
 #   python3 tools/check_task_record.py [spec_dir] --init   T-014   # GENERATE the pre-impl checklist (PENDING rows)
 #   python3 tools/check_task_record.py [spec_dir] --report [T-014] # render a readable, tool-VOUCHED completion report
-import sys, re, pathlib
+import sys, re, os, pathlib
 
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 flags = [a for a in sys.argv[1:] if a.startswith("--")]
@@ -98,21 +99,46 @@ def task_file(tid):
     p = TASKS / (tid + ".md")
     return p if p.exists() else None
 
-def task_obligations(tid):
-    """Regenerate the obligation ID set from the task's frozen references - this is the un-gameable bar."""
+def task_fields(tid):
+    """Read both legacy `field: value` manifests and the current two-column `field | value` table."""
     p = task_file(tid)
     if not p:
         return None
+    fields = []
+    for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+        s = line.strip()
+        if s.startswith("|"):
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            if len(cells) < 2:
+                continue
+            dim, val = cells[0], cells[1]
+        else:
+            m = re.match(r"^\s*([A-Za-z][\w-]*)\s*:\s*(.*)$", line)
+            if not m:
+                continue
+            dim, val = m.group(1), m.group(2)
+        dim = dim.strip(" *`_").lower()
+        if not dim or dim in ("field", "dimension", "---") or set(dim) <= set("-: "):
+            continue
+        fields.append((dim, val))
+    return fields
+
+def task_obligations(tid):
+    """Regenerate the obligation ID set from the task's frozen references - this is the un-gameable bar."""
+    fields = task_fields(tid)
+    if fields is None:
+        return None
     obs = []  # preserve order, de-dup
     seen = set()
-    for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
-        m = re.match(r"^\s*([A-Za-z][\w-]*)\s*:\s*(.*)$", line)
-        if not m:
-            continue
-        dim, val = m.group(1).strip().lower(), m.group(2)
-        if dim not in OBLIGATION_DIMS:
+    for dim, val in fields:
+        # The tests cell is an AC-keyed declaration in current task manifests. Pull ACs from it explicitly,
+        # while ignoring incidental API-/T- ids in test intent; every declared AC must remain accountable even
+        # if a malformed task omitted it from behavior.
+        if dim not in OBLIGATION_DIMS and dim != "tests":
             continue
         for tok in IDTOK.findall(val):
+            if dim == "tests" and not tok.startswith("AC-"):
+                continue
             if tok.startswith(("T-", "ADR-")) or tok in seen:
                 continue
             seen.add(tok)
@@ -170,7 +196,8 @@ if INIT:
         "|---|---|---|---|---|",
     ]
     for tok, dim in obs:
-        req = {"behavior": "failing-capable test, passing", "api": "contract test (provider/consumer)",
+        req = {"behavior": "failing-capable test, passing", "tests": "failing-capable @covers-tagged test, passing",
+               "api": "contract test (provider/consumer)",
                "security": "enforced + evidenced", "nfr": "evidence test (measured, not asserted)",
                "data": "persistence + migration", "integration": "real-path integration test",
                "domain": "realised + behaviour-tested"}.get(dim, "implemented + tested")
@@ -196,24 +223,91 @@ if not RECORDS.exists():
 trace_txt = TRACE.read_text(encoding="utf-8", errors="replace") if TRACE.exists() else None
 review_txt = REVIEW.read_text(encoding="utf-8", errors="replace") if REVIEW.exists() else None
 
-# the test source tree - the un-gameable evidence for AC coverage (the `@covers AC-NNN` tag convention puts the
-# AC id literally in the test that drives it, so it can't be claimed in a self-authored matrix without a tagged
-# test actually existing in the tree).
-TEST_DIRS = [d for d in (ROOT / "tests", ROOT / "test") if d.is_dir()]
-_test_blob = None
+# The source tree is the un-gameable evidence for AC coverage. A raw AC token in a README, fixture, or comment
+# is not coverage: the literal `@covers AC-NNN` tag must live in a recognizable test source that also contains
+# a runnable test declaration (the mechanical proxy for "failing-capable"). Besides tests/, include common
+# co-located layouts, while excluding vendored/build/tooling trees that could accidentally echo an AC id.
+TEST_SOURCE_EXTS = {".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".go", ".java", ".kt",
+                    ".rb", ".cs", ".php", ".rs", ".scala", ".swift", ".feature", ".bats", ".exs",
+                    ".dart", ".c", ".cc", ".cpp", ".cxx", ".fs", ".fsx", ".clj", ".cljs", ".groovy",
+                    ".lua", ".sh", ".ps1", ".r", ".hs"}
+TEST_PATH_PARTS = {"test", "tests", "__tests__", "e2e"}
+COLOCATED_ROOTS = {"src", "app", "apps", "lib", "libs", "packages", "spec"}
+PRUNE_PARTS = {".git", ".claude", ".codex", ".venv", "venv", "node_modules", "vendor", "dist", "build",
+               "out", "coverage", "target", "__pycache__", ".next", ".tox"}
+TEST_NAME = re.compile(r"(?:^test_|_test\.|[._](?:test|spec)s?\.|[._](?:e2e|int|integration|unit|contract)\.)", re.I)
+CAMEL_TEST = re.compile(r"[a-z0-9](?:Test|Tests|Spec|Specs)\.[A-Za-z0-9]+$")
+FAILING_CAPABLE = re.compile(
+    r"\b(?:it|test|specify)(?:\s*\.\s*[A-Za-z_]\w*)*\s*\(|"
+    r"\bTEST(?:_F|_P|_CASE)?\s*\(|"
+    r"(?:^|\s)(?:async\s+)?def\s+test_[A-Za-z0-9_]*\s*\(|"
+    r"(?:^|\s)func\s+test[A-Za-z0-9_]*\s*\(|"
+    r"@\s*(?:[A-Za-z_]\w*\.)*(?:Test|ParameterizedTest|RepeatedTest|TestFactory)\b|"
+    r"\[\s*(?:Fact|Theory|Test|TestCase|TestMethod)\b|"
+    r"#\[\s*(?:test|tokio::test|async_std::test)\b|"
+    r"\bfunction\s+test[A-Za-z0-9_]*\s*\(|"
+    r"\((?:deftest|facts?)\s+|"
+    r"\btest_(?:that|case)\s*\(|"
+    r"^\s*(?:Scenario(?:\s+Outline)?):|"
+    r"^\s*@test\s+[\"']|"
+    r"^\s*(?:it|specify|test)\s+[\"'].*(?:do|\{|\$)",
+    re.I | re.M)
+
+def _test_source(p):
+    try:
+        rel = p.relative_to(ROOT)
+    except ValueError:
+        return False
+    parts = [x.lower() for x in rel.parts]
+    if not p.is_file() or p.suffix.lower() not in TEST_SOURCE_EXTS or any(x in PRUNE_PARTS for x in parts[:-1]):
+        return False
+    in_test_tree = any(x in TEST_PATH_PARTS for x in parts[:-1])
+    colocated = bool(parts and parts[0] in COLOCATED_ROOTS and
+                     (TEST_NAME.search(p.name) or CAMEL_TEST.search(p.name)))
+    return in_test_tree or colocated
+
+def _without_comments(text):
+    """Remove common comments before looking for a test declaration; @covers itself is checked on raw text."""
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    code = []
+    for line in text.splitlines():
+        s = line.lstrip()
+        if s.startswith(("//", "--")) or (s.startswith("#") and not s.startswith("#[")):
+            continue
+        line = re.sub(r"//.*$|--.*$", "", line)
+        code.append(line)
+    return "\n".join(code)
+
+_test_sources = None
+def _load_test_sources():
+    global _test_sources
+    if _test_sources is None:
+        _test_sources = []
+        # os.walk lets us prune vendor/build trees before descending; ROOT.rglob would still traverse every
+        # node_modules entry even if _test_source later rejected it.
+        for base, dirs, files in os.walk(ROOT):
+            dirs[:] = sorted(d for d in dirs if d.lower() not in PRUNE_PARTS)
+            for name in sorted(files):
+                p = pathlib.Path(base) / name
+                if not _test_source(p):
+                    continue
+                try:
+                    txt = p.read_text(encoding="utf-8", errors="replace")
+                except Exception:
+                    continue
+                _test_sources.append((txt, FAILING_CAPABLE.search(_without_comments(txt)) is not None))
+    return _test_sources
+
 def covered_in_source(tok):
-    global _test_blob
-    if not TEST_DIRS:
-        return None                                            # no test tree to check against
-    if _test_blob is None:
-        parts = []
-        for base in TEST_DIRS:
-            for p in base.rglob("*"):
-                if p.is_file():
-                    try: parts.append(p.read_text(encoding="utf-8", errors="replace"))
-                    except Exception: pass
-        _test_blob = "\n".join(parts)
-    return tok in _test_blob
+    token = re.compile(r"(?<![A-Za-z0-9-])" + re.escape(tok) + r"(?![A-Za-z0-9._-])", re.I)
+    for txt, capable in _load_test_sources():
+        if not capable:
+            continue
+        for line in txt.splitlines():
+            tag = re.search(r"@covers\b", line, re.I)
+            if tag and token.search(line[tag.end():]):
+                return True
+    return False
 
 def review_pass_for(tid):
     """An independent VERDICT: PASS for this T- on disk - in review-report.md or a per-task review file."""
@@ -284,13 +378,13 @@ for p in records:
             add("ERROR", where, "a done-claim must carry the '%s' gate row (present + PASS or 'N/A — why') — it cannot be omitted." % needed)
 
     # 4. tests-first evidence - each AC-/API-/EVT- obligation traced to a passing row in the matrix, AND each
-    #    AC- actually present in the TEST SOURCE (the `@covers AC-NNN` tag) so the matrix can't claim a test the
-    #    tree doesn't contain.
+    #    task-declared AC has a literal `@covers AC-NNN` tag in a failing-capable TEST SOURCE, so neither a
+    #    self-authored matrix nor an incidental source comment can claim a test the tree doesn't contain.
     for tok, dim in obs:
         if tok.startswith("AC-"):
             src = covered_in_source(tok)
             if src is False:
-                add("ERROR", where, "%s appears in no file under tests/ — no `@covers %s`-tagged test in the tree (a matrix row can't substitute for the actual test)." % (tok, tok))
+                add("ERROR", where, "%s has no failing-capable test source carrying an `@covers %s` tag in the project test tree (a matrix row or incidental source comment can't substitute for the actual test)." % (tok, tok))
         if not tok.startswith(("AC-", "API-", "EVT-")):
             continue
         if trace_txt is None:
@@ -326,10 +420,10 @@ for p in records:
             # excludes task-ids / versions / per-file digits ('T-002', 'v1.2'), and skipping the bar's own
             # position stops the threshold being read as the metric. (The prior nums[0] grabbed the first digit
             # ANYWHERE - so 'T-002 ... 82% ≥ 70%' read '002' as the score and false-failed a passing row.)
-            # The word keywords are \b-anchored: without it, 'min' matched INSIDE ordinary words
-            # ('deterMINistic') and read a stray number as the bar; the symbols stay unanchored (\b is
-            # meaningless next to non-word chars).
-            bar_m = re.search(r"(?:\b(?:bar|threshold|target|min(?:imum)?|floor)\b|>=|≥|⩾)\D*(\d+(?:\.\d+)?)", ev, re.I)
+            # Word keywords cannot be preceded by an identifier/path char (word, dot, slash, or hyphen): a
+            # plain \b still matches the `floor` segment in `promotion-floor.ts` and hijacks the following
+            # module percentage as the bar. Symbols stay unanchored (a boundary is meaningless beside them).
+            bar_m = re.search(r"(?:(?<![\w./-])(?:bar|threshold|target|min(?:imum)?|floor)\b|>=|≥|⩾)\D*(\d+(?:\.\d+)?)", ev, re.I)
             pcts = [(m.start(1), float(m.group(1))) for m in re.finditer(r"(\d+(?:\.\d+)?)\s*%", ev)]
             measured = next((v for pos, v in pcts if not bar_m or pos != bar_m.start(1)), None) if bar_m else None
             if measured is None or not bar_m:
