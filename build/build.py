@@ -15,8 +15,9 @@ engines instead of duplicating them in source:
 
   dist/codex/         the same system as a Codex plugin + native marketplace.
 
-  dist/marketplace/   the recommended release repo: both marketplace manifests point
-                      at one dual-host portable plugin bundle.
+  dist/marketplace/   a combined release archive: both marketplace manifests point at
+                      one dual-host portable plugin bundle. Publish its plugins/grillspec/
+                      directory at the root of the repository's marketplace branch.
 
   dist/plugins/<c>/   OPTIONAL per-cluster plugins (e.g. one per blog post). MIT.
                       Same content as the matching skill-database entries, but packaged
@@ -223,7 +224,7 @@ python build/build.py plugins    # only the cluster plugins
 | skills  | `dist/skills/`      | portable standalone Agent Skills for Claude Code and Codex   | MIT        |
 | claude  | `dist/claude/`      | the whole system as a Claude Code plugin + marketplace       | Apache-2.0 |
 | codex   | `dist/codex/`       | the whole system as a Codex plugin + native marketplace      | Apache-2.0 |
-| marketplace | `dist/marketplace/` | recommended dual-host marketplace release repo        | Apache-2.0 |
+| marketplace | `dist/marketplace/` | combined dual-host marketplace archive                 | Apache-2.0 |
 | plugins | `dist/plugins/<c>/` | optional dual-host per-cluster plugins (one per blog post) | MIT        |
 
 Source lives under `plugin/` - skills in `plugin/skills/`, the three method engines in

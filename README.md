@@ -39,7 +39,7 @@ Or build one target: `python build/build.py skills | claude | codex | marketplac
 | `dist/` output      | What it is                                                                 | License     | Goes to                                   |
 | :------------------ | :------------------------------------------------------------------------- | :---------- | :---------------------------------------- |
 | `dist/skills/`      | **The skill database** — 46 worker skills as self-contained Agent Skills with portable references, scripts, and Codex metadata. | MIT | a public skills repo or direct copy |
-| `dist/marketplace/` | **Recommended release** — one portable plugin bundle with both Claude Code and Codex marketplace manifests. | Apache-2.0 | the `ivanmrva/grillspec` release repo |
+| `dist/marketplace/` | **Combined release archive** — one portable plugin bundle with both Claude Code and Codex marketplace manifests. | Apache-2.0 | release ZIP / local marketplace |
 | `dist/claude/`      | Claude Code-specific marketplace artifact. | Apache-2.0 | optional host-specific release |
 | `dist/codex/`       | Codex-specific marketplace artifact. | Apache-2.0 | optional host-specific release |
 | `dist/plugins/<c>/` | **Optional per-cluster plugins** — portable dual-host subsets configured in `CLUSTERS`. | MIT | per-post repos / a shared marketplace |
@@ -76,8 +76,9 @@ rm -rf /path/to/skills-repo/skills && cp -r dist/skills /path/to/skills-repo/ski
 
 ## Plugin delivery — what to ship
 
-- **Required: one plugin release** — publish the contents of `dist/marketplace/`. Its Claude and
-  Codex catalogs point at the same portable plugin folder, so there is no second maintained system.
+- **Required: one plugin release** — publish `dist/marketplace/plugins/grillspec/` at the root of
+  the `marketplace` branch. The catalogs committed on `main` both resolve that branch, so there is
+  no second maintained source system. Attach the generated ZIPs to the GitHub release.
 - **Optional: the per-cluster plugins** — only worth shipping if you want blog readers to
   install a narrower bundle instead of copying
   a folder from the skill database. They are **redundant in content** with the skill database, so

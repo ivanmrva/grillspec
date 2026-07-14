@@ -1,7 +1,8 @@
 # Releasing
 
-Everything ships from `dist/`, produced by `python build/build.py --zip`. The recommended setup is
-one dual-host marketplace repo plus, optionally, a separate public skill collection.
+Everything ships from `dist/`, produced by `python build/build.py --zip`. The `main` branch carries
+the canonical source and both marketplace catalogs; the `marketplace` branch carries only the
+generated portable plugin root. A separate public skill collection remains optional.
 
 ## 1. Public skills repo (the skill database — MIT)
 
@@ -22,8 +23,13 @@ The whole orchestrated system, installed once.
 
 ```
 python build/build.py marketplace
-# Push the contents of dist/marketplace/ to github.com/<owner>/grillspec
+# Publish the contents of dist/marketplace/plugins/grillspec/ at the root of the
+# marketplace branch. Do not replace the canonical source on main.
 ```
+
+Create the version tag and GitHub release from the resulting `marketplace` commit. Attach
+`dist/grillspec-marketplace.zip`, `dist/grillspec-skills.zip`, both host-specific plugin ZIPs, and
+any cluster ZIPs. The catalogs on `main` already resolve the `marketplace` branch.
 
 Install:
 
