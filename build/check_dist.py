@@ -2,6 +2,7 @@
 """Validate generated dual-host release artifacts. Run after build/build.py."""
 import json
 import re
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -159,6 +160,17 @@ for path in derive_guides:
     text = path.read_text(encoding="utf-8")
     if "`CLAUDE.md` with exactly `@AGENTS.md`" not in text:
         fail(f"{path.relative_to(ROOT)}: does not generate canonical AGENTS.md + CLAUDE import")
+
+packaged_selfcheck = plugin / "tools" / "selfcheck.py"
+if packaged_selfcheck.is_file():
+    checked = subprocess.run(
+        [sys.executable, str(packaged_selfcheck), str(plugin)],
+        capture_output=True, text=True)
+    if checked.returncode:
+        fail("generated marketplace plugin fails its bundled selfcheck:\n" +
+             (checked.stdout + checked.stderr).strip())
+else:
+    fail("generated marketplace plugin contains no bundled selfcheck.py")
 
 print(f"release check: {len(standalone)} standalone skills, {len(bundled)} bundled skills")
 for error in errors:

@@ -88,7 +88,8 @@ else:
         err("skills/ has no <name>/SKILL.md entries")
 
 FM = re.compile(r"^---\n(.*?)\n---", re.S)
-ENGINE_REF = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/(grill|derive|exec)-engine\.md")
+ENGINE_REF = re.compile(
+    r"(?:\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/|references/)(grill|derive|exec)-engine\.md")
 for sk in skills:
     name = sk.parent.name
     txt = sk.read_text()
@@ -104,8 +105,8 @@ for sk in skills:
     # every worker skill must load a shared engine via a resolving ref; the conductor is exempt.
     is_conductor = "conductor" in name
     if not is_conductor and not ENGINE_REF.search(txt):
-        warn(f"{name}: no resolved ${CLAUDE_PLUGIN_ROOT}/grill-shared/<engine>.md "
-             "reference - a worker skill must load its shared engine")
+        warn(f"{name}: no resolved shared-engine reference "
+             "(plugin-root or portable references/) - a worker skill must load its shared engine")
 
 # --- 3. stale paths (would break once installed from the cache) -----------
 STALE = re.compile(r"(?<!\$\{CLAUDE_PLUGIN_ROOT\})\.claude/(grill-shared|tools|agents|skills|hooks)/")
