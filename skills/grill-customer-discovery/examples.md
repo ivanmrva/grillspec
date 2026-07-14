@@ -2,9 +2,9 @@
 
 Pinning who a clinical-trial patient-recruitment platform is really for.
 
-> **Claude:** Who's the primary segment — the CRO running the trial, or the individual research-site coordinator chasing enrollment? *(I'd lead with the site coordinator: they feel the enrollment pain daily and can adopt without a procurement cycle; the CRO is the buyer, not the user.)*
+> **Agent:** Who's the primary segment — the CRO running the trial, or the individual research-site coordinator chasing enrollment? *(I'd lead with the site coordinator: they feel the enrollment pain daily and can adopt without a procurement cycle; the CRO is the buyer, not the user.)*
 > **User:** The site coordinator. They're judged on hitting an enrollment quota and they're drowning in manual chart review.
-> **Claude:** For the buying side, who actually signs — is the coordinator also the economic buyer, or is that the site's principal investigator? *(Matters because the PI champions but rarely controls budget.)*
+> **Agent:** For the buying side, who actually signs — is the coordinator also the economic buyer, or is that the site's principal investigator? *(Matters because the PI champions but rarely controls budget.)*
 > **User:** PI champions it; the site's research director holds the budget.
 
 Recorded:

@@ -81,7 +81,7 @@ expect("inline-waiver", run({"migrations/006.sql": "-- TODO later  -- migration-
        must=["0 error(s)"], forbid=["ERROR"])
 
 # allowlist file suppresses by path substring
-expect("allowlist-file", run({"migrations/007.sql": "-- TODO\n", ".claude/migration-real-allow.txt": "migrations/007.sql\n"}),
+expect("allowlist-file", run({"migrations/007.sql": "-- TODO\n", ".grillspec/migration-real-allow.txt": "migrations/007.sql\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 
 # an empty DOWN/rollback migration is a legitimate no-op — not flagged
@@ -96,7 +96,7 @@ expect("unrecognized-op-not-empty", run({"db/migrate/010_x.rb": "class X < Migra
        must=["0 error(s)"], forbid=["ERROR", "WARN"])
 # a non-standard migration home is scanned once added to config
 expect("config-extends-dirs", run({"db/changesets/011.sql": "-- TODO\n",
-        ".claude/migration-real-dirs.txt": "db/changesets/\n"}),
+        ".grillspec/migration-real-dirs.txt": "db/changesets/\n"}),
        must=["ERROR", "placeholder"])
 
 # no migration at all = clean no-op (early project)

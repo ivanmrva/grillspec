@@ -16,8 +16,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-CLAUDE_HOOK_CMD = 'python3 "$CLAUDE_PROJECT_DIR/.claude/tools/gate_exec.py" --hook'
-CODEX_HOOK_CMD = ('python3 "$(git rev-parse --show-toplevel)/.codex/tools/gate_exec.py" '
+CLAUDE_HOOK_CMD = 'python3 "$CLAUDE_PROJECT_DIR/.grillspec/tools/gate_exec.py" --hook'
+CODEX_HOOK_CMD = ('python3 "$(git rev-parse --show-toplevel)/.grillspec/tools/gate_exec.py" '
                   '--hook')
 CLAUDE_MATCHER = "Write|Edit|MultiEdit"
 CODEX_MATCHER = "apply_patch|Edit|Write"
@@ -61,31 +61,27 @@ def our_block(host: str) -> dict:
 
 
 def already_installed(pretooluse: list, command: str) -> bool:
-    return any(isinstance(block, dict) and (
-        block.get("_source") == MARK or
+    return any(isinstance(block, dict) and
         any(isinstance(hook, dict) and hook.get("command") == command
-            for hook in block.get("hooks", [])))
+            for hook in block.get("hooks", []))
         for block in pretooluse)
 
 
-def vendor_tools(root: Path, host: str) -> bool:
+def vendor_tools(root: Path) -> bool:
     here = Path(__file__).resolve().parent
-    dest = root / (".claude" if host == "claude" else ".codex") / "tools"
+    sources = [here / filename for filename in VENDOR]
+    if not all(source.is_file() for source in sources):
+        return False
+    dest = root / ".grillspec" / "tools"
     dest.mkdir(parents=True, exist_ok=True)
-    for filename in VENDOR:
-        source = here / filename
+    for filename, source in zip(VENDOR, sources):
         target = dest / filename
-        if source.resolve() != target.resolve() and source.is_file():
+        if source.resolve() != target.resolve():
             shutil.copy2(source, target)
-    return (dest / "gate_exec.py").is_file()
+    return all((dest / filename).is_file() for filename in VENDOR)
 
 
 def install_host(root: Path, host: str) -> int:
-    if not vendor_tools(root, host):
-        print("install_exec_gates: gate_exec.py is unavailable; refusing to wire a broken hook",
-              file=sys.stderr)
-        return 1
-
     settings = (root / ".claude" / "settings.json" if host == "claude"
                 else root / ".codex" / "hooks.json")
     settings.parent.mkdir(parents=True, exist_ok=True)
@@ -125,6 +121,10 @@ def main(argv) -> int:
         print("install_exec_gates: --host must be both, claude, or codex", file=sys.stderr)
         return 2
     root = root_dir(argv)
+    if not vendor_tools(root):
+        print("install_exec_gates: required gate tools are unavailable; refusing to wire a broken hook",
+              file=sys.stderr)
+        return 1
     hosts = ("claude", "codex") if host == "both" else (host,)
     results = [install_host(root, item) for item in hosts]
     return 1 if any(results) else 0

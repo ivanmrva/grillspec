@@ -75,7 +75,7 @@ expect("inline-waiver", run({".github/workflows/deploy.yml":
 
 # allowlist file suppresses by path substring
 expect("allowlist-file", run({".github/workflows/deploy.yml": "jobs:\n  deploy:\n    steps:\n      - run: echo TODO\n",
-        ".claude/deploy-real-allow.txt": ".github/workflows/deploy.yml\n"}),
+        ".grillspec/deploy-real-allow.txt": ".github/workflows/deploy.yml\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 
 # ── expanded coverage: other CI providers, Dockerfile, package.json, Makefile ──
@@ -128,7 +128,7 @@ expect("makefile-real-clean", run({"Makefile": "deploy:\n\thelm upgrade --instal
 expect("unknown-deployer-warns", run({"deploy/release.sh": "#!/bin/bash\nmycorp-deployer ship --prod\n"}),
        must=["WARN", "no recognized deploy"], forbid=["ERROR"])
 expect("config-extends-recognition", run({"deploy/release.sh": "#!/bin/bash\nmycorp-deployer ship --prod\n",
-        ".claude/deploy-real-commands.txt": "mycorp-deployer\n"}),
+        ".grillspec/deploy-real-commands.txt": "mycorp-deployer\n"}),
        must=["0 error(s)"], forbid=["ERROR", "WARN"])
 
 # the bare English word "No-op" in a legitimate CI comment is NOT a faked deploy (regression: was flagged ERROR)
@@ -144,6 +144,10 @@ expect("noop-deploy-placeholder", run({".github/workflows/deploy.yml":
 # no deploy artifact at all = clean no-op (an early project that hasn't wired CI yet)
 expect("no-deploy-artifact-noop", run({"src/app.py": "print('hi')\n", "README.md": "hi\n"}),
        must=["nothing to scan"], forbid=["ERROR", "Traceback"])
+
+# shared project tooling is not a deploy-intent artifact and must never scan itself
+expect("shared-tools-pruned", run({".grillspec/tools/check_deploy_real.py": TOOL.read_text()}),
+       must=["nothing to scan"], forbid=["ERROR", "WARN", "Traceback"])
 
 print("\n%d passed, %d failed" % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)

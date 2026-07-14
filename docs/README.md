@@ -1,6 +1,6 @@
 # Grill Spec System — documentation
 
-Documentation for the **`grillspec`** Claude Code plugin. New here? Start with the plugin [README](../README.md), then come back for depth.
+Documentation for the dual-host **`grillspec`** plugin for Claude Code and Codex. New here? Start with the plugin [README](../README.md), then come back for depth.
 
 ## Contents
 

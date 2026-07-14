@@ -2,9 +2,9 @@
 
 Defining success for a habit-tracking app that nudges users to log workouts.
 
-> **Claude:** What single metric proves it's working — installs, or weekly active loggers who come back? *(I'd make the north-star "% of signups logging ≥3 workouts/week in week 4" — installs are a vanity number; the value only lands if the habit sticks.)*
+> **Agent:** What single metric proves it's working — installs, or weekly active loggers who come back? *(I'd make the north-star "% of signups logging ≥3 workouts/week in week 4" — installs are a vanity number; the value only lands if the habit sticks.)*
 > **User:** Retention, not installs. But week 4 is a month out — I want an earlier signal I can actually steer on.
-> **Claude:** Then a guardrail: if we optimize nudges for that, what must NOT degrade? *(Over-nudging usually tanks notification opt-in and spikes uninstalls — I'd guard both.)*
+> **Agent:** Then a guardrail: if we optimize nudges for that, what must NOT degrade? *(Over-nudging usually tanks notification opt-in and spikes uninstalls — I'd guard both.)*
 > **User:** Guardrails fine. And put the hard stop in writing — last time we limped along on a dead idea for a year before anyone called it.
 
 Recorded:

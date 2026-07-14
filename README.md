@@ -50,18 +50,22 @@ what each portable skill needs.
 ## Project-local governance
 
 The plugin installs no global hooks. Execution skills run `tools/install_exec_gates.py`, which
-vendors the gate into the project and merges equivalent `PreToolUse` hooks into:
+vendors the gate once under `.grillspec/tools/` and merges equivalent `PreToolUse` adapters into:
 
 - `.claude/settings.json` for Claude Code
 - `.codex/hooks.json` for Codex
 
+All other GrillSpec-owned project state—tools, locks, waivers, gate configuration, and transient
+gate records—lives under `.grillspec/`.
+
 The gate enforces red-before-green, prevents unsupported done claims, and rejects newly introduced
-test skips or production fakes. Commit both hook configurations and their vendored tools so
-worktrees inherit them. Codex users should review and trust the project hook through `/hooks`.
+test skips or production fakes. Both host adapters execute the one copy under `.grillspec/tools/`;
+commit that shared tool tree and both hook configurations so worktrees inherit them. Codex users
+should review and trust the project hook through `/hooks`.
 
 The walking skeleton also installs the repository-scoped git pre-commit governance hook and CI
-checks. `AGENTS.md` and `CLAUDE.md` are generated together from the same conventions so ordinary
-sessions in either host receive equivalent project instructions.
+checks. `AGENTS.md` is the canonical project guide; `CLAUDE.md` contains only `@AGENTS.md`, so
+ordinary sessions in either host receive one identical instruction source.
 
 ## Editing and releasing
 

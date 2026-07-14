@@ -2,7 +2,7 @@
 
 Projecting one `API-` contract into a consumer-facing reference entry, with a sunset note.
 
-> **Claude:** Rendered from the contract for `API-CreateBooking` (no OpenAPI artifact present, so generated from the contract definition); grouped under the **Bookings** resource, cross-linked to `API-CreateBooking` / `DATA-Booking`.
+> **Agent:** Rendered from the contract for `API-CreateBooking` (no OpenAPI artifact present, so generated from the contract definition); grouped under the **Bookings** resource, cross-linked to `API-CreateBooking` / `DATA-Booking`.
 
 `docs-site/api/bookings.html` — entry:
 

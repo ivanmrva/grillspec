@@ -233,7 +233,7 @@ TEST_SOURCE_EXTS = {".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".go", 
                     ".lua", ".sh", ".ps1", ".r", ".hs"}
 TEST_PATH_PARTS = {"test", "tests", "__tests__", "e2e"}
 COLOCATED_ROOTS = {"src", "app", "apps", "lib", "libs", "packages", "spec"}
-PRUNE_PARTS = {".git", ".claude", ".codex", ".venv", "venv", "node_modules", "vendor", "dist", "build",
+PRUNE_PARTS = {".git", ".grillspec", ".claude", ".codex", ".venv", "venv", "node_modules", "vendor", "dist", "build",
                "out", "coverage", "target", "__pycache__", ".next", ".tox"}
 TEST_NAME = re.compile(r"(?:^test_|_test\.|[._](?:test|spec)s?\.|[._](?:e2e|int|integration|unit|contract)\.)", re.I)
 CAMEL_TEST = re.compile(r"[a-z0-9](?:Test|Tests|Spec|Specs)\.[A-Za-z0-9]+$")

@@ -73,7 +73,7 @@ expect("inline-waiver", run({"src/g.py": "class FakeGateway:  # no-fakes: allow 
        must=["0 error(s)"], forbid=["ERROR"])
 
 # allowlist file suppresses by path substring
-expect("allowlist-file", run({"src/g.py": "class FakeGateway:\n    pass\n", ".claude/no-fakes-allow.txt": "src/g.py\n"}),
+expect("allowlist-file", run({"src/g.py": "class FakeGateway:\n    pass\n", ".grillspec/no-fakes-allow.txt": "src/g.py\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 
 # no production source dir at all = clean no-op

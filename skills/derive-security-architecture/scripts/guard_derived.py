@@ -2,7 +2,7 @@
 # guard_derived.py - protect DERIVED artifacts from hand-edits.
 # Derived artifacts are a function of their upstream; they change ONLY by re-running their
 # derive-* (or codegen) skill, which reconciles them. Hand-editing them breaks "derived = f(upstream)".
-#   check (default): hash every derived file, compare to .claude/derived.lock; any mismatch = a hand-edit = exit 1.
+#   check (default): hash every derived file, compare to .grillspec/derived.lock; any mismatch = a hand-edit = exit 1.
 #   --record [paths...]: (re)hash the given derived files (or all) into the lock. A derive skill runs this
 #                        right after (re)writing its artifact, so a legit regeneration keeps file+lock in sync.
 # Stdlib only. Run from the project root. Override in emergencies with `git commit --no-verify`.
@@ -16,8 +16,9 @@ DERIVED_PREFIXES = [
     "spec/10-delivery/tasks/",
     "spec/10-delivery/impl-design/",     # per-slice module internals (derive-impl-design, JIT)
 ]
-DERIVED_FILES_EXACT = ["AGENTS.md", "CLAUDE.md"]   # generated together by derive-conventions
-LOCK = os.path.join(".claude", "derived.lock")
+DERIVED_FILES_EXACT = ["AGENTS.md", "CLAUDE.md"]   # canonical guide + import-only adapter
+LOCK = os.path.join(".grillspec", "derived.lock")
+CLAUDE_IMPORT = "@AGENTS.md\n"
 
 def _norm(p): return p.replace("\\", "/")
 def is_derived(p):
@@ -47,7 +48,37 @@ def all_derived():
                 out.add(_norm(f))
     return sorted(out)
 
+def guide_problems():
+    """The project guide has one canonical body. Claude's entry point imports it and nothing else."""
+    agents = os.path.isfile("AGENTS.md")
+    claude = os.path.isfile("CLAUDE.md")
+    if not agents and not claude:
+        conventions_exist = any(os.path.isdir(p) for p in (
+            "spec/10-delivery/conventions", "spec/delivery/conventions"))
+        if conventions_exist:
+            return [
+                ("MISSING", "AGENTS.md", "canonical project guide is missing"),
+                ("MISSING", "CLAUDE.md", "Claude Code import adapter is missing"),
+            ]
+        return []
+    problems = []
+    if not agents:
+        problems.append(("MISSING", "AGENTS.md", "canonical project guide is missing"))
+    elif not open("AGENTS.md", encoding="utf-8").read().strip():
+        problems.append(("INVALID", "AGENTS.md", "canonical project guide is empty"))
+    if not claude:
+        problems.append(("MISSING", "CLAUDE.md", "Claude Code import adapter is missing"))
+    elif open("CLAUDE.md", encoding="utf-8").read() != CLAUDE_IMPORT:
+        problems.append(("INVALID", "CLAUDE.md", "must contain only @AGENTS.md followed by a newline"))
+    return problems
+
 def record(paths):
+    problems = guide_problems()
+    if problems:
+        print("FAIL: project-guide invariant:")
+        for kind, p, msg in problems:
+            print("  [%s] %s - %s" % (kind, p, msg))
+        return 1
     lock = load_lock()
     targets = [_norm(p) for p in paths] if paths else all_derived()
     n = 0
@@ -59,7 +90,7 @@ def record(paths):
     return 0
 
 def check():
-    lock = load_lock(); files = all_derived(); problems = []
+    lock = load_lock(); files = all_derived(); problems = guide_problems()
     for p in files:
         if p not in lock:
             problems.append(("UNREGISTERED", p, "new derived file not produced via its skill (run --record after regenerating)"))

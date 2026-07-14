@@ -21,8 +21,9 @@ on its own can't be proven after the fact"). It enforces three transitions of th
      bootstrap work before the first task branch. Only newly-introduced lines trigger it; a line
      carrying the inline waiver (`no-skips: allow …` / `no-fakes: allow …`) passes.
 
-It is PROJECT-LOCAL: the walking-skeleton wires it into THIS repo's `.claude/settings.json` and/or
-`.codex/hooks.json` (see `install_exec_gates.py`), like the git pre-commit hook in `.git/hooks/`.
+It is PROJECT-LOCAL: the walking-skeleton vendors it once under `.grillspec/tools/`, then wires it
+into THIS repo's `.claude/settings.json` and/or `.codex/hooks.json` (see `install_exec_gates.py`),
+like the git pre-commit hook in `.git/hooks/`.
 It is NOT a global hook and never fires on other projects or the user's `~/.claude` config.
 
   Fail-OPEN by design: any internal error allows the tool call (a bug in the gate must never brick the
@@ -31,7 +32,7 @@ It is NOT a global hook and never fires on other projects or the user's `~/.clau
 
 The active task is derived from the **git branch** (`task/T-NNN-…`, which the engineering workflow
 already mandates per task). That makes the gate **parallel-safe**: an AFK wave runs each task in its
-own branch/worktree, so nothing shares a pointer to clobber, and each worktree's `.gate/` is local
+own branch/worktree, so nothing shares a pointer to clobber, and each worktree's `.grillspec/gate/` is local
 (git-ignored, never carried between worktrees). `--start` writes an explicit pointer only as a
 fallback for flows that don't branch-per-task; a stale pointer can't override a real task branch.
 
@@ -73,7 +74,7 @@ CAMEL_TEST = re.compile(r"[a-z0-9](?:Test|Tests|Spec|Specs)\.\w+$")
 
 
 def project_root() -> Path:
-    env = os.environ.get("CLAUDE_PROJECT_DIR")
+    env = os.environ.get("GRILLSPEC_PROJECT_DIR") or os.environ.get("CLAUDE_PROJECT_DIR")
     if env and Path(env).is_dir():
         return Path(env)
     try:
@@ -85,11 +86,7 @@ def project_root() -> Path:
 
 
 def gate_dir(root: Path) -> Path:
-    for cand in (root / "spec" / "10-delivery" / "verification",
-                 root / "spec" / "delivery" / "verification"):
-        if cand.exists():
-            return cand / ".gate"
-    return root / "spec" / "10-delivery" / "verification" / ".gate"
+    return root / ".grillspec" / "gate"
 
 
 def ensure_gate_dir(root: Path) -> Path:
@@ -104,13 +101,12 @@ def ensure_gate_dir(root: Path) -> Path:
 
 
 def config(root: Path) -> dict:
-    for p in (root / ".claude" / "grillspec-gate.json",
-              root / ".codex" / "grillspec-gate.json"):
-        if p.is_file():
-            try:
-                return json.loads(p.read_text())
-            except Exception:
-                pass
+    p = root / ".grillspec" / "grillspec-gate.json"
+    if p.is_file():
+        try:
+            return json.loads(p.read_text())
+        except Exception:
+            pass
     return {}
 
 
@@ -125,7 +121,7 @@ def now_iso() -> str:
 def branch_task(root: Path):
     """The active task derived from the current git branch (`task/T-NNN-…`). This is the PRIMARY
     signal because it is **parallel-safe**: AFK runs each task in its own branch/worktree, so the
-    branch identifies the task with no shared pointer to clobber — and a worktree's `.gate/` is local
+    branch identifies the task with no shared pointer to clobber — and a worktree's `.grillspec/gate/` is local
     (it's git-ignored, so it never travels between worktrees). Returns None off a task branch."""
     try:
         out = subprocess.run(["git", "-C", str(root), "rev-parse", "--abbrev-ref", "HEAD"],
@@ -365,9 +361,7 @@ def cmd_hook() -> int:
         if "verification" in file_path.replace(os.sep, "/") and introduces_done(tool_input):
             tid = task_id_from_path(file_path)
             if tid:
-                checker = root / ".claude" / "tools" / "check_task_record.py"
-                if not checker.is_file():
-                    checker = root / ".codex" / "tools" / "check_task_record.py"
+                checker = root / ".grillspec" / "tools" / "check_task_record.py"
                 if not checker.is_file():
                     checker = Path(__file__).resolve().parent / "check_task_record.py"
                 spec = root / "spec"
@@ -394,14 +388,13 @@ def cmd_hook() -> int:
             red = gate_dir(root) / "red" / (task + ".json")
             if red.is_file():
                 continue
-            host_dir = ".codex" if payload.get("tool_name") == "apply_patch" else ".claude"
             return deny(
                 "no failing test recorded for the active task %s — write ONE small failing test for "
                 "the next behavior and watch it fail (`python3 %s/tools/gate_exec.py --red --test "
                 "\"<your test command>\"`) BEFORE writing production code in %s. This is the "
                 "red→green micro-cycle; don't batch all code then back-fill tests. Override: "
                 "GRILLSPEC_GATE_OFF=1."
-                % (task, host_dir, os.path.relpath(file_path, root) if file_path else "src/"))
+                % (task, ".grillspec", os.path.relpath(file_path, root) if file_path else "src/"))
     return 0
 
 

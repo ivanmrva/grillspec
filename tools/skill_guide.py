@@ -2,9 +2,8 @@
 """
 skill_guide.py - build an accurate per-skill user guide from the skill's OWN fields.
 
-Single source of truth for guide text, imported by both gen-guides.py (writes docs/skills/)
-and emit-standalone.py (ships a README.md beside each standalone skill). The guide is generated,
-never hand-written, so it stays in sync with the skill - and reading it is the verification:
+Single source of truth for guide text, imported by gen-guides.py (writes docs/skills/).
+The guide is generated, never hand-written, so it stays in sync with the skill - and reading it is the verification:
 purpose, input, output and "what good looks like" all come straight from the profile.
 """
 import re
@@ -122,12 +121,12 @@ def build_guide(name, text, public=False):
     # how to run
     if public:
         L += ["## How to use it",
-              f"Copy the `{name}/` folder into `~/.claude/skills/` (for all your projects) or a project's `.claude/skills/`, then run `/{name}`. Everything it needs is in this one folder - edit any of it to fit your project.",
+              f"Copy the `{name}/` folder into `~/.claude/skills/` or a project's `.claude/skills/` for Claude Code, then run `/{name}`. For Codex, copy it into `~/.agents/skills/` or a project's `.agents/skills/`, then run `${name}`. Everything it needs is in this one folder - edit any of it to fit your project.",
               ""]
     else:
         L += ["## How to run it",
-              f"- **In the bundle plugin:** `/grillspec:{name}`",
-              f"- **Standalone:** copy the `{name}/` folder into `~/.claude/skills/`, then run `/{name}`. It works on its own and composes with sibling skills, each writing to its own output folder.",
+              f"- **In the bundle plugin:** `/grillspec:{name}` in Claude Code or `$grillspec:{name}` in Codex",
+              f"- **Standalone:** copy the `{name}/` folder into `~/.claude/skills/` and run `/{name}` in Claude Code, or into `~/.agents/skills/` and run `${name}` in Codex. It works on its own and composes with sibling skills, each writing to its own output folder.",
               ""]
 
     # verification (the point Ivan cares about)

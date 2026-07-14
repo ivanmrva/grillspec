@@ -66,7 +66,7 @@ expect("inline-waiver", run({ENV: matrix("DATABASE_URL"),
 
 # allowlist file suppresses by key
 expect("allowlist-file", run({ENV: matrix("DATABASE_URL"),
-        "src/a.js": "process.env.AWS_REGION\n", ".claude/config-drift-allow.txt": "AWS_REGION\n"}),
+        "src/a.js": "process.env.AWS_REGION\n", ".grillspec/config-drift-allow.txt": "AWS_REGION\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 
 # no environments.md -> clean no-op

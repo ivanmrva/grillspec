@@ -110,7 +110,7 @@ expect("ci-deploy-or-true-ok", run({".github/workflows/ci.yml": "      - run: no
 expect("inline-waiver", run({"tests/pay.test.js": "it.skip('quarantined', () => {}) // no-skips: allow flake FLK-3\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 expect("allowlist-file", run({"tests/pay.test.js": "it.skip('charges', () => {})\n",
-                              ".claude/no-skips-allow.txt": "tests/pay.test.js\n"}),
+                              ".grillspec/no-skips-allow.txt": "tests/pay.test.js\n"}),
        must=["0 error(s)"], forbid=["ERROR"])
 expect("strict-promotes", run({"tests/pay.test.js": "it.todo('handles refunds')\n"}, args=("--strict",)),
        must=["ERROR"])

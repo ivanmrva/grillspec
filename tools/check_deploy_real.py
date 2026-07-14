@@ -18,10 +18,10 @@
 #   - a disabled deploy job/step (`if: false`, `when: never`);
 #   - a deploy-intent script/workflow that invokes NO recognized deploy/IaC command (echo-only "deployment").
 # Suppress a finding with an inline `deploy-real: allow <reason>` comment on the line, or a path/substring entry
-# in `.claude/deploy-real-allow.txt`. `--strict` promotes WARN -> ERROR.
+# in `.grillspec/deploy-real-allow.txt`. `--strict` promotes WARN -> ERROR.
 #
 # EXTENSIBLE: the built-in deploy-command list can't name every tool. Add a niche / in-house deployer (one
-# literal token per line) to `.claude/deploy-real-commands.txt` and a deploy that uses it counts as real.
+# literal token per line) to `.grillspec/deploy-real-commands.txt` and a deploy that uses it counts as real.
 #
 # LIMITATION (by design): this confirms a real deploy COMMAND runs - it does NOT verify the command targets the
 # *ratified* environment (the right cluster/project/account). That is the behavioural check's job: the e2e/smoke
@@ -88,9 +88,9 @@ PLACEHOLDER = re.compile(
 DISABLED = re.compile(r"(?i)\b(?:if\s*:\s*false|when\s*:\s*never|enabled\s*:\s*false)\b")
 
 def load_list(name):
-    """One token per line from .claude/<name> (blank lines + `#` comments ignored). Empty when absent."""
+    """One token per line from .grillspec/<name> (blank lines + `#` comments ignored). Empty when absent."""
     out = []
-    f = ROOT / ".claude" / name
+    f = ROOT / ".grillspec" / name
     if f.exists():
         for ln in f.read_text(encoding="utf-8", errors="replace").splitlines():
             ln = ln.split("#", 1)[0].strip()
@@ -188,7 +188,8 @@ def scan_makefile(rel, text):
     return n
 
 # discover deploy-intent artifacts; skip vendored / VCS trees.
-SKIP = ("/node_modules/", "/.git/", "/vendor/", "/dist/", "/build/", "/.venv/", "/venv/")
+SKIP = ("/node_modules/", "/.git/", "/.grillspec/", "/.claude/", "/.codex/",
+        "/vendor/", "/dist/", "/build/", "/.venv/", "/venv/")
 artifacts = []
 scanned = 0
 for p in sorted(ROOT.rglob("*")):

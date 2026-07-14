@@ -4,11 +4,11 @@ A short guide to what this system is, how you drive it, and what each background
 
 ## In one paragraph
 
-You describe what you want to build. The system **interviews you** — or **ingests documents you already have** — pressure-tests every answer, and writes a rigorous, cross-referenced **specification** under `spec/`. From that spec it **derives** what an agent needs to build: coding conventions, a task list, a test strategy, and a `CLAUDE.md` entry point. Then it **drives the coding**, task by task, checking each change against the spec and the architecture. Deterministic tools enforce the structure; the hard thinking — *is this requirement right? is this document actually complete?* — is the model's job, done through a set of interview "lenses."
+You describe what you want to build. The system **interviews you** — or **ingests documents you already have** — pressure-tests every answer, and writes a rigorous, cross-referenced **specification** under `spec/`. From that spec it **derives** what an agent needs to build: coding conventions, a task list, a test strategy, and a canonical `AGENTS.md` entry point (with an import-only `CLAUDE.md` adapter). Then it **drives the coding**, task by task, checking each change against the spec and the architecture. Deterministic tools enforce the structure; the hard thinking — *is this requirement right? is this document actually complete?* — is the model's job, done through a set of interview "lenses."
 
 ## The one thing to know
 
-You talk to a single skill: **`grill-spec-conductor`** (the conductor). It is the front door and the router. You never call the other skills by hand — the conductor reads the state of the spec and tells you the next sensible move. Start every session by pointing Claude Code at the conductor.
+You talk to a single skill: **`grill-spec-conductor`** (the conductor). It is the front door and the router. You never call the other skills by hand — the conductor reads the state of the spec and tells you the next sensible move. Start every session by invoking it in your active host: `/grillspec:grill-spec-conductor` in Claude Code or `$grillspec:grill-spec-conductor` in Codex.
 
 ## The shape of it
 
@@ -30,7 +30,7 @@ flowchart TB
   end
   C --> PIPE
 
-  P6 --> D["Derived — regenerate-only<br/>CLAUDE.md, tasks (T-), conventions, two-tier tests"]
+  P6 --> D["Derived — regenerate-only<br/>AGENTS.md (+ CLAUDE import), tasks (T-), conventions, two-tier tests"]
   D --> B["Build loop<br/>implement-task → run-tests → conformance-review"]
   AF["autorun / AFK<br/>drives the loop across the task queue"] --- B
   B --> OPS["Operate<br/>observability, runbooks, day-2"]
@@ -67,7 +67,7 @@ Each stage takes the stage(s) before it as input and produces the artifacts the 
 | 08 UX | `grill-ux-reqs` | design-system + requirements | user journeys, information architecture, a11y/i18n + usability targets (no ids — a **synthesis** of the design system and the requirements) |
 | 11 Commercial | `grill-monetization` | entitlements + product vision | business model · pricing · plans · **prices the `ENTL-` tiers** · metering — **feeds 09 Solution** (entitlement enforcement, billing, metering become build work) |
 | 09 Solution | `derive-architecture` · `derive-data-architecture` · `derive-api-contracts` · `derive-security-architecture` · `derive-infra-ops` · `derive-observability` · `derive-test-strategy` · `derive-ml-architecture` (AI) | requirements | architecture incl. the **module map & seam contracts** + key sequences, API / event contracts (`API-`), observability (`SLO-`), deployment & ops, the two-tier test strategy, ML serving / eval / guardrails (AI) — *module internals are designed per-slice in Build, not here* |
-| 10 Delivery | `derive-conventions` · `derive-tasks` | solution | `CLAUDE.md`, the task list (`T-`), coding conventions |
+| 10 Delivery | `derive-conventions` · `derive-tasks` | solution | canonical `AGENTS.md` + `CLAUDE.md` import, the task list (`T-`), coding conventions |
 | Build | `implement-task` · `run-tests` · `conformance-review`  (· `autorun` drives it AFK; a **design-first** slice first runs `derive-impl-design` for its module internals; a ux-heavy slice already carries its **frozen UI prototype** from task finalization) | delivery | working code, one slice at a time: (design-first → module internals) → implement → test → conformance-review |
 | Build Docs | `generate-docs` · `generate-api-reference` | the spec (any change) | a self-contained docs site (HTML) — **continuous: rebuilt in CI on every spec change**, not a one-time slot |
 | Operate | `deploy-release` · `migrate-data` · `operate-incident` · `diagnose` | the running system | deploys, migrations, incident & diagnosis records, day-2 cadence |
@@ -88,7 +88,7 @@ Each stage takes the stage(s) before it as input and produces the artifacts the 
 | Tool | What it does | When it runs | Verdict |
 |---|---|---|---|
 | `lint_spec.py` | Formal structure, consistency, and coverage: valid file paths, defined IDs, resolving references, one definition per ID, per-area ID ownership, correlated & derived→driver IDs (`AC-`→`UC-`, `ASR-`→`NFR-`, `JRN-`→`UC-`, `SLO-`→`NFR-`, `ML-`→`UC-`), coverage hints, traceability currency, superseded-ADR-referenced-as-live, and blocked-task-without-a-human-ask | Every session, and on every pull request (`spec-governance.yml`) | Deterministic pass/fail — an `ERROR` blocks |
-| `guard_derived.py` | A pre-commit hook that **blocks hand-edits to generated files** (`solution/*`, `functional-spec/`, `delivery/conventions`+`tasks/`, root `AGENTS.md`/`CLAUDE.md`). To change one, you edit its upstream and re-derive | Pre-commit, and in CI | Blocks the commit |
+| `guard_derived.py` | A pre-commit hook that **blocks hand-edits to generated files** (`solution/*`, `functional-spec/`, `delivery/conventions`+`tasks/`, canonical root `AGENTS.md`, import-only `CLAUDE.md`). To change one, you edit its upstream and re-derive | Pre-commit, and in CI | Blocks the commit |
 | `impact.py` | **Change propagation.** Given the IDs you changed — or `--since <gitref>` to self-detect from the git diff — it prints the minimal set of downstream artifacts and the impacted code to re-derive and re-test | Whenever you change the spec | Informational list |
 | `spec_status.py` | **Mechanical readiness rollup.** Element counts, the share of use-cases that carry an acceptance criterion, tasks (afk-eligible vs blocked), open questions, traceability presence, and a blockers verdict | Run anytime to gauge completeness | Informational only — it does **not** judge whether the content is right |
 
@@ -125,7 +125,7 @@ The tools enforce **structure**. They cannot tell you whether a requirement is *
 - `_human-input.md` (spec root) — the **one operational queue**: the batched human-in-the-loop asks `autorun` parks for you to clear in a sitting. Maintained by the orchestration loop; it's a handoff queue, not a decision ledger.
 - `spec/12-operate/` — the **operations ledger**: append-only records of what actually happened to the running system, not derived from the spec and never regenerated. **First created during Build, by `implement-task` on the walking-skeleton task** (the first build task, typically `T-001`), which writes **`bootstrap.md`** — not a bare checklist but a phased, per-platform, per-environment **setup runbook** composed from the infra-ops design (`environments.md`, the config matrix · `prerequisites.md`, the per-platform provisioning steps · `runtime-contract.md`, what the artifact needs to run): Phase A initial (local + dev, the env-var worksheet), Phase B production/pre-launch and Phase C day-2 (filled by `deploy-release`, which also gates the first prod push behind a `production-readiness.md` review). Its unchecked items are what gate the walking skeleton's *true* done-state: the agent infers "bootstrap hasn't run" structurally (on a first run the file is an output it's about to create), and the external facts it lists — actual provisioning, branch-protection rules — live in third-party dashboards the agent can't observe, so it asks you to confirm rather than asserting. From then on the folder accumulates one record per real operational event: `deploy-<env>-<version>.md` (`deploy-release`), `incident-<id>.md` (`operate-incident`), `diagnosis-<id>.md` (`diagnose`), `migration-<DATA|AGG-id>.md` (`migrate-data`). The ADRs those skills emit (`ADR-REL-`, `ADR-INC-`, …) go to the shared `adr/` folder, not here.
 - `src/` + `tests/` — code, and nothing else.
-- **Regenerate-only** (never hand-edited; the guard blocks it): `solution/*`, `functional-spec/`, `delivery/conventions`+`tasks/`, and root `AGENTS.md`/`CLAUDE.md`.
+- **Regenerate-only** (never hand-edited; the guard blocks it): `solution/*`, `functional-spec/`, `delivery/conventions`+`tasks/`, canonical root `AGENTS.md`, and its import-only `CLAUDE.md` adapter.
 
 ## Driving it — the loop
 

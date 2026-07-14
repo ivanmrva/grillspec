@@ -1,7 +1,7 @@
 # grill-growth — worked example
 
 Post-launch growth model for a collaborative whiteboard app, north-star = weekly active editors:
-> **Claude:** Your compounding loop is the share link — every board invite pulls in a new editor who creates their own boards. I'd make **invite-driven acquisition** the primary loop, not paid. What's the earliest action that predicts a user sticks?
+> **Agent:** Your compounding loop is the share link — every board invite pulls in a new editor who creates their own boards. I'd make **invite-driven acquisition** the primary loop, not paid. What's the earliest action that predicts a user sticks?
 > **User:** People who invite at least one teammate in week one almost never churn.
 
 Recorded:

@@ -2,7 +2,7 @@
 
 A "sometimes wrong" bug: invoice totals occasionally off by one cent.
 
-> **Claude:** Built a fast deterministic signal first — a property loop generating 10 000 random line-item sets, asserting `sum(lines) == invoice.total`. Fails ~3% of runs → reproducible. **Minimized** the failing input to two lines: `[0.10, 0.20]` → expected `0.30`, got `0.29`.
+> **Agent:** Built a fast deterministic signal first — a property loop generating 10 000 random line-item sets, asserting `sum(lines) == invoice.total`. Fails ~3% of runs → reproducible. **Minimized** the failing input to two lines: `[0.10, 0.20]` → expected `0.30`, got `0.29`.
 
 **Three ranked, falsifiable hypotheses** (shown before testing any):
 1. *Float accumulation* — totals summed as IEEE-754 floats. → If true, switching the accumulator to integer cents makes it vanish.

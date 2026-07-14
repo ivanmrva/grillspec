@@ -10,14 +10,14 @@
 # cleanly when there is no spec/ or the tools aren't vendored, so a stray install never interferes.
 #
 # Install (the walking-skeleton / derive-conventions does this):
-#   cp .claude/tools/spec_governance_hook.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#   cp .grillspec/tools/spec_governance_hook.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 # Emergency override: git commit --no-verify.
 
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -d "$root/spec" ] || exit 0                       # not a spec repo -> nothing to govern
 
 # the governance tools, vendored into the project (see repo-layout); honor an explicit override
-T="${GRILLSPEC_TOOLS:-$root/.claude/tools}"
+T="${GRILLSPEC_TOOLS:-$root/.grillspec/tools}"
 [ -f "$T/lint_spec.py" ] || exit 0                  # tools not present here -> no-op, never error
 
 # 1) spec consistency — blocks on ERROR (WARN/INFO are advisory and don't block)

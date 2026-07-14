@@ -6,7 +6,7 @@ Run this after editing skills, engines, hooks, or manifests. It validates the
 *authoring* source (not a project's spec/ - that is what lint_spec.py does at
 runtime). It catches the silent breakage modes of hand-editing the skill files:
 malformed frontmatter, a missing/typo'd engine-load reference, a stale
-`.claude/...` path that won't resolve once installed from the plugin cache,
+plugin-resource path, host-specific GrillSpec project state that should live under `.grillspec/`,
 broken manifest/hook JSON, a hook pointing at a missing or non-executable
 script, or a tool that no longer compiles.
 
@@ -88,7 +88,8 @@ else:
         err("skills/ has no <name>/SKILL.md entries")
 
 FM = re.compile(r"^---\n(.*?)\n---", re.S)
-ENGINE_REF = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/(grill|derive|exec)-engine\.md")
+ENGINE_REF = re.compile(
+    r"(?:\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/|references/)(grill|derive|exec)-engine\.md")
 for sk in skills:
     name = sk.parent.name
     txt = sk.read_text()
@@ -104,8 +105,8 @@ for sk in skills:
     # every worker skill must load a shared engine via a resolving ref; the conductor is exempt.
     is_conductor = "conductor" in name
     if not is_conductor and not ENGINE_REF.search(txt):
-        warn(f"{name}: no resolved ${CLAUDE_PLUGIN_ROOT}/grill-shared/<engine>.md "
-             "reference - a worker skill must load its shared engine")
+        warn(f"{name}: no resolved shared-engine reference "
+             "(plugin-root or portable references/) - a worker skill must load its shared engine")
 
 # --- 3. stale paths (would break once installed from the cache) -----------
 STALE = re.compile(r"(?<!\$\{CLAUDE_PLUGIN_ROOT\})\.claude/(grill-shared|tools|agents|skills|hooks)/")
@@ -118,6 +119,39 @@ for sub in ("skills", "grill-shared", "hooks", "agents"):
             err(f"{p.relative_to(ROOT)}: stale '.claude/{ln}/...' path - "
                 "use ${CLAUDE_PLUGIN_ROOT}/ so it resolves from the plugin cache")
             break
+
+# --- 3b. project state is agent-neutral -----------------------------------
+# Host directories are integration adapters only. GrillSpec tools, locks, waivers, and gate config/state
+# must never drift back under `.claude/` or `.codex/`. CHANGELOG is historical and intentionally exempt.
+LEGACY_STATE = re.compile(
+    r"\.(?:claude|codex)/(?:tools/|(?:derived|freshness)\.lock|grillspec-gate\.json|"
+    r"[A-Za-z0-9_-]+-allow\.txt|deploy-real-commands\.txt|migration-real-dirs\.txt)")
+for p in ROOT.rglob("*"):
+    if (not p.is_file() or p.name in {"CHANGELOG.md", "selfcheck.py"} or p.name.startswith("test_") or
+            p.suffix.lower() not in {".md", ".py", ".sh", ".json", ".yaml", ".yml"}):
+        continue
+    match = LEGACY_STATE.search(p.read_text(encoding="utf-8", errors="replace"))
+    if match:
+        err(f"{p.relative_to(ROOT)}: host-specific GrillSpec state path '{match.group(0)}' - "
+            "put shared project state under .grillspec/; keep host directories for adapters only")
+
+installer = ROOT / "tools" / "install_exec_gates.py"
+if installer.exists():
+    install_text = installer.read_text(encoding="utf-8")
+    for required in (
+        '$CLAUDE_PROJECT_DIR/.grillspec/tools/gate_exec.py',
+        '$(git rev-parse --show-toplevel)/.grillspec/tools/gate_exec.py',
+        'root / ".grillspec" / "tools"',
+    ):
+        if required not in install_text:
+            err(f"install_exec_gates.py: shared-tool invariant missing {required!r}")
+
+conventions = ROOT / "skills" / "derive-conventions" / "SKILL.md"
+guard = ROOT / "tools" / "guard_derived.py"
+if conventions.exists() and "`CLAUDE.md` with exactly `@AGENTS.md`" not in conventions.read_text(encoding="utf-8"):
+    err("derive-conventions: must generate canonical AGENTS.md plus an exact @AGENTS.md CLAUDE import")
+if guard.exists() and 'CLAUDE_IMPORT = "@AGENTS.md\\n"' not in guard.read_text(encoding="utf-8"):
+    err("guard_derived.py: must enforce the import-only CLAUDE.md adapter")
 
 # --- 4. hooks --------------------------------------------------------------
 hj = ROOT / "hooks" / "hooks.json"

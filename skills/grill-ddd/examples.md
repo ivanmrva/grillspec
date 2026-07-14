@@ -1,9 +1,9 @@
 # grill-ddd — worked example
 
 Modelling a field-service domain **event-first** — no DDD jargon spoken to the user.
-> **Claude:** When a repair is booked, who can later change the appointment time — only dispatch, or the technician too? *(I'd expect dispatch owns scheduling; the tech only reports status.)*
+> **Agent:** When a repair is booked, who can later change the appointment time — only dispatch, or the technician too? *(I'd expect dispatch owns scheduling; the tech only reports status.)*
 > **User:** Dispatch owns it; the tech just checks in/out.
-> **Claude:** Does a *Job* ever move between branches mid-repair, or stay with the branch that booked it? *(I'd default to: stays.)*
+> **Agent:** Does a *Job* ever move between branches mid-repair, or stay with the branch that booked it? *(I'd default to: stays.)*
 > **User:** Stays with the booking branch.
 
 The check-in is the **pivotal event** that seams **Scheduling** from **FieldWork**.

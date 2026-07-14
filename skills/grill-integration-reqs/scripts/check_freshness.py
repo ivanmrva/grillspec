@@ -17,7 +17,7 @@
 import sys, os, re, json, hashlib, pathlib
 
 SPEC = pathlib.Path("spec")
-LOCK = os.path.join(".claude", "freshness.lock")
+LOCK = os.path.join(".grillspec", "freshness.lock")
 
 # TYPES mirrors lint_spec.py's vocabulary (selfcheck guards them in sync) - resolve ids against the same set.
 TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|JRN|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
@@ -109,7 +109,7 @@ def check(strict):
         return 0
     lock = load_lock()
     if not lock:
-        print("check_freshness: no .claude/freshness.lock yet - run `--record` after writing areas to baseline.")
+        print("check_freshness: no .grillspec/freshness.lock yet - run `--record` after writing areas to baseline.")
         return 0
     blocks, owner = def_blocks()
     stale, untracked = [], []

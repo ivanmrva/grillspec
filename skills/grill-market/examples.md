@@ -2,9 +2,9 @@
 
 Mapping the landscape for an AI contract-redlining tool aimed at in-house legal teams.
 
-> **Claude:** What's the real alternative we displace — a competitor like Ironclad, or the status quo of a lawyer redlining in Word with a clause library? *(I'd treat Word + tracked-changes as the true incumbent; most teams have no AI tool at all, so "do nothing" is the competitor to beat.)*
+> **Agent:** What's the real alternative we displace — a competitor like Ironclad, or the status quo of a lawyer redlining in Word with a clause library? *(I'd treat Word + tracked-changes as the true incumbent; most teams have no AI tool at all, so "do nothing" is the competitor to beat.)*
 > **User:** Honestly it's Word plus a folder of past contracts. Ironclad is CLM — it stores contracts, it doesn't redline them.
-> **Claude:** Then where's the moat — what stops Ironclad from shipping redlining next quarter? *(If it's just "we're faster," that's not defensible; a data moat from accumulated redline decisions would be.)*
+> **Agent:** Then where's the moat — what stops Ironclad from shipping redlining next quarter? *(If it's just "we're faster," that's not defensible; a data moat from accumulated redline decisions would be.)*
 > **User:** Our edge is the labeled redline dataset — every accept/reject trains the suggestions. That compounds.
 
 Recorded:

@@ -22,7 +22,7 @@
 #   - `continue-on-error: true` / `allow_failure: true` on a CI step (line-based scan can't prove it wraps
 #     a test step); `--passWithNoTests` (legit in per-file hooks, laundering in a full-suite run).
 # Suppress a finding with an inline `no-skips: allow <reason>` comment on the line, or a path/substring
-# entry in `.claude/no-skips-allow.txt`. `--strict` promotes WARN -> ERROR.
+# entry in `.grillspec/no-skips-allow.txt`. `--strict` promotes WARN -> ERROR.
 #
 # Test files are found via the shared tier_contract classifier (tests/ trees AND co-located *.test.* files);
 # CI/build files are the same deploy-intent set check_deploy_real.py watches, plus Makefile/package.json/
@@ -77,7 +77,7 @@ CI_FILE = re.compile(
     r"[Mm]akefile|package\.json|[^/]+\.gradle(?:\.kts)?|pom\.xml)$")
 
 allow = []
-allowf = ROOT / ".claude" / "no-skips-allow.txt"
+allowf = ROOT / ".grillspec" / "no-skips-allow.txt"
 if allowf.exists():
     for ln in allowf.read_text(encoding="utf-8", errors="replace").splitlines():
         ln = ln.split("#", 1)[0].strip()

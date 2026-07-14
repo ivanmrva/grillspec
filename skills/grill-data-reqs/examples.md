@@ -2,9 +2,9 @@
 
 Governing the *customer contact record* captured when a repair is booked.
 
-> **Claude:** This holds name, address and phone — that's personal data. What's the deletion trigger and TTL: do we keep it forever, or drop it once the warranty window closes? *(I'd peg retention to the obligation, not "a while" — say 24 months after job completion, matching the warranty period.)*
+> **Agent:** This holds name, address and phone — that's personal data. What's the deletion trigger and TTL: do we keep it forever, or drop it once the warranty window closes? *(I'd peg retention to the obligation, not "a while" — say 24 months after job completion, matching the warranty period.)*
 > **User:** 24 months after the job closes, then purge.
-> **Claude:** And where does it physically live versus whose law governs access — same answer, or split? *(I'd put storage in eu-central-1 but flag that the parent co. is US-incorporated, so sovereignty ≠ residency.)*
+> **Agent:** And where does it physically live versus whose law governs access — same answer, or split? *(I'd put storage in eu-central-1 but flag that the parent co. is US-incorporated, so sovereignty ≠ residency.)*
 > **User:** Stored in Frankfurt; parent is US — so yes, US can be compelled.
 
 Recorded: one governed data-class, personal, with split residency/sovereignty and a TTL+trigger.

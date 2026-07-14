@@ -10,7 +10,7 @@
 # ERROR: the code reads a key the matrix does not declare - the operator cannot provision what isn't written down.
 # WARN:  the matrix declares an env-var-shaped key no code reads - dead/stale config (or consumed by infra, not
 #        app code: PORT, DATABASE_URL injected by the platform) - suppress those via the allowlist.
-# Suppress with an inline `config-drift: allow` comment, or a key/substring in `.claude/config-drift-allow.txt`.
+# Suppress with an inline `config-drift: allow` comment, or a key/substring in `.grillspec/config-drift-allow.txt`.
 #
 # No-ops cleanly when there is no environments.md or no source dir. Run from the project root:
 #   python3 tools/check_config_drift.py [project_root] [--src src,app,lib] [--spec spec]
@@ -63,7 +63,7 @@ READERS = [
 ]
 
 allow = []
-allowf = ROOT / ".claude" / "config-drift-allow.txt"
+allowf = ROOT / ".grillspec" / "config-drift-allow.txt"
 if allowf.exists():
     for ln in allowf.read_text(encoding="utf-8", errors="replace").splitlines():
         ln = ln.split("#", 1)[0].strip()

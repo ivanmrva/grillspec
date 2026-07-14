@@ -2,9 +2,9 @@
 
 Pinning the problem behind a tool that reconciles Stripe payouts against accounting ledgers for Shopify sellers.
 
-> **Claude:** Who feels this most, and how often — is it the bookkeeper closing the month, or the founder spot-checking? *(I'd bet it's the bookkeeper, monthly, and it's a painkiller — a wrong close means a restated tax filing, not just annoyance.)*
+> **Agent:** Who feels this most, and how often — is it the bookkeeper closing the month, or the founder spot-checking? *(I'd bet it's the bookkeeper, monthly, and it's a painkiller — a wrong close means a restated tax filing, not just annoyance.)*
 > **User:** The bookkeeper, every month-end. Today they export both CSVs and match by hand in Excel — takes a full day and still misses fees.
-> **Claude:** So the catalyst is the close deadline. What pulls them to a new way strongly enough to beat the habit of "Excel already works"?
+> **Agent:** So the catalyst is the close deadline. What pulls them to a new way strongly enough to beat the habit of "Excel already works"?
 > **User:** Audit season — one mismatched payout last year cost a client a $4k penalty.
 
 Recorded:

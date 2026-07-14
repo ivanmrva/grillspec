@@ -2,9 +2,9 @@
 
 Setting the vision for a tool that turns customer-support transcripts into draft help-center articles.
 
-> **Claude:** Which alternative do teams actually drop when they adopt this — a knowledge-base tool like Notion, or just the status quo of writing docs by hand? *(I'd frame the category off whichever they abandon; I suspect it's the manual writing, which makes us "AI doc generation," not "another KB.")*
+> **Agent:** Which alternative do teams actually drop when they adopt this — a knowledge-base tool like Notion, or just the status quo of writing docs by hand? *(I'd frame the category off whichever they abandon; I suspect it's the manual writing, which makes us "AI doc generation," not "another KB.")*
 > **User:** They keep Notion as the home. What they drop is the support lead manually writing articles from Zendesk tickets.
-> **Claude:** Then the motion question: does a support lead try this alone on their own tickets, or does it need an admin to wire up Zendesk for the whole org first? *(Self-serve PLG only works if one lead can connect and see value solo.)*
+> **Agent:** Then the motion question: does a support lead try this alone on their own tickets, or does it need an admin to wire up Zendesk for the whole org first? *(Self-serve PLG only works if one lead can connect and see value solo.)*
 > **User:** One lead connects their own Zendesk and gets drafts the same day.
 
 Recorded:

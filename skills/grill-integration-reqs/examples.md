@@ -2,9 +2,9 @@
 
 Specifying the seam to the *payment provider* that captures the card once a repair invoice is settled.
 
-> **Claude:** When we send a capture and the provider times out, do we retry? If so we need an idempotency key, or we'll double-charge. *(I'd make capture at-least-once + idempotent on the invoice-id, with a 24h dedup window — never claim exactly-once.)*
+> **Agent:** When we send a capture and the provider times out, do we retry? If so we need an idempotency key, or we'll double-charge. *(I'd make capture at-least-once + idempotent on the invoice-id, with a 24h dedup window — never claim exactly-once.)*
 > **User:** Yes, retry — and we've double-charged before, so idempotency is mandatory.
-> **Claude:** And how do we catch a capture that silently went missing — a nightly reconciliation against their settlement report, keyed on invoice-id?
+> **Agent:** And how do we catch a capture that silently went missing — a nightly reconciliation against their settlement report, keyed on invoice-id?
 > **User:** Nightly recon, invoice-id is the match key; a drift opens a finance ticket.
 
 Recorded: the payment seam with its delivery contract and reconciliation bar.

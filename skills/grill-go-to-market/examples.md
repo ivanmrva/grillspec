@@ -1,7 +1,7 @@
 # grill-go-to-market — worked example
 
 Launching a self-serve API analytics tool, motion already set to product-led:
-> **Claude:** Your ACV lands around $9k, but you've listed an outbound SDR team as the primary channel — at that ACV the CAC won't clear payback. I'd make **developer content + docs** primary and keep SDRs for expansion only. Who's the ICP — the developer or their VP?
+> **Agent:** Your ACV lands around $9k, but you've listed an outbound SDR team as the primary channel — at that ACV the CAC won't clear payback. I'd make **developer content + docs** primary and keep SDRs for expansion only. Who's the ICP — the developer or their VP?
 > **User:** The developer adopts it; the VP approves the upgrade.
 
 Recorded:

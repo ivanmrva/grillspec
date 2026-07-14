@@ -48,7 +48,7 @@ derived layer — `10-delivery` included — following from the corrected upstre
    what you can't ground — a false fix corrupts the spec.
 4. **Route each fix + drain the tail NOW, not next round.** Fix-zone routing per the SKILL.md: an
    authored-zone defect is fixed in place; a derived-zone defect (`05-functional-spec/`, `09-solution/*`,
-   `10-delivery/{conventions,tasks,impl-design}/`, root `AGENTS.md`/`CLAUDE.md`) is fixed by editing its **upstream**
+   `10-delivery/{conventions,tasks,impl-design}/`, root canonical `AGENTS.md` + import-only `CLAUDE.md`) is fixed by editing its **upstream**
    and re-deriving — never hand-patched. Then run the **fix-mode exit contract** (SKILL.md): `impact.py`
    over the changed IDs → re-run the owning derive step for **every** derived artifact in the set — the
    enumerated tail below is the checklist, `impact.py` is the authority — and register every new stable
@@ -75,7 +75,7 @@ functional `UC-`/`AC-` · the schema/data model + its enums · the API contract 
 and the event contract (channel + payload enum) · the IA screen/nav + the journey · the actor roster + the
 authorization rule · the strategic event-flow — **and then the terminal derived layer**: the affected
 `T-` task manifests, the conventions (when the change moves an architectural/stack/testing fact), the
-impl-design of touched modules, and root `AGENTS.md`/`CLAUDE.md`. The terminal layer is the one a partial propagation
+impl-design of touched modules, and root canonical `AGENTS.md` + import-only `CLAUDE.md`. The terminal layer is the one a partial propagation
 most often strands — it is IN scope of every drain, never "next round's problem". Expect a feature's tail
 to take a round or two to drain fully; that is normal convergence, not thrashing.
 
@@ -120,8 +120,8 @@ project that vendors the tools, resolve them from the project's own tools folder
 ## Guardrails
 
 - **No commit/push unless the user explicitly asks.** On the default branch, branch first.
-- Edit only `spec/` (+ the lock files under `.claude/` and the root meta files this mode owns); never edit
-  code; never hand-edit a derived artifact — root `AGENTS.md`/`CLAUDE.md` included.
+- Edit only `spec/` (+ the lock files under `.grillspec/` and the root meta files this mode owns); never edit
+  code; never hand-edit a derived artifact — root canonical `AGENTS.md` and its import-only `CLAUDE.md` adapter included.
 - The three root meta files (`spec-audit-report.md` · `audit-fixes-log.md` · `human-decisions-needed.md`)
   are transient and git-ignored — meta-commentary, never committed spec content.
 - Interrupted mid-loop: resume from the current working tree (the locks + the fixes log are the record) —
