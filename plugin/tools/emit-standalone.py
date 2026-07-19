@@ -22,8 +22,9 @@ SHARED_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/")
 TOOL_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/tools/")
 DOC_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/docs/")
 PORTABLE_TOOLS = (
-    "check_freshness.py", "check_task_record.py", "gate_exec.py", "guard_derived.py",
-    "impact.py", "install_exec_gates.py", "lint_spec.py", "plugin_feedback.py",
+    "check_freshness.py", "check_orphan_tests.py", "check_task_record.py", "gate_exec.py",
+    "guard_derived.py", "impact.py", "install_exec_gates.py", "lint_spec.py",
+    "plugin_feedback.py", "tier_contract.py",
 )
 MIT_LICENSE = (
     "MIT License\n\nCopyright (c) 2026 Ivan Mrva\n\n"

@@ -145,6 +145,26 @@ if installer.exists():
     ):
         if required not in install_text:
             err(f"install_exec_gates.py: shared-tool invariant missing {required!r}")
+    # Every tool install_exec_gates.py VENDORs must be BUNDLED by the standalone/cluster builds
+    # (PORTABLE_TOOLS) and sit beside the installer, or the installer's anti-brick check refuses to wire
+    # the gate when run from a bundled scripts/ dir. This invariant is why a new VENDOR entry (e.g.
+    # check_orphan_tests.py + its tier_contract.py helper) must be added to PORTABLE_TOOLS in the SAME
+    # change — the failure is invisible in the source tree and only bites the built artifact.
+    def _tuple_names(text, name):
+        m = re.search(name + r"\s*=\s*\((.*?)\)", text, re.S)
+        return set(re.findall(r"[\"']([\w.]+\.py)[\"']", m.group(1))) if m else None
+    vendor = _tuple_names(install_text, "VENDOR")
+    portable_sources = {"tools/emit-standalone.py": ROOT / "tools" / "emit-standalone.py",
+                        "build/build.py": ROOT.parent / "build" / "build.py"}
+    for label, src in portable_sources.items():
+        if not src.exists():
+            continue
+        portable = _tuple_names(src.read_text(encoding="utf-8"), "PORTABLE_TOOLS")
+        if vendor and portable is not None:
+            missing = vendor - portable
+            for fn in sorted(missing):
+                err(f"{label}: PORTABLE_TOOLS omits {fn!r}, which install_exec_gates.py VENDORs — "
+                    "the bundled installer would refuse to wire the gate. Add it to PORTABLE_TOOLS.")
 
 conventions = ROOT / "skills" / "derive-conventions" / "SKILL.md"
 guard = ROOT / "tools" / "guard_derived.py"

@@ -64,8 +64,9 @@ DOC_PREFIX    = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/docs/")
 # referenced by the skill profiles and shared engines. At 160 KB total, bundling the set into a
 # skill that needs tooling is smaller and safer than maintaining a fragile Python-import resolver.
 PORTABLE_TOOLS = (
-    "check_freshness.py", "check_task_record.py", "gate_exec.py", "guard_derived.py",
-    "impact.py", "install_exec_gates.py", "lint_spec.py", "plugin_feedback.py",
+    "check_freshness.py", "check_orphan_tests.py", "check_task_record.py", "gate_exec.py",
+    "guard_derived.py", "impact.py", "install_exec_gates.py", "lint_spec.py",
+    "plugin_feedback.py", "tier_contract.py",
 )
 
 def version():
