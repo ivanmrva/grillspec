@@ -1086,6 +1086,15 @@ def task_human_prereq(text):                                 # the human-prereq 
 def is_na(cell):                                             # a satisfied / not-applicable prereq cell (EMPTY_CELL is exact-match; a prereq may read 'N/A — headless')
     c = re.sub(r"[*`_]", "", cell).strip().lower()           # presentation markdown (`N/A`, **none**, _N/A_) is not semantic content
     return c in EMPTY_CELL or re.match(r"n/?a\b|none\b", c) is not None
+def task_dim(text, name):                                    # a named dimension cell value (normalized key match), or None if the row is absent
+    key = re.sub(r"[\s_-]", "", name.lower())
+    for line in text.splitlines():
+        s = line.strip()
+        if not s.startswith("|"): continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if len(cells) >= 2 and re.sub(r"[\s_-]", "", cells[0].lower()) == key:
+            return cells[1]
+    return None
 # the credential-provisioning register (part a+c): a spec-root, LAYER-FREE authored file (`_provisioning.md`)
 # that both maps each credential/config key to its owner + consuming tasks AND carries the LIVE provisioned/
 # pending state. It is layer-free because it joins a credential (infra, L5) to the tasks that consume it
@@ -1125,6 +1134,23 @@ for p, r in cmd_files():
         if pend:
             add("WARN", r, "afk:eligible but credential(s) %s are not 'provisioned' in _provisioning.md - an unattended run will PARK; provision them (or mark afk:blocked) before claiming eligibility" % ", ".join(sorted(pend)))
         # else: every named credential is provisioned -> the eligibility claim is BACKED, no finding
+
+# 30 an afk:eligible task with a non-N/A `ux` dimension must have its prototype REVIEWED (frozen at finalization)
+#    or explicitly WAIVED. A prose-ratified JRN- does NOT ratify a screen: letting an unreviewed / JIT-generated
+#    screen build unattended is the top source of UI-journey divergence. The linter can't see a human's eyes, but
+#    the `prototype-review` cell must positively read as `frozen`/`reviewed` or `waived - <why>`; an eligible UI
+#    slice whose cell is absent/N-A or still claims `auto-AFK`/`pending` is the contradiction (sibling of #29 -
+#    an afk-eligibility claim must be BACKED). Headless / reuses-DS slices are is_na(ux) and legitimately skip.
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    txt = read(p)
+    if task_afk(txt) != "eligible": continue
+    ux = task_dim(txt, "ux")
+    if ux is None or is_na(ux): continue                     # headless or `N/A - reuses DS-...` -> auto-AFK legitimately allowed
+    pr = task_dim(txt, "prototype-review")
+    prc = re.sub(r"[*`_]", "", pr or "").strip().lower()
+    if re.search(r"\b(frozen|reviewed|waiv)", prc): continue # positively review-cleared or a recorded waiver -> eligibility BACKED
+    add("WARN", r, "afk:eligible with a non-N/A ux dimension but its prototype-review is not review-cleared (\"%s\") - a prose JRN- does not ratify a screen; freeze the reviewed prototype at finalization, record `prototype-review: waived - <why>`, or mark afk:blocked - visual/UX review pending" % ((pr or "(absent)").strip()[:60]))
 
 order = {"ERROR": 0, "WARN": 1, "INFO": 2}
 F.sort(key=lambda x: (order[x[0]], x[1], x[2]))

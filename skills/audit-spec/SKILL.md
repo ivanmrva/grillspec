@@ -184,7 +184,7 @@ failure this phase exists to prevent.
 - **Per buildable slice (`T-`):** would the coding agent have everything and guess NOTHING? All
   referenced IDs resolve and are settled (no `UNRESOLVED` it needs — `blocking` if not); its scoped inputs
   exist (boundary contracts + architecture seam + declared `role:` + conventions + relevant glossary; a UI
-  slice has its `DS-` contract + its `JRN-` journey reference (+ the interaction-states it realises) + the kept prototype, and its `prototype-review` gate is settled — auto-AFK passed, or any HITL `visual/UX decision` escalation resolved (an open prototype-review HITL is `blocking`)); the test strategy MANUFACTURES the slice's edges;
+  slice has its `DS-` contract + its `JRN-` journey reference (+ the interaction-states it realises) + the kept prototype, and its `prototype-review` gate is settled — for an `afk: eligible` non-`N/A`-`ux` slice that means the prototype is **frozen (human-reviewed at finalization)** or explicitly `prototype-review: waived — <why>` (an unreviewed / JIT-generated screen riding an `eligible` slice, or an open HITL `visual/UX decision` escalation, is `blocking`); auto-AFK of this gate is legitimate only where `ux` is `N/A` (headless / reuses-DS)); the test strategy MANUFACTURES the slice's edges;
   every decision the code needs is in the spec or an ADR. Zero load-bearing ambiguity. **Any non-`N/A`
   `human-prereq` on the slice is resolved — its credential marked `provisioned` in the `_provisioning.md`
   register — or explicitly waived** — a slice that can't be built without an unmet human action is not ready
