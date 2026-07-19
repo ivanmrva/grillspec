@@ -42,7 +42,7 @@ ADRs → `adr/ADR-OBS-NNN.md`
 Consumes: the availability/latency/security NFRs and the chosen architecture.
 
 ## Excludes
-telemetry code/agents · infra topology (→ the infrastructure area) · alerting-tooling choice (ADR if emergent)
+telemetry code/agents (the *instrumentation obligation* still reaches the build: each slice's task manifest carries the `SLO-`-backing signals it must emit in its **`obs` dimension**, held to an emission assertion by the Verification Record's `obs` gate row — this area designs the signals, the tasks ship them) · infra topology (→ the infrastructure area) · alerting-tooling choice (ADR if emergent)
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md`

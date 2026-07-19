@@ -65,6 +65,23 @@ expect("migration-no-data-warn", run({"spec/12-operate/migration-001-orders.md":
 expect("incident-dangling-nfr", run({"spec/12-operate/incident-42.md": "Breached NFR-Latency.\n"}),
        must=["ERROR", "NFR-Latency", "resolves nowhere"])
 
+# an incident/diagnosis record with no learnings/propagation line -> WARN (unclosed postmortem loop)
+expect("incident-no-learnings-warn", run({
+    "spec/06-requirements/quality/q.md": "| ID | attr |\n|---|---|\n| NFR-Lat | latency |\n",
+    "spec/12-operate/incident-42.md": "Breached NFR-Lat. Mitigated by restart.\n"}),
+       must=["WARN", "no learnings/propagation line"])
+# ...and one that routes a learning is clean
+expect("incident-learnings-ok", run({
+    "spec/06-requirements/quality/q.md": "| ID | attr |\n|---|---|\n| NFR-Lat | latency |\n",
+    "spec/12-operate/incident-42.md": "Breached NFR-Lat.\nlearning: retry storm on cold cache — gap raised to quality (assumption added).\n"}),
+       forbid=["no learnings/propagation line"])
+# a deploy record is NOT held to the learnings line (it's an incident/diagnosis obligation)
+expect("deploy-not-held-to-learnings", run({
+    "spec/06-requirements/quality/q.md": "| id | x |\n|---|---|\n| T-001 | t |\n",
+    "spec/09-solution/infra-ops/environments.md": "dev environment\n",
+    "spec/12-operate/deploy-dev-1.0.0.md": "Shipped T-001 to dev.\n"}),
+       forbid=["no learnings/propagation line"])
+
 # no 12-operate ledger = clean no-op
 expect("no-ledger-noop", run({}), must=["nothing to reconcile"], forbid=["ERROR", "Traceback"])
 

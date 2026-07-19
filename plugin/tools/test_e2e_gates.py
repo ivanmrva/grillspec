@@ -60,6 +60,11 @@ def project(d):
             "| fitness:architecture | done-gate | green | fitness green | PASS |\n"
             "| spec-lint | done-gate | clean | lint clean | PASS |\n"
             "| deploy | infra-ops | real | .github/workflows/deploy.yml | PASS |\n"
+            "| ux:states | ux | states tested | — | N/A — headless |\n"
+            "| a11y | ux | scan clean | — | N/A — headless |\n"
+            "| ux:rendered | ux | rendered vs prototype | — | N/A — headless |\n"
+            "| prototype-review | ux | reviewed or waived | — | N/A — headless |\n"
+            "| obs | obs | emitted + asserted | — | N/A — no observable surface |\n"
             "| traceability | done-gate | updated | traceability.md | PASS |\n"
             "| conformance | review | verdict | review-report.md | PASS |\n",
         # real production code: reads only DECLARED config, no test doubles

@@ -13,6 +13,7 @@ argument-hint: an idea, existing docs, or a repo
 ## Rules
 - a *preference* counts — record it as a **soft** constraint (vs **hard**) with its **source**, so the architecture derives without re-asking
 - **testable or it isn't a constraint** — "must be fast" is a wish; "p95 < 200 ms, mandated by contract" is a constraint
+- **every hard mandate names its downstream owner by id** — the artifact that operationalises it (`OBL-` for a regulatory bound · an `NFR-`/`ASR-` for a quality bound · a conventions fitness rule / `ADR-` for a stack, standard, or naming mandate) — mirroring how an `OBL-` carries its owner; a mandate row with no owner id is a bound the build will silently ignore, and the architecture/conventions derivations must be able to reach it by reference, not re-discover it in prose
 - a standard/protocol the solution must implement (OAuth2/OIDC/SAML · FHIR · ISO 20022) is a **technical constraint**, not an integration detail
 - **assumptions & dependencies are first-class** — surface them or they bite downstream
 - **every gate/sign-off names a real accountable owner** (a person or role, not "the team") — so the release checklist has someone to ask

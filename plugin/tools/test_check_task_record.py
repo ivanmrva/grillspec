@@ -36,7 +36,7 @@ TRACE_OK = (
 )
 REVIEW_OK = "# review-report\nReviewed independently.\nVERDICT: PASS — T-014 conforms.\n"
 
-def record(status="done", rows=None, drop=()):
+def record(status="done", rows=None, drop=(), extra=()):
     base = [
         ("UC-014", "tests/e2e/pay.js", "PASS"),
         ("AC-014a", "tests/e2e/pay.js::AC-014a", "PASS"),
@@ -52,9 +52,14 @@ def record(status="done", rows=None, drop=()):
         ("fitness:architecture", "—", "PASS"),
         ("spec-lint", "—", "PASS"),
         ("deploy", ".github/workflows/deploy.yml", "PASS"),
+        ("ux:states", "—", "N/A — headless"),
+        ("a11y", "—", "N/A — headless"),
+        ("ux:rendered", "—", "N/A — headless"),
+        ("prototype-review", "—", "N/A — headless"),
+        ("obs", "—", "N/A — no observable surface"),
         ("traceability", "—", "PASS"),
         ("conformance", "review-report.md", "PASS"),
-    ]
+    ] + list(extra)
     over = dict(rows or {})
     lines = ["status: %s" % status, "task: T-014",
              "| Obligation | Source | Required | Evidence | Status |", "|---|---|---|---|---|"]
@@ -230,6 +235,68 @@ expect("table-tests-cell-ac-requires-source-tag", run(proj(record(), task=TASK_T
        must=["ERROR", "AC-014b", "@covers AC-014b"])
 expect("table-task-with-tags-passes", run(proj(record(), task=TASK_TABLE)),
        must=["done — 6 obligations", "0 error(s)"], forbid=["ERROR"])
+
+# ── the rendered-surface + obs gate rows are required-presence like deploy ──
+expect("missing-ux-states-row", run(proj(record(drop=("ux:states",)))),
+       must=["ERROR", "ux:states", "cannot be omitted"], forbid=["0 error(s)"])
+expect("missing-obs-row", run(proj(record(drop=("obs",)))),
+       must=["ERROR", "obs", "cannot be omitted"], forbid=["0 error(s)"])
+
+# ── a UI task's ux/obs cells mint obligations (JRN-/SLO-/EXP- only) the record must carry ──
+TASK_UI = TASK_TABLE + (
+    "| ux | JRN-7 (pay) — states: empty · error → prototype: prototypes/ui/pay.html |\n"
+    "| a11y | keyboard: tab order · SC 2.4.7 |\n"
+    "| obs | SLO-1 payment-latency metric · EXP-2 checkout_completed event |\n"
+)
+UI_ROWS = {"ux:states": ("tests/e2e/pay.js", "PASS"), "a11y": ("tests/e2e/pay.js", "PASS"),
+           "ux:rendered": ("tests/e2e/pay.js", "PASS"), "obs": ("tests/e2e/pay.js", "PASS"),
+           "prototype-review": ("frozen — reviewed at finalization", "PASS")}
+UI_EXTRA = (("JRN-7", "tests/e2e/pay.js", "PASS"), ("SLO-1", "tests/e2e/pay.js", "PASS"),
+            ("EXP-2", "tests/e2e/pay.js", "PASS"))
+UI_COVERS = ("// @covers AC-014a AC-014b API-Pay\n// @state:empty @state:error\n"
+             "it('pays an order', () => { throw new Error('assertion sentinel'); });\n")
+expect("ui-task-ux-obs-obligations-missing", run(proj(record(rows=UI_ROWS), task=TASK_UI), covers=UI_COVERS),
+       must=["ERROR", "JRN-7", "SLO-1", "EXP-2", "cannot be shrunk"])
+expect("ui-task-ux-obs-obligations-carried", run(proj(record(rows=UI_ROWS, extra=UI_EXTRA), task=TASK_UI), covers=UI_COVERS),
+       must=["0 error(s)"], forbid=["ERROR"])
+
+# ── a false 'N/A — headless' on the rendered-surface rows contradicts the task's own non-N/A ux cell ──
+expect("ui-task-false-headless-na", run(proj(record(extra=UI_EXTRA), task=TASK_UI), covers=UI_COVERS),
+       must=["ERROR", "cannot discharge its rendered-surface gate", "every named signal"])
+
+# ── a PASS with no on-disk evidence path on a rendered-surface/obs row is an assertion, not evidence ──
+expect("ui-task-pathless-pass-fails", run(proj(record(rows=dict(UI_ROWS, **{"ux:states": ("done, looks good", "PASS")}),
+        extra=UI_EXTRA), task=TASK_UI), covers=UI_COVERS),
+       must=["ERROR", "pathless PASS"])
+
+# ── every ux-cell state needs a literal @state:<name> tag in a failing-capable test source ──
+expect("ui-task-missing-state-tag-fails", run(proj(record(rows=UI_ROWS, extra=UI_EXTRA), task=TASK_UI),
+        covers="// @covers AC-014a AC-014b API-Pay\n// @state:empty\nit('pays', () => { throw new Error('x'); });\n"),
+       must=["ERROR", "@state:error"])
+
+# ── a UI slice's prototype-review row must positively read frozen/reviewed/waived ──
+expect("ui-task-unreviewed-prototype-fails", run(proj(record(rows=dict(UI_ROWS,
+        **{"prototype-review": ("pending — JIT at execution", "PASS")}), extra=UI_EXTRA), task=TASK_UI), covers=UI_COVERS),
+       must=["ERROR", "unreviewed screen cannot ride a done-claim"])
+
+# ── an 'N/A — reuses DS-…' ux cell mints NO obligation (DS- is not a ux obligation type) ──
+expect("ux-na-reuse-mints-nothing", run(proj(record(),
+        task=TASK_TABLE + "| ux | N/A — reuses DS-001 on the existing screen |\n")),
+       must=["0 error(s)"], forbid=["ERROR", "DS-001"])
+
+# ── an N/A ux cell whose explanation cross-refs a JRN- mints nothing either (the cell is N/A) ──
+expect("ux-na-crossref-mints-nothing", run(proj(record(),
+        task=TASK_TABLE + "| ux | N/A — headless (JRN-9 handled by T-020) |\n")),
+       must=["0 error(s)"], forbid=["ERROR", "JRN-9"])
+
+# ── a PASS'd NFR obligation row must cite a measurement against a bar, not an assertion ──
+expect("nfr-row-unmeasured-fails", run(proj(record(rows={"ASR-002": ("load test looks good", "PASS")}))),
+       must=["ERROR", "cites no measurement against a bar"])
+expect("nfr-row-measured-ok", run(proj(record(rows={"ASR-002": ("p95 212ms vs target 300ms (k6 run tests/e2e/pay.js)", "PASS")}))),
+       must=["0 error(s)"], forbid=["ERROR"])
+# the N/A — Tier-B escape stays legal (the default fixture uses it — re-asserted here explicitly)
+expect("nfr-row-na-ok", run(proj(record(rows={"ASR-002": ("—", "N/A — evidenced by the Tier-B load run")}))),
+       must=["0 error(s)"], forbid=["ERROR"])
 
 # ── claim done with no record at all ───────────────────────────────────────
 expect("missing-record", run(proj(rec=None)),

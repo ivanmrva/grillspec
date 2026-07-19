@@ -20,13 +20,14 @@ argument-hint: an idea, existing docs, or a repo
 - **the journey is rendered in the design system, not redefined here** — reference its components/tokens by `DS-` id; a missing component is a **gap raised to the design-system area**, not invented in a journey
 
 ## Output
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `JRN-` journey · `SCR-` screen (the information architecture's screen inventory — every screen the IA names is referenceable, so a journey step, a task's `ux` cell, and a prototype file can anchor to it instead of a prose screen name).
 Written under `ux/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `journeys.md` | per role: `JRN-`-id'd user journeys with required interaction states (empty/loading/success/error/permission-denied) | **`JRN-` id** · role · serves(`UC-`) · numbered steps · states |
-| `information-needs.md` | per-role information needs + information architecture (screen inventory + navigation map) | role · bullets |
-| `accessibility.md` | accessibility (concrete WCAG level, incl. target-size/focus-appearance/accessible-auth/consistent-help/dragging-alternative bars) + an **inclusivity** target distinct from the conformance level (cognitive load · plain language · situational impairment) + i18n/l10n targets + per-critical-journey usability targets framed as **effectiveness · efficiency · satisfaction**, each with a **named measurement instrument** (e.g. task-completion rate · time-on-task/SEQ · SUS), tied to the quality usability NFRs | target · instrument · list |
+| `journeys.md` | per role: `JRN-`-id'd user journeys with required interaction states (empty/loading/success/error/permission-denied); each step names the `SCR-` screen it happens on | **`JRN-` id** · role · serves(`UC-`) · numbered steps (`SCR-` per step) · states |
+| `information-needs.md` | per-role information needs + information architecture — the **`SCR-`-keyed screen inventory** (one row per screen: `SCR-` id · purpose · primary role(s) · the journeys that touch it) + the navigation map drawn over those `SCR-` ids. A screen in the map that no journey or task ever references is dead IA (lint warns) | **`SCR-` id** · purpose · roles · navigation map |
+| `accessibility.md` | accessibility (concrete WCAG level, incl. target-size/focus-appearance/accessible-auth/consistent-help/dragging-alternative bars) + an **inclusivity** target distinct from the conformance level (cognitive load · plain language · situational impairment) + i18n/l10n targets + per-critical-journey usability targets framed as **effectiveness · efficiency · satisfaction**, each with a **named measurement instrument** (e.g. task-completion rate · time-on-task/SEQ · SUS), tied to the quality usability NFRs. These bind per-slice at build time: each UI task's **`a11y` dimension** names the WCAG criteria, keyboard path, and in-scope i18n targets that apply, held by the record's `a11y` gate row (per-slice scan + assertions) | target · instrument · list |
 
 ADRs → `adr/ADR-UX-NNN.md`
 Consumes: the functional spec (its rejection/state gaps), the domain read-models + actors (task + information needs per role), the **design system** (its tokens · components — journeys reference them by `DS-` id), the global glossary (terminology), the quality usability/WCAG NFRs (targets), and the go-to-market motion (onboarding differs for self-serve vs sales-led).

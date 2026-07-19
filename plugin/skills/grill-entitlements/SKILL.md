@@ -31,7 +31,7 @@ Written under `requirements/entitlements/`:
 | `entitlements.md` | the tier×capability grid (`ENTL-` ids): capability (`UC-` ref) · granting tier(s) · limit/quota · over-limit behaviour · enforcement boundary · billing-state degradation | `ENTL-` id · structured fields · a tier×capability table |
 
 ADRs → `adr/ADR-ENTL-NNN.md`
-Consumes: the **functional spec** (the `UC-` capabilities to gate), the **domain** (capabilities + actors), and the **security** authz model (the access mechanism entitlements plug into). The **architecture** consumes this to build feature-gating, quota enforcement, and billing-state access.
+Consumes: the **functional spec** (the `UC-` capabilities to gate), the **domain** (capabilities + actors), and the **security** authz model (the access mechanism entitlements plug into). The **architecture** consumes this to build feature-gating, quota enforcement, and billing-state access — and at build time each `ENTL-` gate reaches the gated feature's task via its **`security` dimension**, where the done-gate requires the deny / over-limit / lapsed-billing path **deny-path tested**, not assumed.
 
 ## Excludes
 **pricing · plans-as-revenue · unit economics · the billing model** (PLG vs sales-led) → the commercial **monetization** area (it reads these tiers and attaches prices) · the **role/permission authz model** → **security** · billing-integration mechanics (Stripe wiring, invoicing) → the **solution** · the go-to-market motion → **product-vision**
