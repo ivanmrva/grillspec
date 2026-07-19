@@ -4,7 +4,7 @@
 # Each scenario lays down a tiny project (spec/ task + verification records + evidence files), runs the tool,
 # and asserts which findings fire (must=) and which do NOT (forbid=) - locking every check so a later edit
 # can't silently regress one. Stdlib only; no network. Run:  python3 tools/test_check_task_record.py
-import subprocess, sys, tempfile, shutil, pathlib
+import subprocess, sys, os, tempfile, shutil, pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
 TOOL = HERE / "check_task_record.py"
@@ -75,7 +75,8 @@ def record(status="done", rows=None, drop=(), extra=()):
 # a hole replace that source via `covers=`. A text file or a bare AC mention must never discharge this gate.
 def run(files, args=("--task", "T-014"),
         evidence=("tests/e2e/pay.js", "tests/contract/pay.json", "src/billing.js", ".github/workflows/deploy.yml"),
-        covers="// @covers AC-014a AC-014b API-Pay\nit('pays an order', () => { throw new Error('assertion sentinel'); });\n"):
+        covers="// @covers AC-014a AC-014b API-Pay\nit('pays an order', () => { throw new Error('assertion sentinel'); });\n",
+        env_extra=None):
     d = pathlib.Path(tempfile.mkdtemp(prefix="trectest_"))
     try:
         for ev in evidence:
@@ -84,7 +85,9 @@ def run(files, args=("--task", "T-014"),
             (d / "tests" / "e2e" / "pay.js").write_text(covers, encoding="utf-8")
         for rel, content in files.items():
             p = d / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(content, encoding="utf-8")
-        out = subprocess.run([sys.executable, str(TOOL), str(d / "spec"), *args], capture_output=True, text=True)
+        env = dict(os.environ, **env_extra) if env_extra else None
+        out = subprocess.run([sys.executable, str(TOOL), str(d / "spec"), *args],
+                             capture_output=True, text=True, env=env)
         return out.stdout + out.stderr
     finally:
         shutil.rmtree(d, ignore_errors=True)
@@ -311,6 +314,25 @@ expect("report-flags-issue", run(proj(record(drop=("SEC-03",))), args=("--report
 # ── --init generates a PENDING checklist from the task's frozen references ──
 out = run(proj(rec=None), args=("--init", "T-014"))
 expect("init-generates-checklist", out, must=["wrote pre-implementation checklist", "obligation rows"])
+
+# ── colocated @covers evidence is found when a source root is NESTED (code/apps/*/src/…) ──
+# A monorepo rooted under code/ keeps its tests colocated at code/apps/billing/src/pay.test.js — the source
+# root 'src' is present but NOT at parts[0], so the old parts[0] check blinded the scan and reported the AC
+# as untested. The any-part membership finds it. (Isolate the @covers evidence there via covers=None so the
+# only place the tags live is the nested colocated file.)
+CODE_ROOTED = "// @covers AC-014a AC-014b API-Pay\nit('pays', () => { throw new Error('sentinel'); });\n"
+_f = proj(record()); _f["code/apps/billing/src/pay.test.js"] = CODE_ROOTED
+expect("nested-colocated-source-root-found", run(_f, covers=None),
+       forbid=["has no failing-capable test source carrying an `@covers"])
+
+# ── a leaf dir NOT in the recognized root set is not auto-discovered (selectivity preserved) ──
+_g = proj(record()); _g["code/billing/pay.test.js"] = CODE_ROOTED
+expect("unrecognized-leaf-not-auto-found", run(_g, covers=None),
+       must=["has no failing-capable test source carrying an `@covers"])
+
+# ── GRILLSPEC_TEST_ROOTS extends the recognized set for a non-standard leaf name ──
+expect("env-root-extends-discovery", run(_g, covers=None, env_extra={"GRILLSPEC_TEST_ROOTS": "billing"}),
+       forbid=["has no failing-capable test source carrying an `@covers"])
 
 # ── no records dir at all = clean no-op (early project) ────────────────────
 expect("no-records-noop", run({T + "T-014.md": TASK}, args=()),

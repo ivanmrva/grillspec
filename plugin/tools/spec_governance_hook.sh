@@ -56,4 +56,16 @@ if [ -f "$T/check_task_record.py" ]; then
   }
 fi
 
+# 5) reverse traceability — every behavioral test traces to a LIVE spec driver (@covers/@state). The
+#    drift tripwire: an ad-hoc mid-task instruction implemented straight into code shows up here as an
+#    orphan test (or a dangling @covers) — chat is spec input; the driving ID is minted in the spec first.
+#    No-ops cleanly without the tool or a test tree.
+if [ -f "$T/check_orphan_tests.py" ]; then
+  ot_out=$(python3 "$T/check_orphan_tests.py" "$root" 2>&1) || {
+    echo "$ot_out" >&2
+    echo "spec-governance: a test has no live spec driver — the code grew past the spec; mint/amend the driving ID in its owning area, tag the test, and re-commit (or --no-verify)." >&2
+    exit 1
+  }
+fi
+
 exit 0

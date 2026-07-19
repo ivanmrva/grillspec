@@ -4,6 +4,112 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.19.0
+
+### Added — chat is spec input: ad-hoc mid-task changes can no longer grow the code past the spec
+
+The system was armed in one direction only. Spec→code was gated hard (task manifests, `@covers`,
+done-gate, Verification Record), and code-discovers-something→spec had the GAP mechanism — but the third
+input channel, the **user's chat**, was unguarded: an ad-hoc mid-task instruction ("also make it do X")
+entered as a coding instruction, nothing routed it through the spec, and the drift path was fully green
+(`@covers` was checked in the AC→test direction only, so an untagged test covering unspecced behavior
+passed every gate). The mirror rule now exists — *never grow the code past the spec* — with mechanical
+teeth at three points:
+
+- **`gate_exec.py --red` requires `--covers "AC-NNN …"`** — the failing test must name the spec ID(s)
+  that drive it, and each must exist under `spec/`. Combined with red-before-green this makes the spec
+  update a **hard precondition** of the code change: to code the ad-hoc request you must first mint or
+  amend its ID in the owning area. Trips at the moment of drift, not at release. The covers list is
+  recorded in the red-log. Opt-out per project: `"red_requires_covers": false` in
+  `.grillspec/grillspec-gate.json`; the deny message routes a pure refactor/spike to the existing
+  `GRILLSPEC_GATE_OFF` escape.
+- **`check_orphan_tests.py`** — the reverse direction of `@covers`: a failing-capable test source with
+  not one driver tag (`@covers <ID>` / `@state:<name>`) is an ERROR (an orphan — behavior nothing in
+  the spec demands), as is a `@covers` ID that resolves nowhere under `spec/` (a dangling tag). Per-file
+  granularity by design; helper/fixture-shaped files are never flagged; waivers via inline
+  `no-orphans: allow <reason>` or `.grillspec/no-orphans-allow.txt` (fitness functions, generated
+  harnesses). Wired into the done-gate, the spec governance pre-commit hook (step 5), `audit-build`'s
+  mechanical re-run, and the derived pre-commit standard. On an **existing** project its first run
+  doubles as the drift detector: every finding is a behavior the spec never absorbed.
+- **The conformance review's traceability lens is now bidirectional** — every referenced ID has code +
+  a passing test, AND every behavior in the diff has a driving spec ID; an undriven behavior is a
+  blocking violation **even when the user asked for it in chat**, routed back spec-first.
+
+The doctrine lands in the exec engine as *Ad-hoc instructions mid-task — chat is spec input, not code
+input* (route: in-slice behavior change → mint/amend the ID + manifest cell inline, then test-first;
+new scope → a new task, never folded in silently; non-behavioral → proceed) plus a matching anti-cheat
+invariant. `install_exec_gates.py` now vendors `check_orphan_tests.py` + `tier_contract.py` beside the
+gate, so existing projects pick the tripwire up at the next session's step zero. New regression suite
+`test_check_orphan_tests.py`; `test_gate_exec.py` extended for the covers gate.
+
+### Fixed — hard-coded source-root sets silently under-counted evidence on nested monorepo layouts
+
+A project rooted under a wrapper directory (`code/apps/*/src/…`) exposed a real blind spot: `check_task_record`
+keyed colocated `@covers` discovery on `parts[0]` (the first path component), so a `src/` root nested under
+`code/` was never recognized — a fully-tagged tree reported ~126 false "AC has no failing-capable test source"
+errors. The same top-level-only assumption lived in `tier_contract.DEFAULT_ROOTS` (walked as `root/<d>`),
+silently blinding every gate built on it — no-skips, mock-budget, test-tiers, e2e-target, and the new orphan/
+naming check — to the whole tree. Two-part fix: `check_task_record` now recognizes a source root at ANY depth
+(membership over every path component, not just `parts[0]`), and both it and `tier_contract` honor a shared
+**`GRILLSPEC_TEST_ROOTS`** env var (comma-separated) that extends the recognized set for a genuinely
+non-standard root name — set once per project, no per-invocation `--tests` needed. Documented in
+derive-conventions (record it in the runway) and audit-build. (The separate matrix-backfill error class the
+same layouts surface is unrelated and unaffected — a traceability-row concern, not root discovery.)
+
+### Added — the test naming grammar is the gates' visibility contract, now enforced
+
+Every test-side gate (tiers, mock-budget, no-skips, orphan/driver) is built on `tier_contract.py`'s
+classifier, which recognizes tests by naming pattern (`test_*` / `*.test.*` / `*_test.*` / `*Spec.*`) —
+so a file in a test tree that declares tests under an unrecognized name silently escaped **all** of them
+(and the exec-gate, which treats everything under `/tests/` as a test, disagreed with the commit-time
+gates at exactly that margin). `check_orphan_tests.py` now sweeps dedicated test trees for
+failing-capable files the classifier cannot see and ERRORs with a rename instruction; `.feature` files
+are recognized by extension and exempt, co-located `src/` is never name-swept (a production
+`test_connection()` helper must not fire), and the `no-orphans: allow` waiver covers deliberate
+exceptions. Function-level test naming stays deliberately semantic (coding-standards prose, judged by
+the conformance review) — regex-policing test names is compliance theater; the grammar is enforced only
+where it is load-bearing (gate visibility). audit-build Phase 2 additionally gains **present ≠
+executed**: reconcile the runner's executed-file report against the classified test tree (a config-level
+exclusion makes a test count for `@covers` while never running — the documented `check_no_skips.py`
+limitation, closed at aggregate).
+
+### Changed — the audits harden their own blind spots (an independent review of audit-spec / audit-build)
+
+- **audit-build's spec-clean precondition now needs evidence, not a memory.** `spec-audit-report.md` gains
+  a `depth:` marker + `commit:` stamp (mirroring the build report), and the whole-build audit accepts the
+  precondition only from a report whose stamp still covers the spec tree — absent/stale (the normal case;
+  the report is transient and loop-deleted) means running the whole-spec audit first: `consistency` depth
+  backs an `attest` pass, the release-bar `--deep` requires a fresh full-depth spec audit. The attestation
+  header records `spec-audit: <depth> @ <commit>`.
+- **`check_config_drift.py` joins audit-build's Phase-0 aggregate re-run** — config drift is cross-task by
+  nature (keys accumulate; the per-commit gate only ever saw one diff), and it was the one code-side
+  tripwire the release-time baseline omitted.
+- **The waiver files are audited as an object** (audit-build Phase 2): every `.grillspec/*-allow.txt`
+  silences its tripwire even under `--strict`, and a later task appending an entry is cross-task drift no
+  per-task review can see — every entry needs a live reason; a waiver file that grew across the wave is the
+  trend signature to explain.
+- **The governance surface is checked at HEAD** (audit-build Phase 1): gates can be evaded by *deletion*,
+  which no content tripwire sees — the CI workflows still carry the gate steps, the hook configs still wire
+  the exec-gate, `.grillspec/tools/` still vendored.
+- **`ML-` eval rows join the Tier-B release-verdict check** beside NFR/SLO measurements; audit-spec's
+  linter-boundary list catches up with the 4.18 task-cell checks (prototype-review · structured ux cell ·
+  ux↔a11y · reuse-claim anchor); the diff-vs-whole-tree bar wording in derive-test-strategy is precise about
+  per-task gate vs release aggregate bar.
+
+### Changed — coverage and mutation are diff-scoped: the code→test leg of the triangle
+
+The orphan-test tripwire closes test→spec, but code with **no test at all** (and code with tests that
+assert too little) was gated only by whole-tree coverage/mutation numbers — and a whole-tree % lets a
+small untested snippet hide inside its slack. The Verification Record's `coverage` and `mutation` gate
+rows are now explicitly **diff-scoped**: every changed `src/**` line executed by a test (bar 100%,
+`N/A — no src change`), and mutants on the changed logic killed at the ratified bar (`N/A — no logic
+change`). `derive-conventions` wires the stack's changed-lines tool (`diff-cover` or the CI platform's
+native check) into the one `verify` target; `derive-test-strategy` keeps whole-tree numbers as the trend
+metric and names the diff numbers as the gate; the done-gate, Definition of Done, `run-tests`, and the
+conformance review's never-pass list all carry the diff-scoped bar. Composed with the orphan check, the
+traceability triangle is mechanical end to end: changed line → covering test (diff coverage) → live spec
+ID (`check_orphan_tests.py`) → defined in `spec/` — unspecced-untested code is structurally unmergeable.
+
 ## 4.18.0
 
 ### Changed — every spec obligation now reaches the build as a gate, starting with the rendered UI

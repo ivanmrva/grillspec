@@ -3,6 +3,7 @@
 # check_test_tiers.py / check_mock_budget.py / check_e2e_target.py (and audit-build's aggregate re-run). ONE
 # source of truth so the three gates can't drift on how they read a real, human-authored levels.md or classify a
 # co-located test file - the drift that let a parsing bug hide in three copies. Stdlib only; no side effects.
+import os
 import re
 import pathlib
 
@@ -24,8 +25,16 @@ _TESTFILE = re.compile(r"[._](?:test|spec)s?\.|(?:^|/)test_|[._](?:e2e|int|integ
 _CAMEL_TEST = re.compile(r"[a-z0-9](?:Test|Tests|Spec|Specs)\.[a-z]+$")
 # directories never worth walking (keeps a co-located src/ scan off vendored/build trees)
 PRUNE = re.compile(r"/(?:node_modules|dist|build|out|coverage|vendor|\.git|\.grillspec|\.claude|\.codex|\.venv|venv|__pycache__|\.next|target|\.tox)/", re.I)
-# default roots: test dirs AND common source roots (co-located tests) - the test-file filter keeps production out
+# default roots: test dirs AND common source roots (co-located tests) - the test-file filter keeps production out.
+# A monorepo can root its tree under a wrapper dir the conventions choose (code/, services/, …) that none of the
+# defaults name, which would make iter_test_files (root/<d> only) find NOTHING and every tier/mock/skip/orphan
+# gate silently pass. GRILLSPEC_TEST_ROOTS (comma-separated) folds those wrapper roots into the default set so a
+# project sets it ONCE for all six tools; an explicit --tests still overrides. (The per-tool --tests flag remains
+# the ad-hoc escape; this is the persistent, project-level one shared with check_task_record's COLOCATED_ROOTS.)
 DEFAULT_ROOTS = "tests,test,src,app,apps,lib,libs,packages,e2e"
+_extra_roots = ",".join(r.strip() for r in os.environ.get("GRILLSPEC_TEST_ROOTS", "").split(",") if r.strip())
+if _extra_roots:
+    DEFAULT_ROOTS = DEFAULT_ROOTS + "," + _extra_roots
 CODE_EXT = {".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".go", ".java", ".kt", ".rb", ".cs", ".php",
             ".rs", ".scala", ".swift", ".json", ".feature"}
 
