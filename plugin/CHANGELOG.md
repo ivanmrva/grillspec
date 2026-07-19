@@ -4,6 +4,26 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.17.0
+
+### Changed — a reviewed prototype is required before a UI slice can auto-run
+
+- **`prototype-review` no longer auto-AFKs a UI slice on the strength of a prose `JRN-`.** A prose-ratified journey
+  does not ratify a screen, so a slice with a non-`N/A` `ux` dimension is `afk: eligible` only when its prototype
+  is **frozen (human-reviewed at finalization)** or carries an explicit `prototype-review: waived — <why>`;
+  otherwise it is `afk: blocked — visual/UX review pending`. Auto-AFK of this gate is reserved for slices whose
+  `ux` is `N/A` (headless or `N/A — reuses DS-…`). Stated in `derive-tasks` as a second lint-enforced `afk:`
+  invariant and cross-checked by `autorun` at wave selection (batch-finalize + click-through prototypes before the
+  wave, then dispatch unattended).
+- **`lint_spec.py` check #30 — the review-cleared gate.** An `afk: eligible` task with a non-`N/A` `ux` dimension
+  whose `prototype-review` cell does not read `frozen`/`reviewed`/`waived` is a finding (sibling of #29: an
+  afk-eligibility claim must be BACKED). Reuses the task-level `afk` reader so an illustrative `afk: blocked`
+  inside another cell can't spoof the status; headless / reuses-DS slices are `is_na(ux)` and legitimately skip.
+- **`audit-spec` Phase 4 aligned.** The per-`T-` readiness check now treats an `afk: eligible` non-`N/A`-`ux`
+  slice's `prototype-review` as settled only when the prototype is frozen (reviewed) or explicitly waived; an
+  unreviewed / JIT screen riding an eligible slice is `blocking`. Auto-AFK of the gate is legitimate only where
+  `ux` is `N/A`.
+
 ## 4.16.0
 
 ### Changed — one agent-neutral project home and one canonical project guide
