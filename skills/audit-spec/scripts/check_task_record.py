@@ -9,7 +9,8 @@
 #   - a record CLAIMS done (`status: done`) but an obligation row is PENDING/FAIL/blank;
 #   - the record dropped an obligation the task references (you cannot shrink the bar by editing the record);
 #   - the record OMITS any standard gate row (tests-first/tests:layers/coverage/mutation/fitness*/spec-lint/
-#     deploy/traceability) — a required artifact or check silently dropped rather than shipped real or `N/A — why`;
+#     deploy/ux:states/a11y/ux:rendered/prototype-review/obs/traceability) — a required artifact or check
+#     silently dropped rather than shipped real or `N/A — why`;
 #   - the conformance row is not PASS, or no independent `VERDICT: PASS` for this T- exists on disk;
 #   - an AC-/API-/EVT- obligation has no passing row in the traceability matrix (tests-first, evidenced), or a
 #     task-declared AC has no `@covers AC-...` tag in a failing-capable test source;
@@ -44,7 +45,7 @@ ASSUME_DONE = "--assume-done" in flags                         # gate a record a
 #   still says in-progress — this evaluates "would the done-claim hold?" against the unchanged obligation rows.
 
 # Mirror lint_spec's type-prefix vocabulary (kept in sync via selfcheck).
-TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|JRN|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
+TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|AEV|DS|JRN|SCR|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
 IDCORE = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
 IDTOK = re.compile(r"(?<![A-Za-z0-9-])" + IDCORE)
 
@@ -67,8 +68,12 @@ TRACE = VERIF / "traceability.md"
 REVIEW = VERIF / "review-report.md"
 
 # dimensions that impose an OBLIGATION (an ID here must be realised, tested, evidenced) vs. dimensions that
-# are context (depends -> other tasks; ux/placement/design/outcome -> not an ID-obligation of this task).
-OBLIGATION_DIMS = ("behavior", "domain", "data", "api", "security", "nfr", "integration")
+# are context (depends -> other tasks; placement/design/outcome -> not an ID-obligation of this task).
+# ux/obs/ml carry obligations too, but only for their OWN id types (a `N/A — reuses DS-001` ux cell or an
+# incidental cross-ref must not mint a spurious obligation row) - see OBLIGATION_DIM_PREFIXES.
+OBLIGATION_DIMS = ("behavior", "domain", "data", "api", "security", "nfr", "integration", "ux", "obs", "ml")
+# per-dimension allow-list of obligation ID prefixes; a dim absent here accepts any spec ID.
+OBLIGATION_DIM_PREFIXES = {"ux": ("JRN-", "SCR-"), "obs": ("SLO-", "EXP-", "AEV-"), "ml": ("ML-",), "tests": ("AC-",)}
 # standard gate rows every task carries, beyond its referenced IDs (from the engine's done-gate).
 GATE_ROWS = [
     ("tests-first", "done-gate", "every AC- has a failing-capable test that drove the code"),
@@ -79,6 +84,11 @@ GATE_ROWS = [
     ("fitness:architecture", "done-gate", "architecture fitness functions green"),
     ("spec-lint", "done-gate", "spec-lint clean"),
     ("deploy", "infra-ops", "the slice deploys to the first env of the ratified promotion path and a green e2e/smoke ran AGAINST that deployed env (the behavioural proof — evidence is the run, not just that the deploy file exists); or 'N/A — no new deployable surface'. If the env can't run yet, 'blocked — <env> not provisioned' (escalated), never PASS and never silently skipped"),
+    ("ux:states", "ux", "every interaction state the task's ux cell names is exercised by a failing-capable state-tagged test; or 'N/A — headless'"),
+    ("a11y", "ux", "per-slice accessibility scan (axe or equivalent) over every touched screen — zero critical/serious, the WCAG target named — plus the a11y cell's keyboard/focus path asserted; or 'N/A — headless'"),
+    ("ux:rendered", "ux", "the touched screens rendered at each design-system breakpoint and conformant to the frozen prototype (evidence: the render/screenshot run); or 'N/A — headless'"),
+    ("prototype-review", "ux", "the slice's prototype was human-reviewed at finalization ('frozen — <path>') or explicitly 'waived — <why>'; or 'N/A — headless'"),
+    ("obs", "obs", "every obs-cell signal (SLO- telemetry · AEV- analytics event) emitted AND asserted by a test; or 'N/A — no observable surface'"),
     ("conformance", "review", "independent VERDICT: PASS for this T-"),
     ("traceability", "done-gate", "traceability matrix updated"),
 ]
@@ -133,11 +143,17 @@ def task_obligations(tid):
     for dim, val in fields:
         # The tests cell is an AC-keyed declaration in current task manifests. Pull ACs from it explicitly,
         # while ignoring incidental API-/T- ids in test intent; every declared AC must remain accountable even
-        # if a malformed task omitted it from behavior.
+        # if a malformed task omitted it from behavior. ux/obs/ml likewise admit only their own id types.
         if dim not in OBLIGATION_DIMS and dim != "tests":
             continue
+        allowed = OBLIGATION_DIM_PREFIXES.get(dim)
+        # an N/A cell imposes nothing — a cross-ref named inside its explanation ('N/A — headless, JRN-9
+        # handled by T-020') must not mint an obligation. Scoped to the prefix-filtered dims (ux/obs/ml);
+        # the classic dims keep their historic behaviour.
+        if allowed and dim != "tests" and re.match(r"\s*[*`_]*\s*n/?a\b", val, re.I):
+            continue
         for tok in IDTOK.findall(val):
-            if dim == "tests" and not tok.startswith("AC-"):
+            if allowed and not tok.startswith(allowed):
                 continue
             if tok.startswith(("T-", "ADR-")) or tok in seen:
                 continue
@@ -198,9 +214,14 @@ if INIT:
     for tok, dim in obs:
         req = {"behavior": "failing-capable test, passing", "tests": "failing-capable @covers-tagged test, passing",
                "api": "contract test (provider/consumer)",
-               "security": "enforced + evidenced", "nfr": "evidence test (measured, not asserted)",
-               "data": "persistence + migration", "integration": "real-path integration test",
-               "domain": "realised + behaviour-tested"}.get(dim, "implemented + tested")
+               "security": "enforced + deny/over-limit path exercised by a test + evidenced",
+               "nfr": "evidence test (measured, not asserted)",
+               "data": "persistence + migration + owned retention/deletion trigger exercised",
+               "integration": "real-path integration test (incl. failure/degradation path)",
+               "domain": "realised + behaviour-tested",
+               "ux": "every named interaction state realised + rendered vs the frozen prototype",
+               "obs": "signal emitted + asserted by a test",
+               "ml": "eval-harness evidence measured vs the stated bar (offline + online), incl. confidence-threshold/fallback + guardrail behaviour exercised"}.get(dim, "implemented + tested")
         lines.append("| %s | %s | %s |  | PENDING |" % (tok, dim, req))
     for key, src, req in GATE_ROWS:
         lines.append("| %s | %s | %s |  | PENDING |" % (key, src, req))
@@ -309,6 +330,23 @@ def covered_in_source(tok):
                 return True
     return False
 
+# The state sibling of @covers: a UI slice's interaction states are covered only by a literal `@state:<name>`
+# tag in a failing-capable test source — the mechanical teeth behind the ux:states gate row (without it the
+# row is PASS-by-assertion). Names come from the task's own ux cell.
+def ux_cell_states(cell):
+    m = re.search(r"(?i)\bstates?\s*[:\-—]\s*([^|]*)", cell or "")
+    if not m:
+        return []
+    seg = re.split(r"[→|]", m.group(1))[0]                     # stop at the prototype pointer
+    return [s for s in (t.strip(" *`_").lower() for t in re.split(r"[·,;/]", seg)) if re.fullmatch(r"[a-z0-9][a-z0-9 _-]*", s)]
+
+def state_covered(name):
+    tag = re.compile(r"@state:\s*" + re.escape(name.replace(" ", "-")) + r"(?![A-Za-z0-9_-])", re.I)
+    for txt, capable in _load_test_sources():
+        if capable and tag.search(txt):
+            return True
+    return False
+
 def review_pass_for(tid):
     """An independent VERDICT: PASS for this T- on disk - in review-report.md or a per-task review file."""
     texts = []
@@ -377,6 +415,44 @@ for p in records:
         if needed not in rows:
             add("ERROR", where, "a done-claim must carry the '%s' gate row (present + PASS or 'N/A — why') — it cannot be omitted." % needed)
 
+    # 3c. a false N/A cannot discharge a gate row the task's own manifest says applies: a slice whose `ux` cell
+    #     is non-N/A cannot mark ux:states/a11y/ux:rendered "N/A — headless", and a slice whose `obs` cell names
+    #     signals cannot mark the obs row N/A. The record checker sees both files, so the contradiction is
+    #     mechanically visible - this is the record-level sibling of the spec-lint ux/a11y consistency check.
+    def _dim_cell(name):
+        for dim, val in (task_fields(tid) or []):
+            if dim == name:
+                return val
+        return None
+    def _cell_na(val):
+        c = re.sub(r"[*`_]", "", val or "").strip().lower()
+        return not c or re.match(r"n/?a\b|none\b|[-—]+$", c) is not None
+    ux_cell = _dim_cell("ux")
+    if ux_cell is not None and not _cell_na(ux_cell):
+        for k in ("ux:states", "a11y", "ux:rendered"):
+            st, ev = rows.get(k, ("", ""))
+            if re.match(r"\s*n/?a\b", st or "", re.I):
+                add("ERROR", where, "row '%s' is N/A but the task's ux cell is non-N/A (\"%s…\") — a UI slice cannot discharge its rendered-surface gate with 'N/A — headless'." % (k, ux_cell.strip()[:40]))
+            elif is_pass(st) and not re.search(r"[\w.-]+/[\w./-]+", ev or ""):
+                add("ERROR", where, "row '%s' is PASS with no on-disk evidence path — a pathless PASS is an assertion, not evidence; cite the state-tagged test / scan output / render run." % k)
+        # the prototype-review row must POSITIVELY read frozen/reviewed or waived for a UI slice — the
+        # record-level sibling of spec-lint's afk gate, so a solo run can't merge a never-reviewed screen.
+        pst, pev = rows.get("prototype-review", ("", ""))
+        if not re.search(r"\b(frozen|reviewed|waiv)", (pst + " " + pev), re.I):
+            add("ERROR", where, "the prototype-review row does not read 'frozen — <path>' / 'reviewed' / 'waived — <why>' but the task's ux cell is non-N/A — an unreviewed screen cannot ride a done-claim.")
+        # state teeth: every state the ux cell names has a literal @state:<name> tag in a failing-capable
+        # test source (the state sibling of the @covers AC check — without it ux:states is unverifiable).
+        for sname in ux_cell_states(ux_cell):
+            if not state_covered(sname):
+                add("ERROR", where, "ux-cell state '%s' has no failing-capable test source carrying an `@state:%s` tag — every named interaction state needs its state-tagged test." % (sname, sname.replace(" ", "-")))
+    obs_cell = _dim_cell("obs")
+    if obs_cell is not None and not _cell_na(obs_cell):
+        st, ev = rows.get("obs", ("", ""))
+        if re.match(r"\s*n/?a\b", st or "", re.I):
+            add("ERROR", where, "row 'obs' is N/A but the task's obs cell names signals (\"%s…\") — every named signal must be emitted and asserted by a test." % obs_cell.strip()[:40])
+        elif is_pass(st) and not re.search(r"[\w.-]+/[\w./-]+", ev or ""):
+            add("ERROR", where, "row 'obs' is PASS with no on-disk evidence path — cite the test(s) asserting the emissions; a pathless PASS is an assertion, not evidence.")
+
     # 4. tests-first evidence - each AC-/API-/EVT- obligation traced to a passing row in the matrix, AND each
     #    task-declared AC has a literal `@covers AC-NNN` tag in a failing-capable TEST SOURCE, so neither a
     #    self-authored matrix nor an incidental source comment can claim a test the tree doesn't contain.
@@ -393,6 +469,20 @@ for p in records:
         traced = any(tok in ln and ("✓" in ln or re.search(r"\bpass\b", ln, re.I)) for ln in trace_txt.splitlines())
         if not traced:
             add("ERROR", where, "%s has no passing row in the traceability matrix — a back-filled or missing test, not test-first." % tok)
+
+    # 4b. an NFR obligation row claiming PASS must cite a MEASUREMENT against its bar, not an assertion -
+    #     "load test looks good" is exactly how an NFR ships unmeasured. Unit-agnostic (ms/rps/%/min all
+    #     legal), so the rule is loose: the evidence needs at least one number AND a bar/comparator cue
+    #     (bar · target · threshold · vs · within · >= / <= / < / > / >=-glyphs). N/A-with-reason passes as
+    #     everywhere; the numeric coverage/mutation rows keep their stricter %-parser below.
+    for tok, dim in obs:
+        if dim != "nfr" or tok not in rows:
+            continue
+        st, ev = rows[tok]
+        if not is_pass(st) or re.match(r"\s*n/?a\b", st or "", re.I) or re.match(r"\s*n/?a\b", ev or "", re.I):
+            continue
+        if not (re.search(r"\d", ev or "") and re.search(r"(?i)>=|<=|≥|≤|<|>|\b(bar|target|threshold|budget|vs|within)\b", ev or "")):
+            add("ERROR", where, "NFR row '%s' is PASS but its evidence (\"%s\") cites no measurement against a bar - state the measured value and its target (e.g. 'p95 212ms vs target 300ms'); an unmeasured NFR PASS is an assertion." % (tok, (ev or "").strip()[:50]))
 
     # 5. evidence integrity - a path-like evidence cell must exist on disk.
     for key, (st, ev) in rows.items():

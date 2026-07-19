@@ -146,6 +146,11 @@ function exists.** Mechanism (reuses Deferred, pointed at sequencing):
    dependency/boundary rules, build/test/lint commands, DoD, canonical `AGENTS.md` + import-only `CLAUDE.md`) **and** `derive-tasks`
    done — a walking-skeleton task exists and is first, every in-scope use-case is covered by ≥1 task,
    every task traces to spec IDs + has acceptance + DoD + dependencies, and `build-order` is acyclic.
+   **Nothing rides on prose:** a spec obligation that never becomes a task-manifest reference + a
+   Verification-Record gate row *will be silently dropped by an optimizing coding agent* — so confirm
+   every cross-cutting area in scope reaches the tasks through its dimension (`ux`+`a11y` journeys/states/
+   WCAG · `security` incl. `ENTL-` gates + `OBL-` obligations · `obs` — the `SLO-` telemetry + `AEV-`
+   analytics events · `data` retention · `ml` evals), not only through the spec that minted it.
    → ready to code.
 5. **Per-task done (execution loop):** for each `T-NNN` in build-order (dependencies first):
    `implement-task` → `run-tests` (suite green, every `AC-…` exercised) → `conformance-review`

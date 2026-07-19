@@ -39,7 +39,7 @@ PREFIX_OWNER = {"UC":"05-functional-spec","AC":"05-functional-spec",
     "NFR":"06-requirements/quality","ASR":"06-requirements/quality","DATA":"06-requirements/data",
     "SEC":"06-requirements/security","THR":"06-requirements/security","OBL":"06-requirements/compliance","API":"09-solution/api","ML":"06-requirements/ml",
     "ENTL":"06-requirements/entitlements",
-    "SLO":"09-solution/observability","EXP":"11-commercial/growth","T":"10-delivery/tasks","DS":"07-design-system","JRN":"08-ux",
+    "SLO":"09-solution/observability","EXP":"11-commercial/growth","AEV":"11-commercial/growth","T":"10-delivery/tasks","DS":"07-design-system","JRN":"08-ux","SCR":"08-ux",
     "FAC":"04-domain/ddd","REPO":"04-domain/ddd","SVC":"04-domain/ddd",
     "IF":"03-system-context","MOD":"09-solution/arch","CA":"02-product"}
 def file_layer(r):
@@ -52,7 +52,7 @@ def file_layer(r):
     if r.startswith("10-delivery/"): return 6
     if r.startswith("12-operate"): return 6
     return 0  # constraints, 02-product/*, discovery, singletons
-ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"VO":1,"INV":1,"HOT":1,"POL":1,"RM":1,"ENT":1,"FAC":1,"REPO":1,"SVC":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"THR":2,"DATA":2,"OBL":2,"ENTL":2,"EXP":2,"ML":2,"DS":3,"JRN":4,"MOD":5,"API":5,"SLO":5,"T":6,"ADR":0,"IF":0,"CA":0}
+ID_LAYER = {"CMD":1,"EVT":1,"AGG":1,"VO":1,"INV":1,"HOT":1,"POL":1,"RM":1,"ENT":1,"FAC":1,"REPO":1,"SVC":1,"UC":2,"AC":2,"NFR":2,"ASR":2,"SEC":2,"THR":2,"DATA":2,"OBL":2,"ENTL":2,"EXP":2,"AEV":2,"ML":2,"DS":3,"JRN":4,"SCR":4,"MOD":5,"API":5,"SLO":5,"T":6,"ADR":0,"IF":0,"CA":0}
 def id_layer(tok): return ID_LAYER.get(tok.split("-")[0].upper(), 0)
 PROSE_WORDS = 40
 
@@ -178,7 +178,7 @@ for p, r in cmd_files():
 # 11 stable-ID references resolve (the traceability spine)
 # TYPES = the SINGLE source of truth for type-prefixes (selfcheck.py reads this line to detect drift
 #         against the prefixes the skills declare). Keep it one flat alternation on one line.
-TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|DS|JRN|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
+TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|AEV|DS|JRN|SCR|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
 # IDCORE = the type-prefixed token, no boundary (used in ANCHORED definition matches).
 # ID = IDCORE behind a left boundary that also excludes '-' so a known prefix is NOT mined out of a
 #      longer token: 'HOT-005' no longer yields 'T-005', 'SUR-AGG-250' no longer yields 'AGG-250'.
@@ -194,7 +194,7 @@ RANGE = re.compile(r"(?<![A-Za-z0-9-])(?:" + TYPES + r")-\d+(?:(?:\.\.|/)\d+)+")
 # Reference markers — used to find ID *references* in the resolution pass below. Word markers are
 # \b-anchored so they match only as whole words: 'invalidates' must not match 'validates', etc. The
 # symbols (->, →) sit outside \b.
-REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|asserts?|upholds?|addresses|supersedes|surfaces?|renders?|displays?|mitigat(?:es|ed-by)|prices?|priced-by|gates?|gated-by|enforces?|enforced-by|evidences?|evidenced-by|whenever|reacts?-to|consumed-by|consumes)\b|->|→)\s*:?\s*([^\n]*)", re.I)
+REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|asserts?|upholds?|addresses|supersedes|surfaces?|renders?|displays?|mitigat(?:es|ed-by)|prices?|priced-by|gates?|gated-by|enforces?|enforced-by|evidences?|evidenced-by|elicits?|whenever|reacts?-to|consumed-by|consumes)\b|->|→)\s*:?\s*([^\n]*)", re.I)
 REACT = re.compile(r"\bwhenever\b|\breacts?-to\b", re.I)     # a POL- reaction line consumes every event named on it (any cell)
 defined = set()
 defsites = {}                                                # id -> files that AUTHORITATIVELY define it (row-key / heading / id:) — drives define-once + owning-area checks
@@ -479,7 +479,13 @@ COV_HINT = {"CMD":"expected a use-case (UC-) projecting it","EVT":"no downstream
     "AC":"not exercised by any test/task","INV":"no acceptance criterion asserts it - project it into an AC-, or note it's enforced structurally (by construction / a DATA- constraint)","OBL":"no control (SEC-/DATA-/arch) addresses it",
     "THR":"no mitigating control (SEC-/ADR-/OBL-/DATA-) addresses it and it isn't marked accepted-risk",
     "SLO":"no alert/runbook references it","NFR":"no test/SLO evidences it","ASR":"no verifying test",
-    "API":"no consumer/test","EXP":"no analytics event/task wires it","DATA":"no consumer"}
+    "API":"no consumer/test","EXP":"no analytics event/task wires it","DATA":"no consumer",
+    "ENTL":"no task's security dimension / pricing plan references it - the entitlement gate would ship untested",
+    "IF":"no integration-requirement seam or task references it - a boundary crossing whose qualities (SLA, delivery guarantee, failure behaviour) were never elicited",
+    "CA":"no use-case realises this capability area - declared scope that never landed in the functional spec",
+    "HOT":"nothing addresses this hotspot (no task/ADR/impl-design cites it) - a flagged risk left unowned",
+    "SCR":"no journey step, task ux cell, or prototype references this screen - dead information architecture",
+    "AEV":"no task's obs cell emits it - a defined analytics event nothing instruments never fires"}
 trace_ids = set()
 _tp = SPEC / "10-delivery" / "verification" / "traceability.md"
 if _tp.exists():
@@ -493,6 +499,19 @@ _apidir = SPEC / "09-solution" / "api"
 if _apidir.exists():
     for _yf in sorted(_apidir.glob("*.yaml")) + sorted(_apidir.glob("*.yml")):
         refset.update(IDTOK.findall(read(_yf)))
+# Loose coverage credit for the gap-hint-only types (ENTL/IF/CA/HOT/SCR): their real-world citation sites are
+# bare ids inside task-manifest cells, seam files, and journey steps — none of which the strict reference
+# grammar (row-key / ref-keyword / '<ID> <Name>') recognises. For a WARN-level "nothing consumes this" hint a
+# false MISS (noise) is worse than a false CREDIT, so ANY appearance of the token outside its own defining
+# file(s) counts as consumption (the same reasoning that credits raw contract-YAML tokens above). Never used
+# for the ERROR-level checks - those keep the strict grammar.
+LOOSE_COV_TYPES = {"ENTL", "IF", "CA", "HOT", "SCR", "AEV"}
+loose_credit = set()
+for _p, _r in cmd_files():
+    for _tok in set(IDTOK.findall(read(_p))):
+        _pre = _tok.split("-")[0].upper()
+        if _pre in LOOSE_COV_TYPES and _r not in (defsites.get(_tok) or set()) and _r not in (def3sites.get(_tok) or set()):
+            loose_credit.add(_tok)
 # THR / EVT coverage exceptions the back-reference test (tok in refset) structurally misses, read from the
 # element's OWN definition block (its def line through the line before the next def in the same file):
 #  - a THR is covered when its block forward-cites a CONTROL — SEC-/ADR-/OBL- (a security control, an ADR
@@ -546,7 +565,8 @@ for _p, _r in cmd_files():
 # simply empty (early stage) and the WARN is noise, not a gap — suppress it. (#7: a CMD has no UC only
 # once use-cases exist; before then "CMD has no UC" is 100% expected and drowns real within-layer gaps.)
 DOWN_TYPE = {"CMD":("UC",),"EVT":("UC",),"AGG":("DATA",),"RM":("UC",),"UC":("AC",),"AC":("T",),"INV":("AC",),
-    "OBL":("SEC","DATA"),"THR":("SEC",),"NFR":("ASR","SLO"),"ASR":("T",),"API":("T",),"EXP":("T",)}
+    "OBL":("SEC","DATA"),"THR":("SEC",),"NFR":("ASR","SLO"),"ASR":("T",),"API":("T",),"EXP":("T",),
+    "ENTL":("T",),"IF":("T",),"CA":("UC",),"HOT":("T",),"SCR":("JRN",),"AEV":("T",)}
 present_types = {d.split("-")[0].upper() for d in defined}
 # a parent with a keyed child is covered by it (UC-014 by AC-014a; NFR-014 by ASR-014) even with no explicit ref
 keyed_parents = set()
@@ -563,7 +583,7 @@ for tok in sorted(defined):
     if pre not in COV_HINT: continue
     dts = DOWN_TYPE.get(pre)
     if dts and not any(t in present_types for t in dts): continue   # downstream layer empty - premature to warn
-    if tok in refset or tok in trace_ids or tok in keyed_parents: continue
+    if tok in refset or tok in trace_ids or tok in keyed_parents or tok in loose_credit: continue
     if pre == "THR" and tok in thr_covered: continue            # mitigated by a non-SEC control / accepted-risk (its own block)
     if pre == "EVT" and tok in evt_sinks: continue              # intentional audit-only / operator-console-internal sink
     if pre == "INV" and tok in inv_covered: continue            # enforced structurally (by construction / a DATA- constraint) — no AC needed
@@ -1141,6 +1161,8 @@ for p, r in cmd_files():
 #    the `prototype-review` cell must positively read as `frozen`/`reviewed` or `waived - <why>`; an eligible UI
 #    slice whose cell is absent/N-A or still claims `auto-AFK`/`pending` is the contradiction (sibling of #29 -
 #    an afk-eligibility claim must be BACKED). Headless / reuses-DS slices are is_na(ux) and legitimately skip.
+#    ERROR (not WARN): an unreviewed screen riding an unattended wave is exactly the visual/UX HITL trigger, and
+#    the cell's required positive wording makes a false positive essentially impossible.
 for p, r in cmd_files():
     if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
     txt = read(p)
@@ -1150,7 +1172,63 @@ for p, r in cmd_files():
     pr = task_dim(txt, "prototype-review")
     prc = re.sub(r"[*`_]", "", pr or "").strip().lower()
     if re.search(r"\b(frozen|reviewed|waiv)", prc): continue # positively review-cleared or a recorded waiver -> eligibility BACKED
-    add("WARN", r, "afk:eligible with a non-N/A ux dimension but its prototype-review is not review-cleared (\"%s\") - a prose JRN- does not ratify a screen; freeze the reviewed prototype at finalization, record `prototype-review: waived - <why>`, or mark afk:blocked - visual/UX review pending" % ((pr or "(absent)").strip()[:60]))
+    add("ERROR", r, "afk:eligible with a non-N/A ux dimension but its prototype-review is not review-cleared (\"%s\") - a prose JRN- does not ratify a screen; freeze the reviewed prototype at finalization, record `prototype-review: waived - <why>`, or mark afk:blocked - visual/UX review pending" % ((pr or "(absent)").strip()[:60]))
+
+# 31 a non-N/A `ux` cell must be the structured visual contract, not a prose blob: it references the journey by
+#    JRN- id (ERROR - only ids the linter sees are enforced, and the Verification Record's ux obligation row is
+#    generated from exactly this reference) and names the interaction states this slice realises (WARN - a UI
+#    slice with no states list ships a happy-path-only screen; the `ux:states` gate row has nothing to hold it to).
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    txt = read(p)
+    ux = task_dim(txt, "ux")
+    if ux is None or is_na(ux): continue
+    if not re.search(r"(?<![A-Za-z0-9-])JRN-", ux):
+        add("ERROR", r, "non-N/A ux dimension cites no JRN- journey id - the ux cell is the slice's visual contract and the record's ux obligation row is generated from it; reference the journey by bare JRN- id (or mark the cell N/A - headless / N/A - reuses DS-...)")
+    if not re.search(r"(?i)\bstates?\s*[:\-—]", ux):         # requires the list form 'states: a · b' - the bare word ('renders states per spec') names nothing
+        add("WARN", r, "non-N/A ux dimension names no interaction states - list the states this slice realises ('states: empty · loading · error · ...') so the ux:states gate row has a concrete set to hold the screen to, not just the happy path")
+
+# 32 a slice with a non-N/A `ux` dimension may not leave `a11y` N/A or absent - a screen with no pinned keyboard
+#    path / focus order / WCAG criteria is an unreviewable screen, and the record's a11y gate row would gate on
+#    nothing. (The reverse - a11y set while ux is N/A - is legal: a headless slice can still carry an a11y
+#    obligation, e.g. an API serving an accessible client.)
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    txt = read(p)
+    ux = task_dim(txt, "ux")
+    if ux is None or is_na(ux): continue
+    ay = task_dim(txt, "a11y")
+    if ay is None or is_na(ay):
+        add("ERROR", r, "non-N/A ux dimension but the a11y dimension is %s - a UI slice must pin its keyboard path, focus order, contrast and the applicable WCAG success criteria (the a11y gate row holds the slice to exactly this cell); N/A - headless is only legitimate when ux is N/A too" % ("absent" if ay is None else "N/A"))
+    elif not re.search(r"(?i)\bSC\s*\d|\b\d\.\d+\.\d+\b|keyboard|focus", ay):
+        add("WARN", r, "a11y dimension pins nothing checkable (\"%s\") - name the keyboard/focus path and the applicable WCAG success criteria (e.g. 'keyboard tab->confirm - SC 2.4.7'); a content-free a11y cell gives the a11y gate row nothing to hold the slice to" % ay.strip()[:50])
+
+# 33 a `ux: N/A - reuses DS-...` claim anchors to the screen it edits: cite the SCR- id. The reuse escape is
+#    the sanctioned exemption from the prototype/review gates (the IA + design system fully determine the
+#    change), so the claim must be auditable - naming the SCR- lets the whole-build audit sample reuse claims
+#    against the screens actually touched, and the conformance rendered check knows which screen to open.
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    txt = read(p)
+    ux = task_dim(txt, "ux")
+    if ux is None or not is_na(ux): continue
+    if re.search(r"(?i)reuse", ux) and re.search(r"(?<![A-Za-z0-9-])DS-", ux) and not re.search(r"(?<![A-Za-z0-9-])SCR-", ux):
+        add("WARN", r, "ux reuse claim (\"%s\") cites no SCR- screen id - anchor the reuse to the screen it edits ('N/A - reuses DS-... on SCR-NNN') so the claim is auditable and the rendered check knows which screen to open" % ux.strip()[:60])
+
+# 34 placement<->ux plausibility: a task whose `placement` cell names a UI surface (a ui/frontend module, a
+#    screen/page/component path, a .tsx/.jsx/.vue/.svelte file) while its `ux` cell is N/A/absent is the
+#    signature of a UI slice mis-classified as headless - the one wording that bypasses every rendered-surface
+#    gate. Heuristic, so WARN: confirm the classification or carry the JRN-/SCR- contract.
+UIISH = re.compile(r"(?i)\b(ui|frontend|front-end|screens?|pages?|components?)\b|\.(tsx|jsx|vue|svelte)\b")
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    txt = read(p)
+    ux = task_dim(txt, "ux")
+    if ux is not None and not is_na(ux): continue
+    if ux and re.search(r"(?i)reuse", ux): continue          # a reuse claim IS a confirmed UI classification (#33 owns its anchoring)
+    pl = task_dim(txt, "placement")
+    if pl and UIISH.search(pl):
+        add("WARN", r, "placement names a UI surface (\"%s\") but the ux dimension is %s - a UI-touching slice carries its JRN-/SCR- visual contract (or an explicit reuse claim); if the slice is truly headless, say why the UI-looking placement isn't one" % (pl.strip()[:50], "absent" if ux is None else "N/A"))
 
 order = {"ERROR": 0, "WARN": 1, "INFO": 2}
 F.sort(key=lambda x: (order[x[0]], x[1], x[2]))

@@ -64,7 +64,7 @@ Each stage takes the stage(s) before it as input and produces the artifacts the 
 | 04 Domain (DDD) | `grill-ddd` | vision + system context | aggregates, commands, events, invariants, ubiquitous language |
 | 05–06 Requirements | `derive-functional` · `grill-quality` · `grill-data-reqs` · `grill-security-reqs` · `grill-compliance` · `grill-integration-reqs` · `grill-entitlements` · `grill-ml-reqs` (AI) | domain | use-cases + acceptance criteria (`UC-`/`AC-`), quality bars (`NFR-`/`ASR-`), data (`DATA-`), security (`SEC-`), obligations (`OBL-`), integration, entitlements (`ENTL-`), ML behaviour/evals (`ML-`, AI) |
 | 07 Design system | `grill-design-system` | requirements | tokens (DTCG), components, a11y, brand, voice — the `DS-` contract over the design-system asset (its **own layer**) |
-| 08 UX | `grill-ux-reqs` | design-system + requirements | user journeys, information architecture, a11y/i18n + usability targets (no ids — a **synthesis** of the design system and the requirements) |
+| 08 UX | `grill-ux-reqs` | design-system + requirements | user journeys (`JRN-`), the information architecture's screen inventory (`SCR-`), a11y/i18n + usability targets — a **synthesis** of the design system and the requirements |
 | 11 Commercial | `grill-monetization` | entitlements + product vision | business model · pricing · plans · **prices the `ENTL-` tiers** · metering — **feeds 09 Solution** (entitlement enforcement, billing, metering become build work) |
 | 09 Solution | `derive-architecture` · `derive-data-architecture` · `derive-api-contracts` · `derive-security-architecture` · `derive-infra-ops` · `derive-observability` · `derive-test-strategy` · `derive-ml-architecture` (AI) | requirements | architecture incl. the **module map & seam contracts** + key sequences, API / event contracts (`API-`), observability (`SLO-`), deployment & ops, the two-tier test strategy, ML serving / eval / guardrails (AI) — *module internals are designed per-slice in Build, not here* |
 | 10 Delivery | `derive-conventions` · `derive-tasks` | solution | canonical `AGENTS.md` + `CLAUDE.md` import, the task list (`T-`), coding conventions |
@@ -75,7 +75,7 @@ Each stage takes the stage(s) before it as input and produces the artifacts the 
 **Parallel & cross-cutting:**
 
 - **Go-to-market** (`grill-go-to-market`, 11-commercial) — channels · per-channel messaging · launch · partnerships: genuinely commercial *execution*. The build-shaping decision — the **motion** (PLG vs sales-led) — was lifted up into the **product vision** (02), where it feeds onboarding (UX), auth/SSO (security), and billing (monetization). A marketplace channel or a partnership can still surface an integration requirement.
-- **Growth** (`grill-growth`, 11-commercial) — post-launch activation/retention + experiments; the **analytics events it defines become instrumentation tasks** in the build, so it loops back in.
+- **Growth** (`grill-growth`, 11-commercial) — post-launch activation/retention + experiments; the **`AEV-` analytics events it defines land in the emitting slices' `obs` dimension by id** (held to an emission assertion by the Verification Record's `obs` gate row), so instrumentation is built in, not bolted on.
 - **Spikes** (`prototype`) — runnable at **any stage** to settle one empirical unknown (feasibility · perf · a UX direction), then deleted; the answer lands as a bet, a requirement, or an ADR.
 
 ## Two ways in

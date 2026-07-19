@@ -1,6 +1,6 @@
 {
   "name": "grillspec",
-  "version": "4.17.0",
+  "version": "4.18.0",
   "description": "Spec-driven engineering from idea and requirements through architecture, tasks, implementation, verification, and release.",
   "author": {
     "name": "Ivan Mrva",

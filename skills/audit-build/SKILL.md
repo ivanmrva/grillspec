@@ -138,6 +138,10 @@ itself. Walk each:
   reason — a pattern a per-task checker can't see because it only sees one record.
 - **Gate freshness.** Run `…/check_freshness.py` — a task whose upstream spec drifted after its verdict was
   recorded has a *stale* PASS; route to re-run its conformance review.
+- **The Tier-B release verdict exists and is backed.** A release in scope has a persisted
+  `verification/test-run.md` whose per-NFR/SLO rows each cite a *measured* value against the bar
+  `test/nfr-evidence.md` states — a missing Tier-B verdict, or one whose rows restate targets instead of
+  measurements, is `blocking` (the release gate that never ran).
 
 ## Phase 2 — cross-task emergent properties (defects that live BETWEEN tasks)
 - **Coverage survives, not just existed.** An `AC-` a task recorded as covered whose test a LATER task
@@ -151,6 +155,12 @@ itself. Walk each:
   slice.
 - **Fitness bypass.** A fitness rule green per task but disabled/allow-listed system-wide, or an
   architecture rule the accumulated diffs eroded.
+- **Dimension blindness.** A whole requirement class quietly dropped: a manifest dimension (`ux`/`a11y`/
+  `obs`/`security` incl. `ENTL-`/`OBL-`/`ml`/`data` retention) whose gate rows read `N/A` **pervasively across
+  tasks that plainly touch that surface** (UI tasks all `N/A — headless`, an instrumented product with every
+  `obs` row `N/A`) — the signature of an obligation being waved through rather than genuinely inapplicable.
+  Sample the N/As against the code the tasks shipped and flag each false one; one false `N/A` is a task
+  defect, a pattern of them is a `blocking` process divergence.
 
 ## Phase 3 — independent second-pass judgment  *(--depth deep only — full re-judgment)*
 The semantic checks that are model-judgment even for a per-task review — mock placement vs each tier's
@@ -167,7 +177,12 @@ For each `12-operate/` record in scope, confirm it corresponds to the spec it en
 log of reality, so this is *reconciliation*, not re-derivation — never rewrite a record to match the spec):
 - a `deploy-<env>-<version>.md` names real `T-`s in the release and an env on the ratified promotion path
   (`infra-ops/topology.md`); a `migration-*.md` cites the `DATA-` change it enacted; an
-  `incident-<id>.md`/`diagnosis-<id>.md` references the `NFR-`/`SEC-`/`SLO-` it touched.
+  `incident-<id>.md`/`diagnosis-<id>.md` references the `NFR-`/`SEC-`/`SLO-` it touched **and carries a
+  learnings row whose gap/assumption actually landed in the spec** (the propagation promise, audited — an
+  incident whose postmortem says "route to discovery" with nothing routed is an unclosed loop); a first prod
+  promotion has its `production-readiness.md` with a go/no-go verdict and *verified* (rehearsed) evidence
+  per item; the deploy records' change-failed/recovery-time fields roll up against the
+  `infra-ops/delivery-metrics.md` targets.
 - **a record that references a spec ID that doesn't resolve**, or **a release whose deploy record is
   missing entirely**, is `important` (a gap in the operational trail); a record that *contradicts* the spec
   it claims to enact (deployed to an env not on the promotion path) is `blocking`.

@@ -19,7 +19,7 @@ description: >-
 
 ## Rules
 - **the data-egress boundary is the user's call, not a merit decision** — whether customer/PII data may leave to a **third-party / hosted model API** is a privacy/residency constraint the org holds (it can rule the hosted option out entirely); ratify it, never assume it when picking the model approach
-- **evals gate promotion like tests gate code** — no model or prompt ships without passing its eval bar
+- **evals gate promotion like tests gate code** — no model or prompt ships without passing its eval bar; at build time this binds through the task manifest's **`ml` dimension** (the touched `ML-` capabilities), whose eval-harness evidence — measured against the stated offline+online bar — the done-gate and conformance review require like any `AC-`
 - **every model behind a contract + a fallback** — never a hard dependency on one model with no degraded path
 - **models and prompts are versioned, provenance-tracked artifacts** — rollback is always possible
 - for generative/agentic features, input **and** output guardrails (injection · abuse · safety) are mandatory

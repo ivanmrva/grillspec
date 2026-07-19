@@ -4,6 +4,76 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.18.0
+
+### Changed — every spec obligation now reaches the build as a gate, starting with the rendered UI
+
+The release closes a systemic blindness: requirement classes that were fully specified upstream (UX states,
+accessibility, telemetry, entitlements, compliance, ML evals, retention, seam qualities) but never
+materialised as a per-slice gate — so an optimizing coding agent could ship green tasks that quietly dropped
+them. The doctrine is now explicit (conductor gate 4): **a spec obligation that never becomes a task-manifest
+reference + a Verification-Record gate row will be silently dropped**; `audit-build` Phase 2 hunts the
+pattern ("dimension blindness") at attestation time.
+
+- **UI is production from the first screen.** The exec engine gains a visual-contract section: a non-`N/A`
+  `ux` slice builds against the frozen prototype + `DS-` tokens/components + the `JRN-` states + the `a11y`
+  cell as a second acceptance reference — every named interaction state implemented and state-tagged-tested,
+  the keyboard/focus path asserted, the layout holding at the DS breakpoints. "Draft now, polish later" is
+  named an anti-cheat violation (the UI form of the stubbed adapter). `implement-task` opens UI slices by
+  loading the visual contract before any test; `run-tests` gates the rendered surface per slice (state
+  coverage · a11y scan zero critical/serious · breakpoint render); `conformance-review`'s Lens A judges UI
+  **on the rendered surface** (run the app, walk the `flows.md` screen path, compare to the prototype) — a
+  screen never rendered is a screen never reviewed. `derive-test-strategy` moves these into the per-slice
+  Tier-A standard (the Tier-B a11y run attests the system, never substitutes).
+- **Five new standard Verification-Record gate rows** — `ux:states` · `a11y` · `ux:rendered` ·
+  `prototype-review` · `obs` — required-presence like `deploy` (`N/A — headless` / `N/A — no observable
+  surface` where genuinely inapplicable). `check_task_record.py` gives them real teeth, not
+  PASS-by-assertion: a non-`N/A` `ux`/`obs` cell cannot be discharged by a false `N/A` gate row; every
+  ux-cell interaction state must be backed by a literal **`@state:<name>`** tag in a failing-capable test
+  source (the state sibling of `@covers AC-`); a `PASS` on the rendered-surface/obs rows requires an
+  on-disk evidence path; and a UI slice's `prototype-review` row must positively read
+  `frozen`/`reviewed`/`waived` — so a solo run can't merge a never-reviewed screen.
+- **New manifest dimensions `obs` and `ml`; `security` widened.** `obs` carries the `SLO-`-backing telemetry
+  and `EXP-` analytics events the slice must emit *and assert* (grill-growth's "events reach the task
+  breakdown" promise is now mechanical); `ml` carries the `ML-` capabilities whose eval-harness evidence
+  gates the slice like ACs (incl. confidence-threshold/fallback + guardrails); `security` explicitly carries
+  `OBL-` obligations and `ENTL-` entitlement gates, and "evidenced" now means **the deny / over-limit /
+  lapsed-billing path is exercised by a test**. `data` obligations include the owned retention/deletion
+  trigger; `integration` includes the failure/degradation path (sync seams too); i18n targets ride the
+  `a11y` dimension.
+- **New `SCR-` screen id type (08-ux).** The information architecture's screen inventory is now ID-keyed;
+  journey steps, task `ux` cells, and prototype files anchor to `SCR-` instead of prose screen names;
+  `flows.md` is consumed by the conformance rendered lens.
+- **New `AEV-` analytics-event id type (11-commercial/growth).** Every analytics event is a referenceable
+  row (`AEV-` · event · properties · classification · serves(`EXP-`)); the emitting slice's `obs` cell cites
+  it by id, the record's `obs` row asserts its emission, and lint warns on an `AEV-` no task instruments.
+- **Two more evidence rules in `check_task_record.py`**: a PASS'd `nfr` obligation row must cite a **measured
+  value against a bar** (unit-agnostic — digit + bar/comparator; "looks good" fails), closing the NFR-gaming
+  hole the coverage/mutation parser never covered; and lint #34 flags a task whose `placement` names a UI
+  surface (ui/frontend/screen/page/component/.tsx…) while its `ux` cell is N/A/absent — the one wording that
+  previously bypassed every rendered-surface gate (an anchored `reuses DS-… on SCR-…` claim is exempt; #33
+  keeps it auditable).
+- **ID-anchoring rules for previously prose-only obligations**: integration seam files open with
+  `elicits IF-NNN`; compliance AI-checklist items and DPIA findings mint `OBL-`; RoPA rows cite `DATA-`;
+  privacy threats keep `THR-` ids wherever they land; constraints mandates name their downstream owner id;
+  ML quality-bars/responsible-AI rows key to their `ML-`; monetization SLA commitments cite their `NFR-`.
+- **Previously write-only artifacts gained consumers**: Tier-B `test-run.md` is required (audit-build
+  verdict-backing; deploy-release reads it before promoting), `production-readiness.md` + deploy
+  failure/recovery fields reconcile in audit-build Phase 4, incident/diagnosis records must carry a
+  learnings/propagation line (`check_operate_records.py` WARN), and `autorun` refuses to dispatch against a
+  `NOT-READY` spec audit.
+- **`lint_spec.py`**: check #30 (prototype-review gate) escalated WARN→ERROR; new #31 (a non-`N/A` `ux` cell
+  must cite its `JRN-` (ERROR) and name its interaction states in list form (WARN)); new #32 (a UI slice may
+  not leave `a11y` N/A/absent (ERROR), and a content-free `a11y` cell — no keyboard/focus path, no WCAG SC —
+  is a WARN); new #33 (a `ux: N/A — reuses DS-…` claim anchors to the `SCR-` it edits, so the sanctioned
+  reuse escape stays auditable — the conformance rendered check still opens that screen); coverage hints for
+  `ENTL-`/`IF-`/`CA-`/`HOT-`/`SCR-` with a loose-credit rule (bare ids in manifest cells/seam files/journey
+  steps count as consumption for these WARN-level hints); `elicits` recognised as a reference keyword.
+- **Migration for existing projects**: re-run `derive-tasks` (or `audit-spec --fix`) so manifests carry the
+  new dimensions, and backfill the five new gate rows on any existing done records (evidenced or
+  `N/A — why`) — a done-claim without them now fails `check_task_record.py`; new lint findings (#30–#33,
+  coverage hints) surface via the normal audit-fix loop.
+
 ## 4.17.0
 
 ### Changed — a reviewed prototype is required before a UI slice can auto-run

@@ -18,7 +18,7 @@ description: >-
 - Pin the **event-taxonomy naming convention** — object-action, controlled vocabulary — before listing events.
 
 ## Rules
-- **post-launch and parallel** — don't gate the build on it; but its *analytics events* must reach the task breakdown so instrumentation is built in, not bolted on
+- **post-launch and parallel** — don't gate the build on it; but its *analytics events* must reach the task breakdown so instrumentation is built in, not bolted on — **concretely: each `AEV-` event lands in the emitting slice's `obs` dimension by id** (with the `EXP-` it serves), which the Verification Record's `obs` gate row then holds to an emission assertion; an `AEV-` that reaches no task's `obs` cell will never be emitted (lint warns on it)
 - activation + retention are defined against the north-star; the experiment backlog has ≥1 `EXP-` carrying a metric
 - **activation** is a typed bar (event + count + window) with a time-to-value target — never an adjective
 - retention is a **cohort curve** whose plateau is the durable-growth check (+ a stickiness ratio when high-frequency)
@@ -26,14 +26,14 @@ description: >-
 - events follow the pinned **object-action** controlled vocabulary and each carries an **owner**
 
 ## Output
-**Stable IDs** (bare type prefix, ID = the leading table column / row key): `EXP-` a growth experiment.
+**Stable IDs** (bare type prefix, ID = the leading table column / row key): `EXP-` a growth experiment · `AEV-` an analytics event (the instrumentation contract — an event is referenceable by id, so a task's `obs` cell, an experiment, and a rename all trace to the same row).
 Written under `commercial/growth/`:
 
 | File | Captures | Format |
 |---|---|---|
 | `growth-model.md` | acquisition → activation → retention → referral/revenue (tied to north-star) + **named primary growth loop** (trigger→action→output→reinvested input) + activation bar (event·count·window) + time-to-value + retention-curve/cohorts (plateau · stickiness) + leading indicators | funnel · loop · fields |
 | `experiments.md` | experiment backlog — id EXP-NNN | hypothesis · primary metric · MDE · power/alpha · sample size · min-runtime · guardrail metric · stop-rule |
-| `analytics-events.md` | events/properties to track (object-action naming, with consent/tracking classification) + cohort/funnel definitions | event · properties · classification · owner |
+| `analytics-events.md` | events/properties to track — id `AEV-NNN` per event (object-action naming, with consent/tracking classification, the `EXP-` it serves) + cohort/funnel definitions | **`AEV-` id** · event · properties · classification · serves(`EXP-`) · owner |
 
 ADRs → `adr/ADR-GRW-NNN.md`
 Consumes: the compliance obligations / data classification (each event carries its consent/tracking class).

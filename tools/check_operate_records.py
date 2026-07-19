@@ -79,6 +79,13 @@ for p in sorted(OPERATE.rglob("*.md")):
                 add("ERROR", rel, "deployed to env '%s', which is not a declared environment (infra-ops topology/environments) - off the ratified promotion path." % env)
     if name.startswith("migration") and not any(r.startswith("DATA-") for r in refs):
         add("WARN", rel, "a migration record that cites no DATA- - no trace to the data change it enacted.")
+    if name.startswith(("incident-", "diagnosis-")):
+        # the learning-propagation backstop: the record's sharpest obligation is that what the incident taught
+        # REACHES the spec (a gap, an assumption, a re-opened area). The tool can't judge the routing, but it
+        # can force the record to CARRY a learnings/propagation line naming a target - an absent one is the
+        # signature of a postmortem that closed without routing anything.
+        if not re.search(r"(?im)^.*\b(learn(?:ing|ed|t)|lesson|propagat|gap raised|assumption (?:added|updated)|re-open)", text):
+            add("WARN", rel, "no learnings/propagation line - an incident/diagnosis record must name what it taught and where it was routed (a gap, an assumption, a re-opened spec area); a postmortem that routes nothing is an unclosed loop.")
 
 order = {"ERROR": 0, "WARN": 1}
 for sev, where, msg in sorted(F, key=lambda x: (order[x[0]], x[1])):

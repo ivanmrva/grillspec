@@ -334,6 +334,76 @@ expect("provisioning-bad-state", run(LINT, {
     "_provisioning.md": prov(("RESEND_KEY", "T-046", "human", "maybe")),
 }), must=["unrecognized state 'maybe'"])
 
+# ── 30/31/32: the ux-cell contract (prototype-review gate · JRN-+states integrity · ux↔a11y consistency) ──
+def taskux(afk, ux, a11y, pr):
+    return (HDR + "\n# T-050\n\n| field | value |\n|---|---|\n| phase | MVP · afk: %s |\n"
+            "| implements | UC-1 |\n| ux | %s |\n| a11y | %s |\n| prototype-review | %s |\n"
+            "| human-prereq | N/A |\n" % (afk, ux, a11y, pr))
+UXSPEC = {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Pay")),
+    "08-ux/journeys.md": HDR + "\n**JRN-7 · Client — pay invoice (UC-1)**\n1. open invoice\n",
+}
+# 30 an eligible UI slice whose prototype-review is not positively review-cleared is an ERROR (not a WARN):
+# an unreviewed screen riding an unattended wave is the visual/UX HITL trigger
+expect("proto-review-uncleared-errors", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": taskux("eligible", "JRN-7 — states: empty · loading · error",
+                                         "keyboard path: tab order; SC 2.4.7", "pending — JIT at execution"),
+})), must=["not review-cleared", "1 error(s)"])
+expect("proto-review-frozen-ok", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": taskux("eligible", "JRN-7 — states: empty · loading · error",
+                                         "keyboard path: tab order; SC 2.4.7", "frozen — reviewed at finalization: prototypes/ui/pay.html"),
+})), forbid=["not review-cleared"])
+expect("proto-review-waived-ok", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": taskux("eligible", "JRN-7 — states: empty · loading · error",
+                                         "keyboard path: tab order; SC 2.4.7", "waived — speed chosen for internal tool"),
+})), forbid=["not review-cleared"])
+# 31 a non-N/A ux cell must cite its JRN- (ERROR) and name its interaction states (WARN)
+expect("ux-cell-no-jrn-errors", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": taskux("blocked — visual/UX review pending", "checkout screen — states: all five",
+                                         "keyboard path: tab order", "pending"),
+})), must=["cites no JRN- journey id"])
+expect("ux-cell-no-states-warns", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": taskux("blocked — visual/UX review pending", "JRN-7 checkout flow",
+                                         "keyboard path: tab order", "pending"),
+})), must=["names no interaction states"], forbid=["cites no JRN- journey id"])
+expect("ux-cell-na-quiet", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": taskux("eligible", "N/A — headless", "N/A — headless", "N/A"),
+})), forbid=["cites no JRN- journey id", "names no interaction states", "not review-cleared"])
+# 31b the bare word 'states' with no list form names nothing — still WARNs
+expect("ux-cell-states-keyword-fooled", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": taskux("blocked — visual/UX review pending", "JRN-7 renders states per spec",
+                                         "keyboard path: tab order", "pending"),
+})), must=["names no interaction states"])
+# 32b a content-free a11y cell (no keyboard/focus path, no WCAG SC) WARNs
+expect("a11y-content-free-warns", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": taskux("blocked — visual/UX review pending", "JRN-7 — states: empty · error",
+                                         "yes, accessible", "pending"),
+})), must=["pins nothing checkable"])
+# 33 a 'N/A — reuses DS-…' ux claim must anchor to the SCR- screen it edits
+UXSPEC_DS = dict(UXSPEC, **{
+    "07-design-system/design-system.md": HDR + "\n| ID | element |\n|---|---|\n| DS-001 | Button |\n",
+    "08-ux/information-needs.md": HDR + "\n| ID | screen |\n|---|---|\n| SCR-1 | checkout |\n",
+})
+expect("ux-reuse-no-scr-warns", run(LINT, dict(UXSPEC_DS, **{
+    "10-delivery/tasks/T-050.md": taskux("eligible", "N/A — reuses DS-001 on the existing screen",
+                                         "N/A — headless", "N/A"),
+})), must=["cites no SCR- screen id"])
+expect("ux-reuse-with-scr-ok", run(LINT, dict(UXSPEC_DS, **{
+    "10-delivery/tasks/T-050.md": taskux("eligible", "N/A — reuses DS-001 on SCR-1",
+                                         "N/A — headless", "N/A"),
+})), forbid=["cites no SCR- screen id"])
+
+# 32 a UI slice (non-N/A ux) may not leave a11y N/A or absent
+expect("ux-without-a11y-na-errors", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": taskux("blocked — visual/UX review pending", "JRN-7 — states: empty · error",
+                                         "N/A — headless", "pending"),
+})), must=["the a11y dimension is N/A"])
+expect("ux-without-a11y-absent-errors", run(LINT, dict(UXSPEC, **{
+    "10-delivery/tasks/T-050.md": HDR + "\n# T-050\n\n| field | value |\n|---|---|\n"
+        "| phase | MVP · afk: blocked — visual/UX review pending |\n| implements | UC-1 |\n"
+        "| ux | JRN-7 — states: empty · error |\n| prototype-review | pending |\n| human-prereq | N/A |\n",
+})), must=["the a11y dimension is absent"])
+
 # ── 16b derived->driver backref presence + 16c impl-design trace (this session) ──
 # a journey must cite the UC- it renders, co-located on its heading; missing -> ERROR (UC area present, so not premature)
 expect("backref-jrn-missing-uc", run(LINT, {
@@ -411,6 +481,67 @@ expect("invariant-coverage-structural-ok", run(LINT, {
 expect("invariant-coverage-premature-suppressed", run(LINT, {
     "04-domain/ddd/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-1 BranchFixed — branch set at creation\n",
 }), forbid=["'INV-1' has no downstream"])
+
+# ── 14 coverage hints for the previously-blind types (ENTL / IF / CA / HOT / SCR) ──
+expect("entl-coverage-orphan", run(LINT, {
+    "06-requirements/entitlements/e.md": idtable(("ENTL-1", "premium-export")),
+    "10-delivery/tasks/T-001.md": idtable(("T-001", "skeleton")),
+}), must=["ENTL-1", "no task's security dimension"])
+expect("entl-coverage-cited-ok", run(LINT, {
+    "06-requirements/entitlements/e.md": idtable(("ENTL-1", "premium-export")),
+    "10-delivery/tasks/T-001.md": idtable(("T-001", "skeleton")) + "\n| security | ENTL-1 deny-path tested |\n",
+}), forbid=["no task's security dimension"])
+expect("if-coverage-orphan", run(LINT, {
+    "03-system-context/interfaces.md": idtable(("IF-1", "PSP charge")),
+    "10-delivery/tasks/T-001.md": idtable(("T-001", "skeleton")),
+}), must=["IF-1", "never elicited"])
+expect("if-coverage-cited-ok", run(LINT, {
+    "03-system-context/interfaces.md": idtable(("IF-1", "PSP charge")),
+    "06-requirements/integration/stripe.md": HDR + "\nelicits IF-1 — delivery: at-least-once, idempotency key: charge-id\n",
+    "10-delivery/tasks/T-001.md": idtable(("T-001", "skeleton")),
+}), forbid=["never elicited"])
+expect("ca-coverage-orphan", run(LINT, {
+    "02-product/vision/scope.md": idtable(("CA-1", "billing")),
+    "05-functional-spec/uc.md": idtable(("UC-1", "Pay")),
+}), must=["CA-1", "never landed in the functional spec"])
+expect("hot-coverage-orphan", run(LINT, {
+    "04-domain/ddd/h.md": idtable(("HOT-1", "double-booking risk")),
+    "10-delivery/tasks/T-001.md": idtable(("T-001", "skeleton")),
+}), must=["HOT-1", "left unowned"])
+expect("scr-coverage-orphan", run(LINT, {
+    "08-ux/information-needs.md": idtable(("SCR-1", "checkout")),
+    "08-ux/journeys.md": HDR + "\n**JRN-7 · Client — pay (N/A — renders Generic identity)**\n1. open\n",
+}), must=["SCR-1", "dead information architecture"])
+expect("scr-coverage-cited-ok", run(LINT, {
+    "08-ux/information-needs.md": idtable(("SCR-1", "checkout")),
+    "08-ux/journeys.md": HDR + "\n**JRN-7 · Client — pay (N/A — renders Generic identity)**\n1. open SCR-1\n",
+}), forbid=["dead information architecture"])
+expect("aev-coverage-orphan", run(LINT, {
+    "11-commercial/growth/analytics-events.md": idtable(("AEV-1", "checkout_completed")),
+    "10-delivery/tasks/T-001.md": idtable(("T-001", "skeleton")),
+}), must=["AEV-1", "nothing instruments"])
+expect("aev-coverage-cited-ok", run(LINT, {
+    "11-commercial/growth/analytics-events.md": idtable(("AEV-1", "checkout_completed")),
+    "10-delivery/tasks/T-001.md": idtable(("T-001", "skeleton")) + "\n| obs | AEV-1 emitted + asserted |\n",
+}), forbid=["nothing instruments"])
+# 34 placement names a UI surface while ux is N/A -> suspected mis-classified UI slice (WARN); a reuse claim is exempt
+expect("placement-ui-ux-na-warns", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Pay")),
+    "10-delivery/tasks/T-051.md": HDR + "\n# T-051\n\n| field | value |\n|---|---|\n| implements | UC-1 |\n"
+        "| ux | N/A — headless |\n| placement | billing · src/billing/ui/components |\n| human-prereq | N/A |\n",
+}), must=["placement names a UI surface"])
+expect("placement-ui-reuse-exempt", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Pay")),
+    "07-design-system/design-system.md": HDR + "\n| ID | element |\n|---|---|\n| DS-001 | Button |\n",
+    "08-ux/information-needs.md": HDR + "\n| ID | screen |\n|---|---|\n| SCR-1 | checkout |\n",
+    "10-delivery/tasks/T-051.md": HDR + "\n# T-051\n\n| field | value |\n|---|---|\n| implements | UC-1 |\n"
+        "| ux | N/A — reuses DS-001 on SCR-1 |\n| placement | billing · src/billing/ui/components |\n| human-prereq | N/A |\n",
+}), forbid=["placement names a UI surface"])
+expect("placement-headless-quiet", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Pay")),
+    "10-delivery/tasks/T-051.md": HDR + "\n# T-051\n\n| field | value |\n|---|---|\n| implements | UC-1 |\n"
+        "| ux | N/A — headless |\n| placement | billing · src/billing/domain |\n| human-prereq | N/A |\n",
+}), forbid=["placement names a UI surface"])
 
 # ── 13b context-namespaced IDs: literal external-vendor identifiers shaped like <lead>-<TYPE>-… (Alpaca's
 #    APCA-API-KEY-ID header: lead APCA, type API) are flagged in PROSE but must be writable verbatim inside a

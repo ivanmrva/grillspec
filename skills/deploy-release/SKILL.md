@@ -38,7 +38,7 @@ Written under `12-operate/`:
 
 ADRs → `adr/ADR-REL-NNN.md`
 (no spec/code changes — operates the running system)
-Consumes: the merged increment + `09-solution/infra-ops/` (environments + release/rollback strategy) + `09-solution/observability/` (`SLO-`, alerts) + the release-readiness checklist.
+Consumes: the merged increment + `09-solution/infra-ops/` (environments + release/rollback strategy) + `09-solution/observability/` (`SLO-`, alerts) + the release-readiness checklist + **the latest Tier-B release verdict (`10-delivery/verification/test-run.md`) — a promotion with no persisted, met release verdict for the increment is promoting unverified**.
 
 ## Resources
 - `references/exec-engine.md`

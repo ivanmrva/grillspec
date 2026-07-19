@@ -34,8 +34,8 @@ Written under `prototypes/ui/` (repo root, a non-spec zone):
 
 | File | Captures | Format |
 |---|---|---|
-| `<screen>.html` | the slice's screen: real components + tokens · all interaction states · wired into the IA's navigation · linked to `JRN-`/`UC-`/`DS-` IDs | self-contained HTML |
-| `flows.md` | per journey (keyed by its `JRN-` id): the screen → screen path, mapped to its `UC-` IDs | journey (`JRN-`) · screens · UC- |
+| `<screen>.html` | the slice's screen — the file realises one `SCR-` from the IA's screen inventory (name the file after it): real components + tokens · all interaction states · wired into the IA's navigation · linked to `SCR-`/`JRN-`/`UC-`/`DS-` IDs | self-contained HTML |
+| `flows.md` | per journey (keyed by its `JRN-` id): the `SCR-` → `SCR-` screen path, mapped to its `UC-` IDs — **the conformance review's rendered lens walks this path** when it judges the built journey, so keep it current as slices land | journey (`JRN-`) · `SCR-` path · UC- |
 
 (generated per ux-heavy UI slice at its finalization; the screens accrete as UI slices are finalized — the global structure is the UX-requirements IA + the design system, not a separate pass; no spec changes)
 Consumes: the UX requirements (the slice's journey · its IA placement · interaction states), the design system (tokens · components), and the slice's use-cases.
