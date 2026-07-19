@@ -34,6 +34,8 @@ def run_sub(root, *args, env_extra=None):
 def mkproject():
     d = Path(tempfile.mkdtemp())
     (d / "spec" / "10-delivery" / "verification").mkdir(parents=True)
+    # a live spec ID for --red --covers to resolve (the chat-is-spec-input tripwire)
+    (d / "spec" / "acceptance.md").write_text("- AC-001 sample criterion\n")
     (d / "src").mkdir()
     return d
 
@@ -87,20 +89,44 @@ def main():
     check("test file edit allowed even with active task", r.returncode == 0)
 
     # --- --red refuses a PASSING test command -------------------------------------------
-    r = run_sub(p, "--red", "--test", "true")
+    r = run_sub(p, "--red", "--test", "true", "--covers", "AC-001")
     check("--red on a passing test is rejected", r.returncode == 1)
     r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
     check("still denied after failed --red attempt", r.returncode == 2)
 
-    # --- --red on a FAILING test records the log → src edit now allowed ------------------
+    # --- --red refuses a covers-less red (chat is spec input, not code input) ------------
     r = run_sub(p, "--red", "--test", "false")
+    check("covers-less --red is rejected", r.returncode == 1)
+    check("covers-less message names the doctrine", "spec input" in r.stderr)
+    r = run_sub(p, "--red", "--test", "false", "--covers", "AC-999")
+    check("--red with an ID that exists nowhere under spec/ is rejected", r.returncode == 1)
+    check("unknown-ID message says mint the ID first", "nowhere under spec/" in r.stderr)
+    r = run_sub(p, "--red", "--test", "false", "--covers", "not-an-id")
+    check("--red with a non-ID-shaped covers token is rejected", r.returncode == 1)
+    r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
+    check("still denied after rejected covers attempts", r.returncode == 2)
+
+    # --- --red on a FAILING test records the log → src edit now allowed ------------------
+    r = run_sub(p, "--red", "--test", "false", "--covers", "AC-001")
     check("--red on a failing test recorded", r.returncode == 0)
     check("red-log file exists",
           (p / ".grillspec" / "gate" / "red" / "T-007.json").is_file())
+    check("red-log records the covers IDs",
+          json.loads((p / ".grillspec" / "gate" / "red" / "T-007.json").read_text())
+          .get("covers") == ["AC-001"])
     check("gate dir self-ignores (transient state not committed)",
           (p / ".grillspec" / "gate" / ".gitignore").read_text().strip().endswith("*"))
     r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
     check("src edit allowed after red-log", r.returncode == 0)
+
+    # --- a project may opt out of the covers requirement --------------------------------
+    optout = mkproject()
+    (optout / ".grillspec").mkdir()
+    (optout / ".grillspec" / "grillspec-gate.json").write_text(
+        json.dumps({"red_requires_covers": False}))
+    run_sub(optout, "--start", "T-008")
+    r = run_sub(optout, "--red", "--test", "false")
+    check("covers-less --red allowed when red_requires_covers is false", r.returncode == 0)
 
     # --- override env bypasses the gate -------------------------------------------------
     p2 = mkproject()
@@ -159,7 +185,7 @@ def main():
     bsrc = gb / "src" / "c.py"
     r = run_hook(gb, "Write", {"file_path": str(bsrc), "content": "x"})
     check("on a task branch + no red-log → src edit DENIED (branch is the signal)", r.returncode == 2)
-    r = run_sub(gb, "--red", "--test", "false")          # no --start — task comes from the branch
+    r = run_sub(gb, "--red", "--test", "false", "--covers", "AC-001")   # no --start — task comes from the branch
     check("--red works with no --start (task derived from branch)", r.returncode == 0)
     check("red-log keyed by the branch task",
           (gb / ".grillspec" / "gate" / "red" / "T-021.json").is_file())
@@ -168,7 +194,7 @@ def main():
 
     # --- a real task branch beats a stale --start pointer -------------------------------
     run_sub(gb, "--start", "T-999")                       # stale/wrong explicit pointer
-    r = run_sub(gb, "--red", "--test", "false")           # should still record under T-021 (the branch)
+    r = run_sub(gb, "--red", "--test", "false", "--covers", "AC-001")   # should still record under T-021 (the branch)
     check("branch task overrides a stale --start pointer",
           (gb / ".grillspec" / "gate" / "red" / "T-021.json").is_file())
 
@@ -176,8 +202,8 @@ def main():
     # (each worktree has its own local .grillspec/gate/; branch keys the red-log — simulate with 2 repos)
     wa = mkgitproject("task/T-030-a")
     wb = mkgitproject("task/T-031-b")
-    run_sub(wa, "--red", "--test", "false")
-    run_sub(wb, "--red", "--test", "false")
+    run_sub(wa, "--red", "--test", "false", "--covers", "AC-001")
+    run_sub(wb, "--red", "--test", "false", "--covers", "AC-001")
     # A's edit needs A's red-log; it must NOT be unblocked by B's, and vice-versa
     ra = run_hook(wa, "Write", {"file_path": str(wa / "src" / "a.py"), "content": "x"})
     rb = run_hook(wb, "Write", {"file_path": str(wb / "src" / "b.py"), "content": "x"})
@@ -241,6 +267,9 @@ def main():
           (fresh / ".grillspec" / "tools" / "gate_exec.py").is_file())
     check("installer vendored shared check_task_record.py",
           (fresh / ".grillspec" / "tools" / "check_task_record.py").is_file())
+    check("installer vendored check_orphan_tests.py + its tier_contract.py helper",
+          (fresh / ".grillspec" / "tools" / "check_orphan_tests.py").is_file()
+          and (fresh / ".grillspec" / "tools" / "tier_contract.py").is_file())
     check("Claude hook targets shared gate",
           any(h.get("command") == 'python3 "$CLAUDE_PROJECT_DIR/.grillspec/tools/gate_exec.py" --hook'
               for b in blocks for h in b.get("hooks", [])))

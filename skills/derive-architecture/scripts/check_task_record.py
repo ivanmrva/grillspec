@@ -78,8 +78,8 @@ OBLIGATION_DIM_PREFIXES = {"ux": ("JRN-", "SCR-"), "obs": ("SLO-", "EXP-", "AEV-
 GATE_ROWS = [
     ("tests-first", "done-gate", "every AC- has a failing-capable test that drove the code"),
     ("tests:layers", "test-strategy", "every test level the slice touches per the test strategy exists & passes (unit/integration/contract/e2e/NFR-evidence as applicable)"),
-    ("coverage", "test-strategy", ">= ratified coverage bar"),
-    ("mutation", "test-strategy", ">= ratified mutation bar on changed logic"),
+    ("coverage", "test-strategy", ">= ratified coverage bar, DIFF-scoped: every changed src/** line executed by a test (a whole-tree % hides a small untested snippet in its slack; the diff scope removes the slack); or 'N/A — no src change'"),
+    ("mutation", "test-strategy", ">= ratified mutation bar, DIFF-scoped: mutants on the changed logic killed (the mechanical proxy for 'the new assertions bite'); or 'N/A — no logic change'"),
     ("fitness:no-fakes", "done-gate", "no stub/mock/double/canned-response/unwired-fallback in src/"),
     ("fitness:architecture", "done-gate", "architecture fitness functions green"),
     ("spec-lint", "done-gate", "spec-lint clean"),
@@ -254,6 +254,12 @@ TEST_SOURCE_EXTS = {".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".go", 
                     ".lua", ".sh", ".ps1", ".r", ".hs"}
 TEST_PATH_PARTS = {"test", "tests", "__tests__", "e2e"}
 COLOCATED_ROOTS = {"src", "app", "apps", "lib", "libs", "packages", "spec"}
+# A monorepo may nest its source roots under a wrapper directory the conventions choose (code/apps/*/src/…),
+# so a recognized source root can appear at ANY depth, not only position 0 — keying on parts[0] silently
+# blinded the @covers evidence scan to every co-located test in a `code/`-rooted layout. The membership test
+# below walks every path component, and GRILLSPEC_TEST_ROOTS (comma-separated) extends the recognized set for a
+# genuinely non-standard LEAF source-dir name — the same lever tier_contract honors, so a project sets it once.
+COLOCATED_ROOTS |= {r.strip().lower() for r in os.environ.get("GRILLSPEC_TEST_ROOTS", "").split(",") if r.strip()}
 PRUNE_PARTS = {".git", ".grillspec", ".claude", ".codex", ".venv", "venv", "node_modules", "vendor", "dist", "build",
                "out", "coverage", "target", "__pycache__", ".next", ".tox"}
 TEST_NAME = re.compile(r"(?:^test_|_test\.|[._](?:test|spec)s?\.|[._](?:e2e|int|integration|unit|contract)\.)", re.I)
@@ -283,7 +289,7 @@ def _test_source(p):
     if not p.is_file() or p.suffix.lower() not in TEST_SOURCE_EXTS or any(x in PRUNE_PARTS for x in parts[:-1]):
         return False
     in_test_tree = any(x in TEST_PATH_PARTS for x in parts[:-1])
-    colocated = bool(parts and parts[0] in COLOCATED_ROOTS and
+    colocated = bool(any(x in COLOCATED_ROOTS for x in parts[:-1]) and
                      (TEST_NAME.search(p.name) or CAMEL_TEST.search(p.name)))
     return in_test_tree or colocated
 

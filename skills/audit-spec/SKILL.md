@@ -33,7 +33,9 @@ conflate them.
   ADR status · **state-machine integrity (unreachable / dead-end / nondeterministic states)** ·
   **authorization completeness (every command has a rule; no blank decision cell)** · **typed-field
   consistency (a `retention`/`residency`/`class`/`SLA`/`price` stated twice must agree; every `DATA-` carries
-  class/retention/residency)** · and the INFO heuristics for dev-trace language, skill/tool-name leaks, and
+  class/retention/residency)** · **task-cell integrity (an `afk:eligible` non-`N/A`-`ux` task's
+  `prototype-review` review-cleared · a non-`N/A` `ux` cell structured — cites its `JRN-` + states · `ux`↔`a11y`
+  consistency · a reuse-claim anchored to its `SCR-`)** · and the INFO heuristics for dev-trace language, skill/tool-name leaks, and
   adjective-without-a-bar. **Treat every linter ERROR as a `blocking` finding and move on** — your job
   starts where its soundness ends.
 - **Beside it — the per-task code-conformance review.** That checks generated CODE against the spec, per task, after a
@@ -57,7 +59,7 @@ neighbours (for a focused re-check after a change).
 **The fix-mode exit contract (what "fixed" is allowed to mean).** After the last upstream edit: run
 `python3 scripts/impact.py <changed-IDs…>` (or `--since <ref>`) → for **every derived
 artifact in the impact set**, re-run its owning derive step — explicitly including the terminal derived
-layer a partial propagation most often strands: `10-delivery/conventions|tasks|impl-design` and root
+layer a partial propagation most often strands: `10-delivery/conventions|tasks|impl-design` and the
 root canonical `AGENTS.md` + import-only `CLAUDE.md`, not just `05`/`09` — → `python3 scripts/guard_derived.py --record <re-derived
 paths>` + `…/check_freshness.py --record <all touched paths>` → re-run the Phase-0 baseline to green. **You
 may not report "fixed" or "clean" while the impact set of your own edits contains a derived artifact that
@@ -220,7 +222,7 @@ re-grilling the authored areas that read it). The report contains:
 
 | Section | Contents |
 |---|---|
-| Verdict header | per-gate go/no-go (desirability · architecture-readiness · implementation-readiness · delivery-readiness) + overall **CODE-GEN READINESS: READY / NOT-READY** (or `CONSISTENT (domain not assessed)` in `consistency` mode) + the blocking count |
+| Verdict header | per-gate go/no-go (desirability · architecture-readiness · implementation-readiness · delivery-readiness) + overall **CODE-GEN READINESS: READY / NOT-READY** (or `CONSISTENT (domain not assessed)` in `consistency` mode) + the blocking count + a **`depth:`** marker and a **`commit: <HEAD sha>`** stamp of the tree audited — the whole-build audit reads both to decide whether this report still evidences its spec-clean precondition (a report whose commit HEAD has moved past is stale) |
 | Findings | table sorted blocking → important → nit → suggestion: `severity · area · location (file:line / ID) · rule violated · finding · remediation route` |
 | Coverage gaps | the missing branches from Phase 3, each concrete: "X exists but Y is missing" |
 | Contradictions | each with both conflicting locations quoted |

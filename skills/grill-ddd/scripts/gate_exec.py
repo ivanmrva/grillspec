@@ -37,7 +37,14 @@ own branch/worktree, so nothing shares a pointer to clobber, and each worktree's
 fallback for flows that don't branch-per-task; a stale pointer can't override a real task branch.
 
 Subcommands the exec loop calls (the engine instructs it; the gate enforces it):
-  --red   --test "<cmd>"     run <cmd>, REQUIRE it to fail, record the red-log for the active task
+  --red   --test "<cmd>" --covers "AC-NNN ..."
+                             run <cmd>, REQUIRE it to fail, record the red-log for the active task.
+                             --covers names the spec ID(s) this failing test drives and each must exist
+                             under spec/ - the mechanical edge of "chat is spec input, not code input":
+                             an ad-hoc mid-task instruction gets its ID minted/amended in the owning
+                             spec area FIRST, which makes the spec update a hard precondition of the
+                             code change instead of a follow-up promise. (Opt out for a project via
+                             `"red_requires_covers": false` in .grillspec/grillspec-gate.json.)
   --start T-NNN              (fallback) set the active task when NOT on a `task/T-NNN` branch
   --done  [T-NNN]            clear the explicit pointer (no-op when the branch is the signal)
   --hook                     PreToolUse entrypoint: reads the hook JSON on stdin, allow(0)/deny(2)
@@ -184,11 +191,40 @@ def cmd_done(task: str) -> int:
     return 0
 
 
-def cmd_red(test_cmd: str) -> int:
+SPEC_ID = re.compile(r"^[A-Z]{1,8}-[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def missing_in_spec(root: Path, tokens: list) -> list:
+    """The given spec-ID tokens that appear NOWHERE under spec/ — unknown IDs. Fail-open: an unreadable
+    file is skipped; no spec/ tree at all returns [] (nothing to validate against)."""
+    spec = root / "spec"
+    if not spec.is_dir():
+        return []
+    missing = set(tokens)
+    pats = {t: re.compile(r"(?<![A-Za-z0-9-])" + re.escape(t) + r"(?![A-Za-z0-9_-])") for t in tokens}
+    for p in sorted(spec.rglob("*")):
+        if not missing:
+            break
+        if not p.is_file() or p.suffix.lower() not in (".md", ".yaml", ".yml", ".json"):
+            continue
+        try:
+            txt = p.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        for t in list(missing):
+            if pats[t].search(txt):
+                missing.discard(t)
+    return sorted(missing)
+
+
+def cmd_red(test_cmd: str, covers: str) -> int:
     """Run the test command, REQUIRE it to fail, then record the red-log for the active task.
 
     A red-log written only after a real non-zero (failing) test run is what makes the RED gate mean
-    'a failing test was actually seen', not 'the model asserted it ran one'."""
+    'a failing test was actually seen', not 'the model asserted it ran one'. The --covers check is the
+    drift tripwire at the earliest possible moment: before any code exists, the failing test must name
+    the spec ID(s) that demand it — and they must exist — so an ad-hoc mid-task instruction is forced
+    through the spec (mint/amend the ID first) instead of straight into the code."""
     root = project_root()
     task = active_task(root)
     if not task:
@@ -197,6 +233,30 @@ def cmd_red(test_cmd: str) -> int:
     if not test_cmd:
         print("gate --red: pass the failing-test command via --test \"...\"", file=sys.stderr)
         return 1
+    tokens = [t for t in re.split(r"[,\s]+", covers or "") if t]
+    if config(root).get("red_requires_covers", True):
+        if not tokens:
+            print("gate --red: name the spec ID(s) this failing test drives via --covers \"AC-NNN …\".\n"
+                  "Chat is spec input, not code input: a behavior with no driving spec ID — an ad-hoc\n"
+                  "mid-task instruction included — gets its ID minted or amended in the owning spec area\n"
+                  "FIRST, then the tagged failing test, then the code. A pure refactor or spike needs no\n"
+                  "red at all (GRILLSPEC_GATE_OFF=1 for the sanctioned non-TDD edit); a project can opt\n"
+                  "out via `\"red_requires_covers\": false` in .grillspec/grillspec-gate.json.",
+                  file=sys.stderr)
+            return 1
+        bad = [t for t in tokens if not SPEC_ID.match(t)]
+        if bad:
+            print("gate --red: --covers takes bare spec IDs like AC-012 (uppercase type prefix) — not: %s"
+                  % ", ".join(bad), file=sys.stderr)
+            return 1
+        unknown = missing_in_spec(root, tokens)
+        if unknown:
+            print("gate --red: %s exist(s) nowhere under spec/ — a failing test may only be driven by a\n"
+                  "LIVE spec ID. If this behavior came from an ad-hoc instruction, that instruction is\n"
+                  "spec input: mint or amend the ID in its owning spec area (and the task's manifest\n"
+                  "cell) first, then re-run. Never invent an ID to appease the gate."
+                  % ", ".join(unknown), file=sys.stderr)
+            return 1
     proc = subprocess.run(test_cmd, shell=True, cwd=root, capture_output=True, text=True)
     if proc.returncode == 0:
         print("gate --red: that test command PASSED (exit 0) — RED needs a test that FAILS for the "
@@ -205,10 +265,11 @@ def cmd_red(test_cmd: str) -> int:
     g = ensure_gate_dir(root)
     (g / "red").mkdir(parents=True, exist_ok=True)
     (g / "red" / (task + ".json")).write_text(json.dumps({
-        "task": task, "test_cmd": test_cmd, "recorded_at": now_iso(),
+        "task": task, "test_cmd": test_cmd, "covers": tokens, "recorded_at": now_iso(),
         "exit_code": proc.returncode,
     }, indent=2) + "\n")
-    print("gate --red: recorded failing test for %s — src/** edits for this task are now unblocked." % task)
+    print("gate --red: recorded failing test for %s%s — src/** edits for this task are now unblocked."
+          % (task, (" (covers %s)" % ", ".join(tokens)) if tokens else ""))
     return 0
 
 
@@ -391,9 +452,9 @@ def cmd_hook() -> int:
             return deny(
                 "no failing test recorded for the active task %s — write ONE small failing test for "
                 "the next behavior and watch it fail (`python3 %s/tools/gate_exec.py --red --test "
-                "\"<your test command>\"`) BEFORE writing production code in %s. This is the "
-                "red→green micro-cycle; don't batch all code then back-fill tests. Override: "
-                "GRILLSPEC_GATE_OFF=1."
+                "\"<your test command>\" --covers \"<the spec IDs it drives>\"`) BEFORE writing "
+                "production code in %s. This is the red→green micro-cycle; don't batch all code then "
+                "back-fill tests. Override: GRILLSPEC_GATE_OFF=1."
                 % (task, ".grillspec", os.path.relpath(file_path, root) if file_path else "src/"))
     return 0
 
@@ -409,11 +470,14 @@ def main() -> int:
         i = args.index("--done")
         return cmd_done(args[i + 1] if i + 1 < len(args) and not args[i + 1].startswith("--") else "")
     if "--red" in args:
-        test = ""
+        test = covers = ""
         if "--test" in args:
             j = args.index("--test")
             test = args[j + 1] if j + 1 < len(args) else ""
-        return cmd_red(test)
+        if "--covers" in args:
+            j = args.index("--covers")
+            covers = args[j + 1] if j + 1 < len(args) else ""
+        return cmd_red(test, covers)
     print(__doc__)
     return 0
 

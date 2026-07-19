@@ -22,7 +22,7 @@ CODEX_HOOK_CMD = ('python3 "$(git rev-parse --show-toplevel)/.grillspec/tools/ga
 CLAUDE_MATCHER = "Write|Edit|MultiEdit"
 CODEX_MATCHER = "apply_patch|Edit|Write"
 MARK = "grillspec-exec-gate"
-VENDOR = ("gate_exec.py", "check_task_record.py")
+VENDOR = ("gate_exec.py", "check_task_record.py", "check_orphan_tests.py", "tier_contract.py")
 
 
 def root_dir(argv) -> Path:

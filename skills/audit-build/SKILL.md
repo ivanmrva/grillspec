@@ -50,7 +50,13 @@ evidenced" is the per-task conformance review's concern; here it appears only as
 - **Beside it — the whole-spec audit.** That judges the SPEC (is it consistent, complete, buildable); this
   judges the BUILD against that spec. **A clean whole-spec audit is a precondition** — you cannot attest a
   build against a spec that is itself broken; if the spec carries open `blocking` findings, say so and stop
-  at `NOT-ATTESTABLE (spec not clean)`.
+  at `NOT-ATTESTABLE (spec not clean)`. **The precondition needs EVIDENCE, not a memory:** it is met only by
+  a `spec-audit-report.md` whose `commit:` stamp still covers the current spec tree and whose blocking count
+  is zero. The report is transient (git-ignored; the remediation loop deletes it after a remediated pass), so
+  **absent or stale is the normal case, not an error** — resolve it by running the whole-spec audit yourself
+  first: `consistency` depth suffices to back an `attest` pass; the release-bar `--deep` pass requires a
+  fresh **full**-depth spec audit (readiness can only be declared at full). Record in the attestation header
+  which spec-audit depth + commit backed the precondition.
 
 ## Modes (depth)
 | `--depth` | Runs | Max verdict it may issue |
@@ -115,13 +121,21 @@ at release: the build is complete, so every tier must exist. The per-commit gate
 because mid-build a tier legitimately hasn't landed yet). These gates classify tests by directory
 (`tests/<tier>/`) OR filename (`foo.int.test.ts`; a bare `foo.test.ts` = unit) and read a real human-authored
 `levels.md` (bold/parenthetical tier names, a scope comment above the table), so a **co-located** source-root
-layout is handled — point `--tests` at the source roots if they're non-standard. If the project wired its OWN
+layout is handled. For a monorepo rooted under a wrapper directory none of the defaults name (`code/apps/*/src/…`,
+`services/*/…`), set **`GRILLSPEC_TEST_ROOTS`** (comma-separated) once — it folds those roots into the default
+set for every classifier-backed gate AND `check_task_record`'s colocated-evidence scan, so the tools aren't
+silently blind to the whole tree (a per-invocation `--tests` remains the ad-hoc override). If the project wired its OWN
 equivalent tier/mock/e2e fitness against the same contract (e.g. a native pnpm check), prefer consuming that
 gate's result over re-running the reference tools · `…/check_e2e_target.py` (e2e tests hit the named
 deployed env, not a local stack) · `…/check_no_skips.py --strict` (no skipped/xfail'd/`.only`-focused test,
 no CI test step that swallows a red — at release every declared deferral has expired, so WARNs are promoted)
 · `…/check_no_fakes.py` / `…/check_deploy_real.py` /
-`…/check_migration_real.py` over the whole tree · `…/check_operate_records.py` (Phase 4). Every ERROR →
+`…/check_migration_real.py` over the whole tree · `…/check_orphan_tests.py` (every behavioral test traces
+to a live spec driver — an orphan test or dangling `@covers` is drift: behavior the spec never absorbed,
+typically an ad-hoc mid-build instruction that skipped the spec) · `…/check_config_drift.py` (the env vars
+the code reads ⊆ the declared `environments.md` matrix — config drift is cross-task by nature: keys
+accumulate across tasks, and the per-commit gate only ever saw one diff at a time) ·
+`…/check_operate_records.py` (Phase 4). Every ERROR →
 `blocking`; every WARN → an `important` candidate to confirm. **Don't re-do what these decide mechanically —
 run them, trust the output, spend your effort on the meaning below.**
 
@@ -140,13 +154,28 @@ itself. Walk each:
   recorded has a *stale* PASS; route to re-run its conformance review.
 - **The Tier-B release verdict exists and is backed.** A release in scope has a persisted
   `verification/test-run.md` whose per-NFR/SLO rows each cite a *measured* value against the bar
-  `test/nfr-evidence.md` states — a missing Tier-B verdict, or one whose rows restate targets instead of
-  measurements, is `blocking` (the release gate that never ran).
+  `test/nfr-evidence.md` states — **and, where the build ships an `ML-` capability, per-`ML-` rows citing a
+  measured eval-harness result against its stated bar** (evals gate ML the way tests gate code; a per-task
+  eval pass does not prove the aggregate model behavior at release) — a missing Tier-B verdict, or one whose
+  rows restate targets instead of measurements, is `blocking` (the release gate that never ran).
+- **The governance surface is intact at HEAD.** The gates can be evaded by *deletion*, which no content
+  tripwire sees (`check_no_skips.py` catches a swallowed red, not a removed CI test step): confirm the CI
+  workflows still carry the gate steps the conventions defined (build · full tests · conformance · the
+  tripwires), the committed hook configs (`.claude/settings.json` / `.codex/hooks.json`) still wire the
+  exec-gate, and `.grillspec/tools/` is still vendored and committed. A gate step that vanished between
+  merges is the infrastructure form of the rubber-stamp — `blocking`.
 
 ## Phase 2 — cross-task emergent properties (defects that live BETWEEN tasks)
 - **Coverage survives, not just existed.** An `AC-` a task recorded as covered whose test a LATER task
   weakened, deleted, or `skip`ped. Re-run the aggregate suite and confirm every `AC-` still has a *passing*
   `@covers` test NOW — a per-task green at merge time does not prove it is green after the next merge.
+- **Present ≠ executed.** A test file the classifier sees but the runner never runs — a config-level
+  exclusion (jest `testPathIgnorePatterns`, pytest `--ignore`/`addopts`, a suite glob that misses a
+  directory) — counts for `@covers` while asserting nothing (the documented `check_no_skips.py` limitation;
+  this is where it closes at aggregate). Where the runner emits an executed-file report (JUnit XML, a
+  coverage file list), reconcile it against the classified test tree: a present-but-never-executed test
+  source is a `blocking` laundered green. Without a report, read the runner config's exclusions yourself and
+  ground each one — an exclusion nobody can justify is the finding.
 - **Suite shape vs declared distribution.** Compute the actual tier counts and compare to the
   `pyramid`/`integration-weighted` shape `test/levels.md` declared. An e2e-top-heavy suite, or a "pyramid"
   that is 90% e2e, is a `blocking` process divergence even if every test is green.
@@ -155,6 +184,14 @@ itself. Walk each:
   slice.
 - **Fitness bypass.** A fitness rule green per task but disabled/allow-listed system-wide, or an
   architecture rule the accumulated diffs eroded.
+- **The waiver files are the system-wide bypass channel — audit them as an object.** Every
+  `.grillspec/*-allow.txt` (`no-skips` · `no-fakes` · `no-orphans` · `mock-budget` · `e2e-target` ·
+  `deploy-real` · `migration-real`) silences its tripwire **even under `--strict`**, and the per-task
+  conformance review only sees the entries present at its own merge — an entry a LATER task appended to get
+  past a gate is exactly the cross-task drift this phase hunts. Walk every entry: each needs a live,
+  still-true reason; an entry whose reason expired, that can't be grounded, or whose addition coincides with
+  a task that would otherwise have gone red is a `blocking` bypass. A waiver file that *grew* across the
+  wave is the trend signature to explain, entry by entry.
 - **Dimension blindness.** A whole requirement class quietly dropped: a manifest dimension (`ux`/`a11y`/
   `obs`/`security` incl. `ENTL-`/`OBL-`/`ml`/`data` retention) whose gate rows read `N/A` **pervasively across
   tasks that plainly touch that surface** (UI tasks all `N/A — headless`, an instrumented product with every
@@ -207,7 +244,7 @@ Print a summary to the session. The report contains:
 
 | Section | Contents |
 |---|---|
-| Attestation header | **BUILD ATTESTATION: ATTESTED / NOT-ATTESTED** (or `NOT-ATTESTABLE (spec not clean)` if the whole-spec audit has open blockers) + the release/wave scope + the blocking count + the **`depth: deep` / `depth: attest (sampled N of M)`** marker + a **`commit: <HEAD sha>`** stamp of the exact tree you audited (so a release gate can confirm the attestation still covers HEAD and reject a stale one) |
+| Attestation header | **BUILD ATTESTATION: ATTESTED / NOT-ATTESTED** (or `NOT-ATTESTABLE (spec not clean)` if the whole-spec audit has open blockers) + the release/wave scope + the blocking count + the **`depth: deep` / `depth: attest (sampled N of M)`** marker + a **`commit: <HEAD sha>`** stamp of the exact tree you audited (so a release gate can confirm the attestation still covers HEAD and reject a stale one) + a **`spec-audit: <depth> @ <commit>`** line naming the spec-audit pass that evidenced the spec-clean precondition |
 | Ledger findings | rubber-stamped records, unbacked `VERDICT`s, dropped gate rows, stale PASSes — each `T- · record path · claim · what's missing` |
 | Emergent findings | lost/weakened `AC-` coverage, suite-shape divergence, aggregate-bar misses, fitness bypasses — each grounded in the aggregate run |
 | Operate reconciliation | operate records that dangle or contradict the spec they enacted |
