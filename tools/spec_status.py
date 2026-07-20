@@ -28,7 +28,10 @@ ac_nums = set(m.group(1) for a in ac for m in [re.match(r"^AC-(\d+)[a-z]+$", a)]
 uc_with_ac = [u for u in uc for m in [re.match(r"^UC-(\d+)$", u)] if m and m.group(1) in ac_nums]
 afk_elig = len(re.findall(r"afk:\s*eligible", ALL, re.I))
 afk_block = len(re.findall(r"afk:\s*blocked", ALL, re.I))
-gaps = sum(1 for l in ALL.splitlines() if re.search(r"\bGAP\b", l) and re.search(r"\bUNRESOLVED\b", l, re.I))
+# Scoped to task manifests (mirrors lint_spec.py check 15): only a GAP in 10-delivery/tasks/ (not build-order.md)
+# is a real blocker. Scanning ALL files miscounts convention prose that merely DESCRIBES the gap rule.
+task_files = [p for p in files if p.relative_to(SPEC).as_posix().startswith("10-delivery/tasks/") and p.name != "build-order.md"]
+gaps = sum(1 for p in task_files for l in read(p).splitlines() if re.search(r"\bGAP\b", l) and re.search(r"\bUNRESOLVED\b", l, re.I))
 def count_entries(name):
     hits = list(SPEC.glob("**/" + name))
     if not hits: return None
