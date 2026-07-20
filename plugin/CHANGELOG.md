@@ -4,6 +4,24 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.19.1
+
+### Fixed — bundled installer no longer bricks, and the gap counter stops false-firing on rule prose
+
+Two release-hygiene fixes on top of 4.19.0:
+
+- **`check_orphan_tests.py` + `tier_contract.py` are now in `PORTABLE_TOOLS`.** `install_exec_gates.py`
+  `VENDOR`s both (added in 4.19.0), and its anti-brick check refuses to wire the gate when a `VENDOR`
+  file isn't beside it — so the standalone / cluster / marketplace builds, which bundle the installer via
+  `PORTABLE_TOOLS`, shipped an installer that would refuse to install. Both are bundled now, and
+  `selfcheck.py` asserts `VENDOR ⊆ PORTABLE_TOOLS` (across `build.py` + `emit-standalone.py`) so a vendored
+  dependency can't fall out of the portable set again.
+- **`spec_status.py`'s unresolved-GAP counter is scoped to task manifests.** It flagged a line in *any*
+  spec file matching `GAP` + `UNRESOLVED`, so convention prose that merely *describes* the gap rule (e.g.
+  `10-delivery/conventions/workflow.md`) counted as a real blocker even though the message reads "in tasks".
+  The scan now covers only `10-delivery/tasks/` (excluding `build-order.md`), mirroring the authoritative
+  check in `lint_spec.py` so the two tools report the same count.
+
 ## 4.19.0
 
 ### Added — chat is spec input: ad-hoc mid-task changes can no longer grow the code past the spec
