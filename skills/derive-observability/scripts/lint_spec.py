@@ -111,7 +111,10 @@ for p, r in cmd_files():
 # Literal content inside a fenced block or an inline `code` span is exempt: a vendor that uses {{ }} templating
 # (Clerk session-token claims, Handlebars configs) must be documentable verbatim. INLINE_CODE blanks `...` spans
 # so the check sees only prose; the fence toggle skips fenced blocks, mirroring the ref checks below.
-INLINE_CODE = re.compile(r"`[^`]*`")
+# A CommonMark code span is a run of N backticks closed by the same run, so authors can embed a literal backtick
+# in a double-backtick span (``uow[`afterCommit`]``); match the opening run and its same-length close, not just
+# single-backtick spans — otherwise the inner `...` leaks past the blanker and its [...](...) false-fires below.
+INLINE_CODE = re.compile(r"(`+)(?:(?!\1).)*?\1")
 TOK = re.compile(r"\{\{|\}\}|\bTODO\b|\bTKTK\b|\bFIXME\b|\bNNNN\b")
 for p, r in cmd_files():
     if os.path.basename(r) == "template.md" and "adr/" in r: continue
@@ -123,11 +126,16 @@ for p, r in cmd_files():
         if fence: continue
         if TOK.search(INLINE_CODE.sub(" ", l)): add("ERROR", r, "placeholder/stale token: " + l.strip()[:60], i)
 
-# 5 dangling local links
+# 5 dangling local links. Same code exemption as the placeholder check (#4): verbatim TypeScript in
+# documentation — uow["afterCommit"](handler), port["send"](1) — tokenizes as a markdown [...](...) link and
+# would false-fire as a dangling reference, so blank inline `code` spans and skip fenced blocks first.
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 for p, r in cmd_files():
+    fence = False
     for i, l in enumerate(read(p).splitlines(), 1):
-        for t in LINK.findall(l):
+        if l.lstrip().startswith("```"): fence = not fence; continue
+        if fence: continue
+        for t in LINK.findall(INLINE_CODE.sub(" ", l)):
             t = t.split("#")[0].strip()
             if not t or t.startswith(("http://", "https://", "mailto:")): continue
             if not (p.parent / t).exists() and not (SPEC / t).exists():
