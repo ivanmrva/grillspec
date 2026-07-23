@@ -562,6 +562,18 @@ expect("tok-curly-fenced-ok", run(LINT, {"12-operate/rb.md": HDR + "\n```\n{{use
 expect("tok-curly-inline-ok", run(LINT, {"12-operate/rb.md": HDR + "\nclaim `{{user.role}}` in config\n"}),
        forbid=["placeholder/stale token"])
 
+# ── dangling-link check honours the code exemption: verbatim member-access TypeScript (uow["afterCommit"]())
+#    tokenizes as a markdown [...](...) link; a genuine dangling link in PROSE still errors, but the same text
+#    inside a fence, a single-backtick span, or a double-backtick span (embedding a literal backtick) does NOT. ──
+expect("dangling-link-prose-fires", run(LINT, {"12-operate/rb.md": HDR + "\nSee [the guide](./missing.md) for setup.\n"}),
+       must=["dangling link", "missing.md"])
+expect("dangling-link-fenced-ok", run(LINT, {"12-operate/rb.md": HDR + "\n```ts\nuow[\"afterCommit\"](handler)\n```\n"}),
+       forbid=["dangling link"])
+expect("dangling-link-inline-ok", run(LINT, {"12-operate/rb.md": HDR + "\nCall `port[\"send\"](1)` on commit.\n"}),
+       forbid=["dangling link"])
+expect("dangling-link-double-backtick-ok", run(LINT, {"12-operate/rb.md": HDR + "\nCall ``uow[`afterCommit`](handler)`` here.\n"}),
+       forbid=["dangling link"])
+
 # ── 11d illegal downward PATH reference: an upstream file pointing at a downstream area by path/link (the ID
 #    direction checks only see id tokens; this catches 'infra-ops/prerequisites.md' cited from a requirement). ──
 expect("path-downward-bare-warns", run(LINT, {"06-requirements/quality/nfrs.md": HDR + "\nRPO target owned by infra-ops/test.\n" + idtable(("NFR-1", "x"))}),

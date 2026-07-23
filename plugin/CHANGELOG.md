@@ -4,6 +4,24 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.19.2
+
+### Fixed — `lint_spec.py` no longer false-errors on verbatim code inside spec docs
+
+Two related false-positive classes in the spec linter, both from inline checks that didn't fully exempt
+code spans. No real errors were missed — but the spurious ERRORs blocked a clean lint.
+
+- **The dangling-local-link check now skips fenced blocks and inline `code` spans.** It was the only
+  reference check without that exemption, so verbatim member-access TypeScript in documentation —
+  `uow["afterCommit"](handler)`, `port["send"](1)` — tokenized as a markdown `[...](...)` link and
+  false-fired as a dangling reference. It now blanks inline code and skips fences, mirroring the
+  placeholder check (#4).
+- **`INLINE_CODE` matches full CommonMark code spans, not just single-backtick ones.** A code span is a
+  run of N backticks closed by the same run, so authors use a double-backtick span to embed a literal
+  backtick (`` uow[`afterCommit`] ``). The old single-backtick pattern let the inner `[...](...)` leak
+  past the blanker and false-fire. The regex now matches the opening run and its same-length close,
+  which also strengthens the placeholder (#4) and context-namespaced-ID (#13b) checks that share it.
+
 ## 4.19.1
 
 ### Fixed — bundled installer no longer bricks, and the gap counter stops false-firing on rule prose
