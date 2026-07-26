@@ -308,6 +308,45 @@ def main():
     check("partial source toolset writes no host configs",
           not (target / ".claude").exists() and not (target / ".codex").exists())
 
+    # --- sibling worktrees: the gate validates the tree being EDITED ---------------------
+    # The session env var can point at a SIBLING worktree of the same repo. Validating that tree
+    # reads another checkout's state — which false-denied a legitimate `status: done` against a
+    # stale record. The anchor (the file the hooked call touches) must win over the env var.
+    wt_a = mkgitproject("plain-branch")                      # env points HERE; no active task
+    wt_b = Path(tempfile.mkdtemp()).resolve() / "sibling"    # ...but the edits land HERE
+    subprocess.run(["git", "worktree", "add", "-q", "-b", "task/T-042-x", str(wt_b)],
+                   cwd=wt_a, capture_output=True, text=True)
+    check("sibling worktree created", (wt_b / "spec").is_dir())
+
+    # gate 1: the edited tree is on a task branch with no red-log → DENY, though the env-pointed
+    # tree has no active task at all (pre-fix this resolved to wt_a and fell open).
+    (wt_b / "src").mkdir(exist_ok=True)
+    r = run_hook(wt_a, "Write", {"file_path": str(wt_b / "src" / "a.py"), "content": "print(1)"})
+    check("sibling worktree: RED gate follows the edited tree, not the env var", r.returncode == 2)
+
+    # gate 2: the done-claim is checked against the EDITED tree's record. Stub checkers stand in
+    # for the record contents — the assertion is purely which tree's checker runs.
+    for tree, code in ((wt_a, 1), (wt_b, 0)):
+        (tree / ".grillspec" / "tools").mkdir(parents=True, exist_ok=True)
+        (tree / ".grillspec" / "tools" / "check_task_record.py").write_text(
+            "import sys; sys.exit(%d)\n" % code)
+    rec = wt_b / "spec" / "10-delivery" / "verification" / "T-042.md"
+    rec.parent.mkdir(parents=True, exist_ok=True)
+    r = run_hook(wt_a, "Write", {"file_path": str(rec), "content": "status: done\n"})
+    check("sibling worktree: done-claim checked against the edited tree's record",
+          r.returncode == 0)
+    # ...and the env-pointed tree's own record still governs edits made inside it
+    rec_a = wt_a / "spec" / "10-delivery" / "verification" / "T-042.md"
+    rec_a.parent.mkdir(parents=True, exist_ok=True)
+    r = run_hook(wt_a, "Write", {"file_path": str(rec_a), "content": "status: done\n"})
+    check("done-claim inside the env-pointed tree still gated", r.returncode == 2)
+
+    # a Write to a not-yet-created directory still anchors on its repo (climbs to a real ancestor)
+    r = run_hook(wt_a, "Write", {"file_path": str(wt_b / "src" / "new" / "deep" / "b.py"),
+                                 "content": "print(1)"})
+    check("anchor resolves through a not-yet-created directory", r.returncode == 2)
+    subprocess.run(["git", "worktree", "remove", "--force", str(wt_b)], cwd=wt_a, capture_output=True)
+
     # --- installer is idempotent --------------------------------------------------------
     subprocess.run([sys.executable, str(INSTALL), str(fresh)], capture_output=True, text=True)
     s = json.loads((fresh / ".claude" / "settings.json").read_text())

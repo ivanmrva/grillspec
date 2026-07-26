@@ -80,7 +80,25 @@ TEST_NAME = re.compile(r"^test_|_test\.|\.test\.|\.spec\.|_spec\.", re.I)
 CAMEL_TEST = re.compile(r"[a-z0-9](?:Test|Tests|Spec|Specs)\.\w+$")
 
 
-def project_root() -> Path:
+def project_root(anchor=None) -> Path:
+    """Root of the tree being VALIDATED. Precedence: (1) the repository containing `anchor` —
+    the file the hooked tool call touches; a session env var may point at a SIBLING worktree of
+    the same repo, and validating that tree reads another checkout's gate state (a legitimate
+    `status: done` then false-denies against a stale record); (2) GRILLSPEC_PROJECT_DIR /
+    CLAUDE_PROJECT_DIR; (3) git toplevel of CWD; (4) CWD. CLI subcommands pass no anchor —
+    they run from the project cwd, where the env/cwd fallback is the correct behaviour."""
+    if anchor:
+        d = Path(anchor)
+        if not d.is_dir():                                       # a Write may target a file — or a
+            d = d.parent                                         # directory — that doesn't exist yet,
+        while not d.is_dir() and d != d.parent:                  # so climb to the first real ancestor
+            d = d.parent
+        try:
+            out = subprocess.run(["git", "-C", str(d), "rev-parse", "--show-toplevel"],
+                                 capture_output=True, text=True, check=True)
+            return Path(out.stdout.strip())
+        except Exception:
+            pass
     env = os.environ.get("GRILLSPEC_PROJECT_DIR") or os.environ.get("CLAUDE_PROJECT_DIR")
     if env and Path(env).is_dir():
         return Path(env)
@@ -410,7 +428,10 @@ def cmd_hook() -> int:
         return 0                                                 # unparseable → fail open
     if os.environ.get("GRILLSPEC_GATE_OFF"):
         return 0
-    root = project_root()
+    # anchor on the file this call actually touches — see project_root(). (Codex `apply_patch`
+    # carries no file_path; it falls back to env/cwd, as before.)
+    ti = payload.get("tool_input") or {}
+    root = project_root(ti.get("file_path") or ti.get("notebook_path"))
     if not (root / "spec").is_dir():                             # not a grillspec project → no-op
         return 0
     edits = normalized_edits(payload, root)

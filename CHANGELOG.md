@@ -4,6 +4,24 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.19.3
+
+### Fixed — the exec gate validates the worktree being edited, not the one the env var points at
+
+`gate_exec.py`'s `project_root()` preferred `GRILLSPEC_PROJECT_DIR` / `CLAUDE_PROJECT_DIR`
+unconditionally. When a hooked `Edit`/`Write` targeted a file in a **sibling worktree of the same
+repo** — the normal shape of an AFK run, one task per worktree — the gate validated the env-pointed
+tree instead of the tree actually being edited: it read another checkout's gate state and red-logs.
+Observed twice on 2026-07-26 as a legitimate `status: done` false-denied against a stale record on a
+different checkout.
+
+`project_root()` now takes an optional anchor and resolves the repository **containing the file the
+hooked call touches** first, falling back to the env vars, then git-toplevel-of-CWD, then CWD. The
+anchor climbs to its first existing ancestor, so a `Write` creating a new file (or a new directory)
+still resolves correctly. Only the hook path passes an anchor — `--start`, `--done` and `--red` are
+CLI-invoked from the project cwd, where the env/cwd fallback is the right behaviour and is unchanged.
+Codex `apply_patch` payloads carry no `file_path` and keep the previous resolution.
+
 ## 4.19.2
 
 ### Fixed — `lint_spec.py` no longer false-errors on verbatim code inside spec docs
