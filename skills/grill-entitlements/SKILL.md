@@ -1,7 +1,9 @@
 ---
 name: grill-entitlements
 description: >-
-  Pin the entitlement model — the access tiers, what each unlocks (feature gating), usage limits/quotas, and how access degrades on a lapsed billing state — as the access-control contract architecture enforces. The STRUCTURAL half of monetization (pricing is a separate commercial area). Loads the shared grill engine.
+  Pin the entitlement model — access tiers, feature gating, usage limits and quotas, and
+  degradation on a lapsed billing state — the access-control contract architecture enforces; the
+  structural half of monetization. Loads the shared grill engine.
 ---
 
 <!-- grillspec-portable-resources -->

@@ -1,7 +1,9 @@
 ---
 name: grill-design-system
 description: >-
-  Pin the design system as a spec — design tokens (DTCG, primitive→semantic→component), components-as-contracts (variants · states · ARIA), implementation mapping, accessibility baked into the tokens, brand & assets, and voice/content. Provided, partial, or generated from a brand seed. Use when you need the design system specified, not the journeys. Loads the shared grill engine.
+  Pin the design system as a spec — DTCG design tokens (primitive→semantic→component), components-
+  as-contracts with variants, states and ARIA, accessibility baked into the tokens, brand assets,
+  and voice. Provided, partial, or generated from a brand seed. Loads the shared grill engine.
 ---
 
 <!-- grillspec-portable-resources -->

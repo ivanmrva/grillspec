@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill Problem Validation"
   short_description: "Pin the problem worth solving and score the riskiest bets \u2014\u2026"
-  default_prompt: "Use $grill-problem-validation to pin the problem worth solving and score the riskiest bets \u2014 problem hypothesis (who hurts, how badly, vs which alternatives, why-now),\u2026"
+  default_prompt: "Use $grill-problem-validation to pin the problem worth solving and score the riskiest bets \u2014 problem hypothesis, desirability/viability/feasibility bets scored criticality \u00d7\u2026"
 policy:
   allow_implicit_invocation: false

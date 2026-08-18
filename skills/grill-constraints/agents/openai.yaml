@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill Constraints"
   short_description: "Pin the fixed bounds the solution must live within \u2014\u2026"
-  default_prompt: "Use $grill-constraints to pin the fixed bounds the solution must live within \u2014 technical & organizational mandates, externally-imposed standards & conventions, the regulatory\u2026"
+  default_prompt: "Use $grill-constraints to pin the fixed bounds the solution must live within \u2014 technical and organizational mandates, imposed standards, applicable regulatory regimes, the\u2026"
 policy:
   allow_implicit_invocation: false

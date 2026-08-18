@@ -1,7 +1,9 @@
 ---
 name: derive-architecture
 description: >-
-  Derive the solution architecture — style, C4 decomposition, tech stack, contexts→services, cross-cutting concerns, the module map & seam contracts, and the key sequences — from the settled spec. Use when the requirements are settled and you need the architecture derived (not interviewed). Loads the shared derive engine.
+  Derive the solution architecture from the settled spec — style, C4 decomposition, tech stack,
+  contexts→services, cross-cutting concerns, the module map and seam contracts, and the key
+  sequences. Loads the shared derive engine.
 ---
 
 <!-- grillspec-portable-resources -->

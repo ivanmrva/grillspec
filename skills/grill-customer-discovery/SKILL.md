@@ -1,7 +1,9 @@
 ---
 name: grill-customer-discovery
 description: >-
-  Pin who the product is for — target market & segments, personas with the B2B decision-making unit, and the jobs-to-be-done behind each. Flags which personas are system users, seeding the shared actor roster. Use when you need the primary segment, its JTBD, and the personas nailed. Loads the shared grill engine.
+  Pin who the product is for — target market and segments, personas with the B2B decision-making
+  unit, and the jobs-to-be-done behind each; flags which personas are system users, seeding the
+  shared actor roster. Loads the shared grill engine.
 ---
 
 <!-- grillspec-portable-resources -->

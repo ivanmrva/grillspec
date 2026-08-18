@@ -30,7 +30,10 @@
 #   python3 tools/check_task_record.py [spec_dir] --report [T-014] # render a readable, tool-VOUCHED completion report
 import sys, re, os, pathlib
 
-args = [a for a in sys.argv[1:] if not a.startswith("--")]
+_flag_vals = {sys.argv[i + 1] for i, a in enumerate(sys.argv)
+              if a in ("--task", "--init", "--report") and i + 1 < len(sys.argv)
+              and not sys.argv[i + 1].startswith("--")}
+args = [a for a in sys.argv[1:] if not a.startswith("--") and a not in _flag_vals]
 flags = [a for a in sys.argv[1:] if a.startswith("--")]
 SPEC = pathlib.Path(args[0] if args else "spec")
 ROOT = SPEC.parent                                              # the project root; evidence paths resolve here

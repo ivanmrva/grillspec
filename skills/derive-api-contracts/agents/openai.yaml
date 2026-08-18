@@ -1,6 +1,6 @@
 interface:
   display_name: "Derive API Contracts"
-  short_description: "Produce machine-readable API and event contracts \u2014 an\u2026"
-  default_prompt: "Use $derive-api-contracts to produce machine-readable API and event contracts \u2014 an `openapi.yaml` (latest-stable OpenAPI), an `asyncapi.yaml` (latest-stable AsyncAPI), schemas\u2026"
+  short_description: "Produce machine-readable API and event contracts \u2014\u2026"
+  default_prompt: "Use $derive-api-contracts to produce machine-readable API and event contracts \u2014 openapi.yaml and asyncapi.yaml at the latest stable standard, schemas and versioning \u2014 from the\u2026"
 policy:
   allow_implicit_invocation: false

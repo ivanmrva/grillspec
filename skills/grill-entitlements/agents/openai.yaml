@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill Entitlements"
-  short_description: "Pin the entitlement model \u2014 the access tiers, what each\u2026"
-  default_prompt: "Use $grill-entitlements to pin the entitlement model \u2014 the access tiers, what each unlocks (feature gating), usage limits/quotas, and how access degrades on a lapsed billing\u2026"
+  short_description: "Pin the entitlement model \u2014 access tiers, feature gating\u2026"
+  default_prompt: "Use $grill-entitlements to pin the entitlement model \u2014 access tiers, feature gating, usage limits and quotas, and degradation on a lapsed billing state \u2014 the access-control\u2026"
 policy:
   allow_implicit_invocation: false

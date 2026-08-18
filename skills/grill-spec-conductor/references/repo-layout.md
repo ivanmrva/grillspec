@@ -136,9 +136,9 @@ per-task done (execution loop). **Code lives in the project source tree (`src/`,
 `spec/`** — the closed-world rule governs `spec/` only; canonical `AGENTS.md` and its import-only `CLAUDE.md` adapter sit at the repo root.
 
 **Output discipline (enforced):** the file set is exactly this list — **no file may be created at a
-path not above.** Every file opens with `<!-- scope: … | excludes: … | format: … -->`. Style is tight,
-structured, ubiquitous-language, **prose to clarify, not walls**. In-scope content lives in the artifact that owns it, never a bespoke side-file.
-Checked mechanically by `scripts/lint_spec.py` (the conductor runs it each session).
+path not above.** In-scope content lives in the artifact that owns it, never a bespoke side-file; headers
+and style per `house-rules.md`. Checked mechanically by `scripts/lint_spec.py` (the
+conductor runs it each session).
 
 ## Standalone / partial bundles
 This is the canonical full map. A standalone bundle ships only the skills it needs plus the shared engine(s) they load (the bundler copies exactly those, resolved transitively); each skill writes its own deliverables. `repo-layout.md`, `lint_spec.py`, and the conductor are full-system concerns, not part of a single-skill bundle. Areas not shipped stay unpopulated - valid: the linter checks that every file sits at an allowed path, not that every area is filled, so this map needs no trimming for a subset. The conductor is optional - present, it routes and gates; absent, a skill is invoked directly and runs against whatever upstream the bundle provides, raising a missing input as a gap rather than inventing it.

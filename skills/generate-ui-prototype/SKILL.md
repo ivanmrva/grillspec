@@ -1,7 +1,9 @@
 ---
 name: generate-ui-prototype
 description: >-
-  Generate a clickable HTML prototype of the screen(s) a UI slice implements — built from the real design-system tokens & components, with every interaction state, wired into the navigation the information architecture defines — as the precise visual + interaction reference the coding task builds against. Produced when a ux-heavy slice is finalized (the design-review window), not in the coding loop; skipped when the IA + design system already determine the screen. Loads the shared exec engine.
+  Generate a clickable HTML prototype of a UI slice's screens from the real design-system tokens
+  and components, every interaction state included — produced and frozen at task finalization as
+  the coding task's visual reference. Loads the shared exec engine.
 ---
 
 <!-- grillspec-portable-resources -->

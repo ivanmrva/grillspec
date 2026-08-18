@@ -1,7 +1,9 @@
 ---
 name: grill-goals
 description: >-
-  Define what success means — a north-star metric with its input-metric tree, supporting success metrics, guardrail/counter-metrics, and pre-committed KILL-CRITERIA ('if not X by Y, we stop'). Use when you need success and the stop conditions pinned. Loads the shared grill engine.
+  Define what success means — a north-star metric with its input-metric tree, supporting success
+  metrics, guardrail/counter-metrics, and pre-committed KILL-CRITERIA ('if not X by Y, we stop').
+  Loads the shared grill engine.
 ---
 
 <!-- grillspec-portable-resources -->

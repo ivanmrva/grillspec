@@ -4,6 +4,58 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.20.0
+
+### Changed — instruction-layer dedup for precise-instruction-following models: every rule stated once
+
+Newer Claude models follow instructions precisely enough that repeating a rule three-to-five times
+costs attention and creates drift risk without buying compliance — while every mechanical gate
+(the Python checkers, hooks, CI wiring) is untouched and every gate row survives. The refactor:
+
+- **`grill-shared/house-rules.md` (new)** — the four passages previously copy-pasted across all
+  three engines (the workspace-only source fence · the timeless-artifact rule · output discipline ·
+  stable-ID mechanics · plugin-feedback routing) now live once; each engine loads it alongside
+  `decision-classes.md`. The bundler resolves it transitively, so every standalone/cluster bundle
+  ships it.
+- **`exec-engine.md`** rewritten (6,078 → 3,750 words): the Definition-of-Done prose and the
+  done-gate run-on sentence — two drifting serializations of the same checklist — merged into ONE
+  canonical gate table (gate · green means · enforced by); each behavioral rule (no-fakes, deploy-real,
+  UI contract, tests-first, the Verification Record) stated once with its enforcing checker; the
+  anti-cheat invariants kept as compact pointers to those rules.
+- **`grill-engine.md`** (3,625 → 2,354) and **`derive-engine.md`** (2,433 → 1,511): shared passages
+  replaced by the house-rules pointer; the decide-vs-ask guidance stated once (the classifier file)
+  instead of three times per engine.
+- **Exec-family skills deduplicated against the engine** — `implement-task`, `conformance-review`,
+  `run-tests`, `autorun` no longer restate engine rules; they carry only their task-specific
+  process and judgments (the held-out-AC protocol, the rendered-surface review, the not-exercised
+  e2e enumeration, the bootstrap runbook composition all remain in full).
+- **Conductor** — the stage map lived in three places (repo-layout tree, the conductor's ASCII
+  block, `dependencies.json`); the conductor now points at the shared layer and keeps only what the
+  tree can't show.
+- **Frontmatter descriptions trimmed** to what-plus-when (~40 words each; 2,450 → 1,845 words
+  total) — the always-loaded surface of the plugin; mode semantics stay in each skill's body.
+
+Follow-up sweep: `conductor-playbook.md` drops its restated ID mechanics and lite-path no-fakes
+prose (pointers to `house-rules.md` / the exec engine; the unique scaling rules stay);
+`repo-layout.md`'s style tail points at the house rules; `HOW-IT-WORKS.md` now names the two
+cross-engine references beside the three engines. `operator-map.md` is left as is — it is a
+deliberate one-page summary, so its overlap is its function. A live smoke run executed every tool
+invocation the rewritten engines state, in a scratch project — all forms work as written,
+including the gate's covers-less-red and unknown-covers-ID refusals.
+
+### Fixed
+
+- `check_task_record.py` invoked as `--task T-NNN` *without* the optional `[spec_dir]` positional
+  double-counted the flag's value as the spec path (resolving the record at the bogus
+  `T-NNN/10-delivery/…`), breaking the tool's own documented usage. Flag values are now excluded
+  from the positional scan; regression test added (surfaced by the smoke run).
+- `implement-task` labelled analytics events `EXP-` (the growth-experiment prefix); the analytics
+  event prefix is `AEV-` — a drift artifact of the same rule being restated in skill and engine.
+- `conductor-playbook.md` pointed at the source-of-truth fence "in `grill-engine.md`"; the fence
+  lives in `house-rules.md`.
+- `audit-spec` attributed the two spec axes to "the engine" while loading the exec engine (the
+  axes are defined grill-side) — now stated without the dangling attribution.
+
 ## 4.19.3
 
 ### Fixed — the exec gate validates the worktree being edited, not the one the env var points at

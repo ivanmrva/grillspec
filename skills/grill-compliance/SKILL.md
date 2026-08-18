@@ -1,7 +1,9 @@
 ---
 name: grill-compliance
 description: >-
-  Pin which regulatory/legal regimes apply and turn them into concrete, referenceable obligations (`OBL-`) that flow into security, data, and architecture. Swiss/EU-aware (FADP/GDPR/EU AI Act). Use when you need the applicable regimes and their obligations nailed down. Loads the shared grill engine.
+  Pin which regulatory/legal regimes apply and turn them into concrete, referenceable obligations
+  (OBL-) that flow into security, data, and architecture. Swiss/EU-aware (FADP/GDPR/EU AI Act).
+  Loads the shared grill engine.
 ---
 
 <!-- grillspec-portable-resources -->

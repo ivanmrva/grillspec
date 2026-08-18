@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill Integration Reqs"
-  short_description: "Per external boundary, elicit the qualities and obligations\u2026"
-  default_prompt: "Use $grill-integration-reqs to per external boundary, elicit the qualities and obligations of each exchange in detail \u2014 direction, interaction-style, volumes, latency, SLA,\u2026"
+  short_description: "Per external boundary, specify each exchange \u2014 direction\u2026"
+  default_prompt: "Use $grill-integration-reqs to per external boundary, specify each exchange \u2014 direction, interaction style, volumes, latency, SLA, delivery guarantee with\u2026"
 policy:
   allow_implicit_invocation: false

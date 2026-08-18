@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill Customer Discovery"
-  short_description: "Pin who the product is for \u2014 target market & segments\u2026"
-  default_prompt: "Use $grill-customer-discovery to pin who the product is for \u2014 target market & segments, personas with the B2B decision-making unit, and the jobs-to-be-done behind each. Flags\u2026"
+  short_description: "Pin who the product is for \u2014 target market and segments\u2026"
+  default_prompt: "Use $grill-customer-discovery to pin who the product is for \u2014 target market and segments, personas with the B2B decision-making unit, and the jobs-to-be-done behind each; flags\u2026"
 policy:
   allow_implicit_invocation: false

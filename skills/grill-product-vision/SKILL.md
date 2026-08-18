@@ -1,7 +1,10 @@
 ---
 name: grill-product-vision
 description: >-
-  Define the product in plain language — what it is and the outcome, the value proposition, a one-line positioning statement with differentiation, a coarse in/out scope with explicit non-goals, coarse MVP/near/deferred phasing, and the go-to-market **motion** (PLG / self-serve vs sales-led) — the early fork that shapes onboarding, billing and auth. The scope here seeds which contexts the domain model covers. Use when you need vision, positioning, a revisable scope, and the motion set before architecture. Loads the shared grill engine.
+  Define the product in plain language — value proposition, one-line positioning with
+  differentiation, coarse scope with explicit non-goals, MVP/near/deferred phasing, and the go-to-
+  market motion (PLG vs sales-led), the early fork that shapes onboarding, billing and auth. Loads
+  the shared grill engine.
 ---
 
 <!-- grillspec-portable-resources -->

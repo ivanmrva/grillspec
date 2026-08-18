@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill Spec Conductor"
-  short_description: "START HERE to spec, design, model, plan, or build a project\u2026"
-  default_prompt: "Use $grill-spec-conductor to sTART HERE to spec, design, model, plan, or build a project, product, or feature end-to-end \u2014 the single front door and orchestrator for the whole\u2026"
+  short_description: "START HERE to spec, design, plan, or build a project or\u2026"
+  default_prompt: "Use $grill-spec-conductor to sTART HERE to spec, design, plan, or build a project or feature end-to-end \u2014 the front door and orchestrator for the whole\u2026"
 policy:
   allow_implicit_invocation: false

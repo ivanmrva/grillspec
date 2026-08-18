@@ -1,7 +1,9 @@
 ---
 name: grill-market
 description: >-
-  Map the competitive landscape — direct competitors in a comparison matrix, indirect alternatives incl. status-quo/DIY, defensible differentiation with named moats, switching costs, and order-of-magnitude sizing. Feeds positioning and the viability bet. Use when you need the landscape and rough size mapped, not a financial model. Loads the shared grill engine.
+  Map the competitive landscape — direct competitors in a comparison matrix, indirect alternatives
+  including status-quo/DIY, defensible differentiation with named moats, switching costs, and
+  order-of-magnitude sizing. Loads the shared grill engine.
 ---
 
 <!-- grillspec-portable-resources -->

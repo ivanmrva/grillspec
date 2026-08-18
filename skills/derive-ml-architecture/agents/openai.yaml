@@ -1,6 +1,6 @@
 interface:
   display_name: "Derive ML Architecture"
   short_description: "Derive the ML/AI system design from the ML requirements \u2014\u2026"
-  default_prompt: "Use $derive-ml-architecture to derive the ML/AI system design from the ML requirements \u2014 model serving, the evaluation harness, the training/feedback (or prompt/retrieval)\u2026"
+  default_prompt: "Use $derive-ml-architecture to derive the ML/AI system design from the ML requirements \u2014 model serving, the evaluation harness, the training/feedback or prompt/retrieval\u2026"
 policy:
   allow_implicit_invocation: false

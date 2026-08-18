@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill Product Vision"
-  short_description: "Define the product in plain language \u2014 what it is and the\u2026"
-  default_prompt: "Use $grill-product-vision to define the product in plain language \u2014 what it is and the outcome, the value proposition, a one-line positioning statement with differentiation, a\u2026"
+  short_description: "Define the product in plain language \u2014 value proposition\u2026"
+  default_prompt: "Use $grill-product-vision to define the product in plain language \u2014 value proposition, one-line positioning with differentiation, coarse scope with explicit non-goals,\u2026"
 policy:
   allow_implicit_invocation: false

@@ -1,7 +1,10 @@
 ---
 name: grill-problem-validation
 description: >-
-  Pin the problem worth solving and score the riskiest bets — problem hypothesis (who hurts, how badly, vs which alternatives, why-now), desirability/viability/feasibility bets scored criticality × uncertainty, value-proposition fit, and a PMF definition with the cheapest test per assumption. Runs first and never closes. Use when you need the problem nailed and the riskiest bets scored before anything is built. Loads the shared grill engine.
+  Pin the problem worth solving and score the riskiest bets — problem hypothesis,
+  desirability/viability/feasibility bets scored criticality × uncertainty, value-proposition fit,
+  and a PMF definition with the cheapest test per assumption. Runs first and never closes. Loads
+  the shared grill engine.
 ---
 
 <!-- grillspec-portable-resources -->

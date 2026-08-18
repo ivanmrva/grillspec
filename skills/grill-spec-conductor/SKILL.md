@@ -1,7 +1,7 @@
 ---
 name: grill-spec-conductor
 description: >-
-  START HERE to spec, design, model, plan, or build a project, product, or feature end-to-end — the single front door and orchestrator for the whole idea-to-spec-to-architecture-to-tasks-to-code-to-operate workflow. Use when starting from an idea or from scratch, when the scope is the whole project rather than one area, or when you don't know which step you need: it scans the spec, re-derives the current state, and recommends or asks which area to work next. Owns the cross-area dependency order, the readiness gates, the global glossary/actors and consistency, the discovery/validation overlay, the pivot loop, and the lite path. Prefer this over any individual grill-, derive-, or exec- skill whenever the work spans more than one area. Run this first.
+  START HERE to spec, design, plan, or build a project or feature end-to-end — the front door and orchestrator for the whole idea-to-spec-to-code-to-operate workflow. It scans the spec, re-derives the current state, and routes to the next area; owns the dependency order, readiness gates, and cross-area consistency. Prefer it over any single grill-/derive-/exec- skill whenever work spans more than one area.
 ---
 
 <!-- grillspec-portable-resources -->
@@ -9,6 +9,7 @@ description: >-
 
 Each area is the skill **`grill-<id>`**. The shared engine is `references/grill-engine.md`;
 the decide-vs-ask classifier is `references/decision-classes.md` (the convergence test);
+the cross-engine house rules are `references/house-rules.md`;
 the output tree + owners + modes are in `references/repo-layout.md`. You orchestrate; the
 area skills + engine interview. Everything writes into one `spec/` repo.
 
@@ -59,57 +60,8 @@ The same skills, handed no input and no target, run standalone for someone who c
   hands each execution skill a **tight context** (the task + its referenced spec IDs only) so the
   coding agent stays efficient.
 
-## Dependency graph — zero → right before source code (stages = folders = one skill each)
-The map below is the human overview; the **machine-readable** edges (each area's exact `consumes`/`produces_ids`) live in `references/dependencies.json` — consult it when handing a skill its input (rendered at `references/DEPENDENCY-GRAPH.md`).
-```
-STAGE 0 · DISCOVERY (runs FIRST · continuous · never closes)
-        discovery            problem hypothesis · DVF bets recorded in the artifact · value-prop fit · PMF plan
-STAGE 0 · FOUNDATION (elicited)
-        product-vision       vision · positioning · COARSE scope · phasing · GTM motion       → 02-product/vision/
-        customer-discovery   segments · personas · JTBD  (seeds actors.md)                   → 02-product/customers/
-        market               competitors · alternatives · differentiation · sizing          → 02-product/market/
-        goals                north-star · success metrics · KILL-CRITERIA                    → 02-product/goals/
-        constraints          mandates · regulatory · environment (DDD only as context)      → 03-constraints/
-        system-context       scope · external actors · neighbor systems · interfaces · C4 L1 → 03-system-context/
-STAGE 1 · DOMAIN
-        ddd                  the hub; seeds glossary + actors                                → 04-domain/ddd/
-STAGE 2 · REQUIREMENTS (derive[domain] + reference[product,constraints] + elicit deltas)
-        derive-functional (projected from ddd)                                                          → 05-functional-spec/   (DERIVED — no input)
-        quality · data-reqs · integration-reqs · compliance (OBL-) · entitlements (ENTL-) · security-reqs (SEC-) · ml-reqs (AI · ML-)  → 06-requirements/*   (grilled; tiered — see repo-layout)
-STAGE 3 · DESIGN SYSTEM (the visual + interaction contract — its own layer; consumes requirements)
-        design-system        tokens(DTCG) · components · a11y · brand · voice  (DS-)                 → 07-design-system/   (grilled; a provided export as base, or generated)
-STAGE 4 · UX (the experience — journeys synthesise the design system + the requirements)
-        ux-reqs              journeys · info-needs · IA · a11y · i18n  (`JRN-` journeys — a synthesis)  → 08-ux/   (grilled)
-        ───────────────── ARCHITECTURE-READINESS GATE ─────────────────
-STAGE 5 · SOLUTION (the how)
-        derive-architecture · derive-data-architecture · derive-api-contracts ·
-        derive-security-architecture · derive-infra-ops · derive-test-strategy · derive-observability (SLO-) · derive-ml-architecture (AI)   → 09-solution/*
-        (architecture fixes the module map + seam contracts; module INTERNALS are designed per-slice in execution — derive-impl-design is JIT, its output landing in 10-delivery/impl-design/ downstream of tasks, NOT a solution area)
-        ───────────────── IMPLEMENTATION-READINESS GATE ─────────────────
-STAGE 6 · DELIVERY PREP (build the agent's runway)
-        derive-conventions   standards · dependency/boundary rules · DoD · build/test cmds · AGENTS.md + CLAUDE.md import → 10-delivery/conventions/
-        derive-tasks         minimal vertical slices (T-NNN) · walking-skeleton first · build-order DAG  → 10-delivery/tasks/
-        ───────────────── DELIVERY-READINESS GATE ─────────────────
-STAGE 7 · EXECUTION (per task, in build-order; CODE lives in the repo, NOT spec/)
-        (slice flagged design-first → derive-impl-design designs its modules → 10-delivery/impl-design/)  →  implement-task (builds against the slice's frozen UI prototype, if any, + the module design)  →  run-tests  →  conformance-review  →  done    (loop; any red routes back)
-        (the UI prototype is NOT a loop step — it is produced + reviewed + frozen at task finalization, before the run; see Task readiness)
-        autorun         autonomous driver · runs that loop across the whole task queue (AFK) · stops only on a true blocker (HITL trigger)
-                                                                            conformance-review → 10-delivery/verification/
-        ──────────── RELEASE-READINESS CHECKLIST (advisory) ────────────
-POST-LAUNCH · COMMERCIAL (pure sinks — nothing upstream depends on these; the build-shaping MOTION lives in 02-product/vision, the ENTITLEMENT tiers in 06-requirements/entitlements)
-        go-to-market         channels · launch · partnerships                                → 11-commercial/go-to-market/
-        monetization         business model · pricing · plans · unit economics — prices the ENTL- tiers → 11-commercial/monetization/
-        growth               activation/retention model · experiment backlog (EXP-) · analytics events → 11-commercial/growth/
-STAGE 8 · OPERATE & MAINTAIN (real/prod systems · feeds back to discovery)
-        deploy-release  (rollout/rollback) · migrate-data (on DATA-/AGG- change) · operate-incident (learnings → assumptions/gaps)
-        diagnose (hard bugs: feedback-loop → reproduce → hypothesise → fix+regression)
-                                                                            operational records → 12-operate/
-ANY STAGE · prototype (throwaway spike to answer ONE question empirically — resolves a gap/assumption instead of guessing → resolutions/assumptions/ux/ADR)
-ANY STAGE · generate-docs / generate-api-reference / generate-ui-prototype (project the spec → the full-project docs site · the API reference · a ux-heavy slice's clickable UI prototype (produced + frozen at that task's finalization, not in the coding loop; skipped when the IA + design system already fully determine the screen); regenerated on change — consumed by readers/clients and the build)
-cross-cutting views (reconciled by reading outputs):  glossary, actors, bets, the risk + technical-debt register, decisions
-```
-**Stage purity:** each leaf folder is the exclusive output of one skill/stage; nothing co-located
-across stages. The only cross-stage shared location is `adr/` (one file per ADR, so two skills never collide).
+## Stage map & dependencies (owned by the shared layer — consult, don't restate)
+The canonical stage chain, per-area slots, tier diagrams, gates, and stage-purity rule live in `references/repo-layout.md`; the machine-readable edges (each area's exact `consumes`/`produces_ids`) in `references/dependencies.json`, rendered for humans at `references/DEPENDENCY-GRAPH.md`. Consult those when sequencing areas and handing a skill its input. What the tree can't show: discovery runs first, is continuous, and never closes; `derive-impl-design` is JIT in execution (a design-first slice, output to `10-delivery/impl-design/` downstream of tasks — not a solution area); the execution loop per task is implement-task → run-tests → conformance-review with any red routing back, driven across the whole DAG by `autorun`; `prototype` answers ONE empirical question at any stage; `generate-docs` / `generate-api-reference` / `generate-ui-prototype` project the spec on change (the UI prototype is produced + frozen at task finalization, not in the coding loop). Cross-cutting views (glossary, actors, bets, the risk + technical-debt register, decisions) are reconciled by reading area outputs, never stored as files.
 
 **Key edges:** discovery → product-vision · product-vision.scope → which ddd contexts exist · product-vision.motion (PLG vs sales-led) → ux · security · monetization ·
 customer-discovery.personas → actors · constraints → bounds all · personas + neighbor-systems → system-context (the boundary) → ddd + integration + C4-L1 · ddd → all requirements (quality/data/security anchor on the domain — orthogonal to use-cases) · functional →
@@ -176,12 +128,12 @@ the world keeps invalidating things you thought you knew.
    (closed-world paths · file headers · dangling local links · placeholder/stale tokens · duplicate
    cross-area term · invalid bet status · Deferred-without-trigger); its WARNs are candidates you
    judge (readiness-vs-reality · gate order · prose). Then **read the area outputs** (their recorded bets, gaps, and decisions) and **scan the repo** for the *semantic* consistency the
-   linter can't see — including a **timeless-source-of-truth sweep**: the spec describes the system as it is now, so strip any development-trace / changelog language that slipped into an area (content tagged `new` / `newly added` / `now` / `previously` / `expand→contract`, notes of what an edit added/cut/deferred, `this round` / `as discussed`), and any **append-only / incoherent structure** an edit left behind (a change bolted onto the end rather than placed where it belongs, a redundant section parallel to the one it belonged in, a separate paragraph/note/row added beside content that a change should have updated in place, a half-restructured document that's part-sectioned-part-flat, or emphasis used to mark an addition — bold/italic just because content is new rather than by the document's convention) — each spec must read as one coherent document written from scratch; route the fix to the owning area. The same word is fine as domain language (a `new booking`). 2. **Re-derive** cross-area state incl. cross-references; flag downstream of any
+   linter can't see — including a **timeless-source-of-truth sweep**: development-trace language or append-only structure that violates the timeless-artifact rule in `references/house-rules.md` is a defect; route the fix to the owning area. 2. **Re-derive** cross-area state incl. cross-references; flag downstream of any
    changed upstream as "needs recheck"; recompute bet-health. 3. **Report both dashboards** + unlocked
    / blocked / nearest gate + the single riskiest untested assumption. 4. On the user's pick, load and
    run the area skill yourself (or migrate / a cross-area fix / an assumption-test plan); update your readiness view.
 
-**System self-feedback (the run improves the plugin, not just the spec).** If at any point this run hits friction that is a **defect or gap in this system itself** — a linter check that is demonstrably wrong, a skill instruction that contradicts another or cannot be satisfied, an ID type the schema needs but the linter rejects, a path a skill is told to write that the structure won't allow, a stale tool/doc reference — **do not silently work around it and do not record it in any `spec/` artifact** (the spec must stay free of awareness of this system). Capture it: `python3 scripts/plugin_feedback.py --add --kind bug|gap|improvement --component <skill/tool/engine> --summary "…" --detail "…" --suggest "…" --evidence <file:line>`. It appends to **`GRILLSPEC-FEEDBACK.md` at the project root** (a sibling of `spec/`, never inside it) for the plugin author to triage — capture-and-route, never self-patch. Keep the bar high: a real contradiction or a rule that demonstrably can't be satisfied, not a mere preference. When the file has entries, note their count in your end-of-run report.
+**System self-feedback (the run improves the plugin, not just the spec).** Friction that is a defect in this system itself follows the house rules' plugin-feedback route (`plugin_feedback.py` → `GRILLSPEC-FEEDBACK.md` at the project root) — never recorded in a `spec/` artifact, never silently worked around. When the file has entries, note their count in your end-of-run report.
 
 ## Skill kinds — interview vs derivation vs execution (and what each must NOT do)
 - **Interview (`grill-*`)** — elicits facts only the human/market has (vision, domain, the *values*
@@ -289,7 +241,7 @@ re-validation is trustworthy at scale. It **complements, not replaces, you:**
 Run it at session start and each run, before trusting any cached state.
 
 ## Cross-area reconciliation (no shared singletons)
-There are **no shared mutable singletons**. Each area writes its own self-describing artifact; **`glossary.md`** and **`actors.md`** are deliverables only in the areas whose job is to define them — the **domain model** owns the canonical ubiquitous language and domain actor roster, **customer-discovery** owns personas/system-users, **system-context** owns the external/boundary actors + neighbor systems, and (optionally) **design-system**/**compliance** keep their own UI/regulatory lexicons; most areas own neither. **All ADRs** live in the **one shared `adr/`** folder, each filename prefixed with its area code (`ADR-<PREFIX>-NNN`) so no two skills collide. The conductor **reads the area outputs** and reconciles across them: it **maintains the system-wide `glossary.md` and `actors.md` at the spec root** (reconciled from the per-area ones — one term/one meaning; personas ↔ domain roles ↔ boundary actors unified into one roster), derives the **global ADR index** from `adr/` (every `ADR-` reference resolves; every filename carries a registered prefix), and harvests the **bet register** and **risks** inline from the artifacts. **No file may exist at a path not listed in `repo-layout.md`** — on scan, relocate or merge any stray file. Every file opens with its `<!-- scope: … | excludes: … | format: … -->` header; style is tight, structured, ubiquitous-language, **no prose**, and **prefer a Markdown table whenever the content is even loosely tabular** — the glossary, actor roster, ADR index, and readiness dashboards are all tables, because tables are the most scannable form for the reader.
+There are **no shared mutable singletons**. Each area writes its own self-describing artifact; **`glossary.md`** and **`actors.md`** are deliverables only in the areas whose job is to define them — the **domain model** owns the canonical ubiquitous language and domain actor roster, **customer-discovery** owns personas/system-users, **system-context** owns the external/boundary actors + neighbor systems, and (optionally) **design-system**/**compliance** keep their own UI/regulatory lexicons; most areas own neither. **All ADRs** live in the **one shared `adr/`** folder, each filename prefixed with its area code (`ADR-<PREFIX>-NNN`) so no two skills collide. The conductor **reads the area outputs** and reconciles across them: it **maintains the system-wide `glossary.md` and `actors.md` at the spec root** (reconciled from the per-area ones — one term/one meaning; personas ↔ domain roles ↔ boundary actors unified into one roster), derives the **global ADR index** from `adr/` (every `ADR-` reference resolves; every filename carries a registered prefix), and harvests the **bet register** and **risks** inline from the artifacts. **No file may exist at a path not listed in `repo-layout.md`** — on scan, relocate or merge any stray file. Every file follows the house rules (header · style · tables); the glossary, actor roster, ADR index, and readiness dashboards are all tables.
 
 **What the conductor itself writes** (reconciled at the spec root — it owns no area artifact):
 

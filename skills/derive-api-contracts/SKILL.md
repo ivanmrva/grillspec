@@ -1,7 +1,9 @@
 ---
 name: derive-api-contracts
 description: >-
-  Produce machine-readable API and event contracts — an `openapi.yaml` (latest-stable OpenAPI), an `asyncapi.yaml` (latest-stable AsyncAPI), schemas and versioning — from the published language and integration requirements. Use when the published language and integration requirements exist and you need the API/event contracts derived. Loads the shared derive engine.
+  Produce machine-readable API and event contracts — openapi.yaml and asyncapi.yaml at the latest
+  stable standard, schemas and versioning — from the published language and integration
+  requirements. Loads the shared derive engine.
 ---
 
 <!-- grillspec-portable-resources -->

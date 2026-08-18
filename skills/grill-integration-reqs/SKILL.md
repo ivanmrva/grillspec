@@ -1,7 +1,10 @@
 ---
 name: grill-integration-reqs
 description: >-
-  Per external boundary, elicit the qualities and obligations of each exchange in detail — direction, interaction-style, volumes, latency, SLA, delivery guarantee + idempotency/ordering/retry/DLQ/replay, failure/degradation behaviour, reconciliation, auth. Use when the boundary roster already exists and you need each seam specified. Loads the shared grill engine.
+  Per external boundary, specify each exchange — direction, interaction style, volumes, latency,
+  SLA, delivery guarantee with idempotency/ordering/retry/DLQ/replay, failure and degradation
+  behaviour, reconciliation, auth. Use once the boundary roster exists. Loads the shared grill
+  engine.
 ---
 
 <!-- grillspec-portable-resources -->

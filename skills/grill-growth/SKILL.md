@@ -1,7 +1,9 @@
 ---
 name: grill-growth
 description: >-
-  Pin the post-launch growth model — activation/retention/referral, an experiment backlog, and the analytics events the product must emit to measure it. Use when you need a growth model plus its instrumentation; closes the loop from launch back to discovery. Loads the shared grill engine.
+  Pin the post-launch growth model — activation, retention and referral, an experiment backlog,
+  and the analytics events the product must emit to measure it; closes the loop from launch back
+  to discovery. Loads the shared grill engine.
 ---
 
 <!-- grillspec-portable-resources -->
