@@ -58,10 +58,10 @@ expect("echo-only-script-warn", run({"deploy/release.sh": '#!/bin/bash\necho "de
 expect("echo-only-strict", run({"deploy/release.sh": '#!/bin/bash\necho "deploying..."\nexit 0\n'}, args=("--strict",)),
        must=["ERROR"])
 
-# a disabled deploy job (if: false) is a WARN
-expect("disabled-job-warn", run({".github/workflows/deploy.yml":
+# a disabled deploy job (if: false) is an unambiguous fake - ERROR
+expect("disabled-job-error", run({".github/workflows/deploy.yml":
         "jobs:\n  deploy:\n    if: false\n    steps:\n      - run: helm upgrade app .\n"}),
-       must=["WARN", "disabled deploy"], forbid=["ERROR"])
+       must=["ERROR", "disabled deploy"])
 
 # a NON-deploy workflow (test/lint only, no deploy command) is left alone - no false positive on test logs
 expect("non-deploy-workflow-ignored", run({".github/workflows/ci.yml":
@@ -105,9 +105,9 @@ expect("dockerfile-real-clean", run({"Dockerfile": "FROM node:20\nCOPY . .\nCMD 
 expect("pkgjson-placeholder", run({"package.json":
         '{\n  "scripts": {\n    "deploy": "echo TODO"\n  }\n}\n'}),
        must=["ERROR", "placeholder"])
-expect("pkgjson-echo-warn", run({"package.json":
+expect("pkgjson-echo-error", run({"package.json":
         '{\n  "scripts": {\n    "deploy": "exit 0"\n  }\n}\n'}),
-       must=["WARN", "echo-only"], forbid=["ERROR"])
+       must=["ERROR", "echo-only"])
 expect("pkgjson-real-clean", run({"package.json":
         '{\n  "scripts": {\n    "deploy": "vercel --prod"\n  }\n}\n'}),
        must=["0 error(s)"], forbid=["ERROR", "WARN"])
@@ -119,7 +119,10 @@ expect("pkgjson-no-deploy-script", run({"package.json":
 # a Makefile deploy target that's a placeholder is an ERROR; echo-only is a WARN; real is clean
 expect("makefile-placeholder", run({"Makefile": "deploy:\n\t# TODO implement\n"}),
        must=["ERROR", "placeholder"])
-expect("makefile-echo-warn", run({"Makefile": "deploy:\n\techo deploying\n"}),
+expect("makefile-echo-error", run({"Makefile": "deploy:\n\techo deploying\n"}),
+       must=["ERROR", "echo-only"])
+# an unrecognized-but-present command stays a WARN (absence heuristic, not proof of a fake)
+expect("makefile-unrecognized-warn", run({"Makefile": "deploy:\n\t./scripts/custom-ship.sh\n"}),
        must=["WARN", "no recognized deploy"], forbid=["ERROR"])
 expect("makefile-real-clean", run({"Makefile": "deploy:\n\thelm upgrade --install app ./chart\n"}),
        must=["0 error(s)"], forbid=["ERROR", "WARN"])

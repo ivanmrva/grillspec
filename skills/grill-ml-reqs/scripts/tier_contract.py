@@ -15,6 +15,25 @@ _SYNONYM = {"journey": "e2e", "smoke": "e2e", "system": "e2e", "acceptance": "e2
 def canon(tok):
     return _SYNONYM.get(tok.lower(), tok.lower())
 
+# A test DECLARATION the runner can execute and fail - the shared core check_task_record.py and
+# check_orphan_tests.py both key on (ONE definition, so a framework added for one gate can't silently
+# be invisible to the other). A helper/fixture file never declares one, so it is never flagged.
+FAILING_CAPABLE = re.compile(
+    r"\b(?:it|test|specify)(?:\s*\.\s*[A-Za-z_]\w*)*\s*\(|"
+    r"\bTEST(?:_F|_P|_CASE)?\s*\(|"
+    r"(?:^|\s)(?:async\s+)?def\s+test_[A-Za-z0-9_]*\s*\(|"
+    r"(?:^|\s)func\s+test[A-Za-z0-9_]*\s*\(|"
+    r"@\s*(?:[A-Za-z_]\w*\.)*(?:Test|ParameterizedTest|RepeatedTest|TestFactory)\b|"
+    r"\[\s*(?:Fact|Theory|Test|TestCase|TestMethod)\b|"
+    r"#\[\s*(?:test|tokio::test|async_std::test)\b|"
+    r"\bfunction\s+test[A-Za-z0-9_]*\s*\(|"
+    r"\((?:deftest|facts?)\s+|"
+    r"\btest_(?:that|case)\s*\(|"
+    r"^\s*(?:Scenario(?:\s+Outline)?):|"
+    r"^\s*@test\s+[\"']|"
+    r"^\s*(?:it|specify|test)\s+[\"'].*(?:do|\{|\$)",
+    re.I | re.M)
+
 # a test's tier from a tests/<tier>/ directory, or from a tier token in the filename (foo.int.test.ts)
 _TIER_SEG = re.compile(r"/(?:tests?|specs?|__tests__)/(?:.*/)?(unit|integration|contract|e2e|journey|smoke|system|acceptance|nfr)(?:/|_|-|\.|$)", re.I)
 _FNAME_TIER = re.compile(r"(?:^|[._-])(unit|integration|int|contract|e2e|journey|smoke|system|acceptance|nfr)[._-]", re.I)

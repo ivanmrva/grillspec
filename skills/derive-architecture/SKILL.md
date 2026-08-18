@@ -38,11 +38,11 @@ Written under `solution/arch/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `solution-strategy.md` | the 3–5 load-bearing decisions: top decomposition approach · key technology choices · how the top quality goals are achieved · key org/team decisions | — |
-| `style.md` | the architecture style + the decided cross-cutting concerns (authn/authz · errors · logging/trace · tx · caching · config · idempotency · concurrency · feature-flags · gateway/BFF) | — |
+| `solution-strategy.md` | the 3–5 load-bearing decisions: top decomposition approach · key technology choices · how the top quality goals are achieved · key org/team decisions | numbered: decision · why · alternatives-rejected (ADR ref) |
+| `style.md` | the architecture style + the decided cross-cutting concerns (authn/authz · errors · logging/trace · tx · caching · config · idempotency · concurrency · feature-flags · gateway/BFF) | table: concern · decision · ADR |
 | `c4.md` | C4 decomposition in Mermaid: containers (L2) · components (L3, typed) — refining the System Context (L1) taken from the system context | Mermaid · C4 context/container/component · typed component list |
 | `stack.md` | technology stack table: concern · choice · ADR (latest-stable/idiomatic by default) | table: concern · choice · ADR |
-| `services.md` | bounded contexts → services/deployable units + inter-context comms & consistency (sync/async · choreography vs saga · failure handling · data ownership) | — |
+| `services.md` | bounded contexts → services/deployable units + inter-context comms & consistency (sync/async · choreography vs saga · failure handling · data ownership) | table: context · service/unit · comms-mode · consistency · failure handling · data-owner |
 | `modules.md` | the module/component map — per module (`MOD-`): `role:` (domain · driving-port · driven-port · adapter · application-service) · **`realises:` the `AGG-`/`UC-` this module exists for** (or `N/A — why` for a technical/infra module) · allowed dependency direction (inward only) · **the public interface it exposes at its seam** (the stable contract slices build against) | table keyed on `MOD-`: module · role · realises(`AGG-`/`UC-`) · direction · seam interface |
 | `quality.md` | each `ASR-` → mitigating tactic → its C4 location → the **fitness function** that guards it | table: ASR · tactic · C4 location · fitness function |
 | `sequences.md` | the key cross-module interactions in Mermaid — the golden-path end-to-end trace **+ ≥1 critical-failure/compensation path** per transactional or cross-context interaction | Mermaid |

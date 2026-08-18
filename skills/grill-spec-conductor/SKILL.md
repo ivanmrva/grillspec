@@ -50,7 +50,10 @@ The area skills are **self-contained units that know nothing about this system**
 The same skills, handed no input and no target, run standalone for someone who copied just a few of them; driven by you, they compose into one consistent `spec/`.
 
 ## Dashboards (report the relevant ones — they're orthogonal)
-- **Spec health** — per-area maturity (L0–Ln) + invariants (is the spec consistent & complete-enough?).
+- **Spec health** — per-area maturity + invariants (is the spec consistent & complete-enough?). The
+  maturity scale is closed so two sessions rate alike: **L0** no content · **L1** framed (scope + first
+  content, open set non-empty) · **L2** consistent (invariants pass, open set empty — Resolved/Deferred/N/A) ·
+  **L3** validated (its load-bearing bets Validated/Accepted-risk).
 - **Bet health** — the bets recorded across area artifacts: of the *critical* ones, how many are
   Validated / Testing / Accepted-risk / Untested / Invalidated; plus kill-criteria status and PMF
   signals. A green spec next to a red bet is the point — keep them visibly separate. *Spec consistent*
@@ -125,9 +128,11 @@ the world keeps invalidating things you thought you knew.
 
 ## Each run, the conductor
 1. **Run `scripts/lint_spec.py`** — its ERRORs are the authoritative structural truth
-   (closed-world paths · file headers · dangling local links · placeholder/stale tokens · duplicate
-   cross-area term · invalid bet status · Deferred-without-trigger); its WARNs are candidates you
-   judge (readiness-vs-reality · gate order · prose). Then **read the area outputs** (their recorded bets, gaps, and decisions) and **scan the repo** for the *semantic* consistency the
+   (closed-world paths · file headers · dangling local links · placeholder/stale tokens · undefined/downward
+   ID references · authz completeness · uncovered threats · unratified `unconfirmed` values once tasks
+   exist); its WARNs are candidates you judge (readiness-vs-reality · gate order · prose · bet-status vocab).
+   Deferred-without-trigger and cross-area term collisions have **no mechanical check** — they are yours to
+   catch in the semantic sweep. Then **read the area outputs** (their recorded bets, gaps, and decisions) and **scan the repo** for the *semantic* consistency the
    linter can't see — including a **timeless-source-of-truth sweep**: development-trace language or append-only structure that violates the timeless-artifact rule in `references/house-rules.md` is a defect; route the fix to the owning area. 2. **Re-derive** cross-area state incl. cross-references; flag downstream of any
    changed upstream as "needs recheck"; recompute bet-health. 3. **Report both dashboards** + unlocked
    / blocked / nearest gate + the single riskiest untested assumption. 4. On the user's pick, load and
@@ -225,11 +230,14 @@ Apply the same test everywhere: a layer that produces nothing a downstream layer
 re-validation is trustworthy at scale. It **complements, not replaces, you:**
 - **ERROR** (ground truth — hard violation): file outside the structure · missing/empty
   `scope|excludes|format` header · dangling local link · placeholder/stale token (`{{`, TODO, NNNN) ·
-  duplicate cross-area term · invalid bet status · Deferred with no trigger · **reference to an
-  undefined ID** · **illegal downward reference** (a file referencing a layer it shouldn't) ·
-  **ID defined in more than one place** (define once) · **ID defined outside its owning directory** · **a child ID whose keyed parent is missing** (AC->UC, ASR->NFR)
-  (mechanical stage-purity / no-unrelated-content) · **unresolved `GAP … UNRESOLVED` in a task** (the
-  last-responsible-moment forcing checkpoint). Non-zero exit (use in CI).
+  **reference to an undefined ID** · **illegal downward reference** (a file referencing a layer it
+  shouldn't) · **ID defined in more than one place** (define once) · **ID defined outside its owning
+  directory** · **a child ID whose keyed parent is missing** (AC->UC, ASR->NFR) · **authorization
+  completeness** (an empty actor×command cell, a CMD- with no rule) · **an uncovered THR-** (no control,
+  no accepted-risk) · staged promotions at their gate: an uncovered **OBL-** once the solution layer
+  exists, an **AC- no task owns** once tasks exist, an **`unconfirmed` (unratified) value** once tasks
+  exist · **unresolved `GAP … UNRESOLVED` in a task** (the last-responsible-moment forcing checkpoint) ·
+  task-DAG cycle · afk-eligibility contradictions. Non-zero exit (use in CI).
 - **WARN** (you judge): marked-done-but-empty · content-but-not-started · architecture-before-gate ·
   dense prose blocks · **structural coverage gaps** — an element with no downstream reference
   (every `CMD-`→`UC-`, `UC-`→`AC-`, `AC-`→test, `AGG-`→`DATA-`, `OBL-`→control, …). *This WARN set is
@@ -245,10 +253,10 @@ There are **no shared mutable singletons**. Each area writes its own self-descri
 
 **What the conductor itself writes** (reconciled at the spec root — it owns no area artifact):
 
-| File (spec root) | Captures |
-|---|---|
-| `glossary.md` | system-wide ubiquitous language, reconciled from the per-area glossaries (one term / one meaning) |
-| `actors.md` | the unified actor roster (personas ↔ domain roles ↔ boundary actors merged) |
-| `_readiness.md` | the per-area readiness dashboard (status per area · which gates are met) |
+| File (spec root) | Captures | Format |
+|---|---|---|
+| `glossary.md` | system-wide ubiquitous language, reconciled from the per-area glossaries (one term / one meaning) | table: `term · definition · context` (the same columns every per-area glossary uses) |
+| `actors.md` | the unified actor roster (personas ↔ domain roles ↔ boundary actors merged) | table: `actor · type (human/system/persona/role) · owning area · description` |
+| `_readiness.md` | the per-area readiness dashboard | table: `area · status (done/in-progress/not-started) · maturity (L0–L3) · open-count · gate state` |
 
 DERIVED-by-reading the area outputs (NOT stored as files): the **global ADR index** (from `adr/`), the **bet register**, the **risk + technical-debt register** (each entry: category · probability · impact · owner · mitigation · status / paydown-trigger), and the **decisions log**. The conductor writes **no ADRs of its own** and **no area artifact** — every area artifact belongs to its worker skill.

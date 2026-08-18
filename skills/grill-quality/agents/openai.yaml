@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill Quality"
-  short_description: "Turn vague quality wishes into measurable NFR scenarios\u2026"
-  default_prompt: "Use $grill-quality to turn vague quality wishes into measurable NFR scenarios, walking a standard quality-attribute tree so no dimension is missed, and tag the\u2026"
+  short_description: "Turn vague quality wishes into measurable NFR scenarios by\u2026"
+  default_prompt: "Use $grill-quality to turn vague quality wishes into measurable NFR scenarios by walking a standard quality-attribute tree, and tag the architecturally-significant ones (ASRs).\u2026"
 policy:
   allow_implicit_invocation: false

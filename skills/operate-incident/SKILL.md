@@ -21,11 +21,9 @@ description: >-
 7. **Blameless postmortem — capture the learning:** focus on systems/contributing factors, never individuals. Every root cause becomes a new assumption or `GAP` (a missing rule, NFR, or runbook) and propagates upstream via the standard machinery — a postmortem is a focused change, not a dead document. Record **action items as owned + tracked** (owner · tracking-ref · status), never free text.
 
 ## Rules
-- The postmortem is **blameless** — systems and contributing factors, not people.
-- **Action items are owned + tracked** (owner · tracking-ref · status); a free-text "we should…" is not an action item.
+- **Done is the record, machine-checkable** — the incident file carries all four timeline stamps (detected · acknowledged · mitigated · recovered), the error-budget row (SLO-ref · %), and every action item as `owner · tracking-ref · status`; run `python3 scripts/check_operate_records.py` to reconcile the record (dangling spec refs, a deploy off the ratified path) before closing the incident.
 - **Error-budget consumed** (SLO-ref · %) is recorded every incident; **above the agreed threshold, a postmortem is mandatory** (not at the team's discretion).
 - The reported **acknowledge** and **recovery** durations (from the timestamps) are raw inputs to a higher-level rollup — this skill does not compute or own a running average.
-- **customer-signal intake is first-class (the qualitative loop back):** the step-1 triage routes a user-reported problem upstream (→ discovery / bets / risks), the same propagation as an incident learning — so real-user signal reaches the spec, not just analytics.
 - **Never pass on:** an incident with no postmortem · a recurring failure with no new runbook/rule · a learning that doesn't reach the spec.
 
 ## Output

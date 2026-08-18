@@ -14,7 +14,7 @@ description: >-
 **Load `references/grill-engine.md` first and follow it.** This skill applies that method to **Goals, metrics & kill-criteria** — the single metric that signals it's working and the conditions under which we stop.
 
 ## Rules
-- the north-star comes with its **input-metric tree** — the 3–5 levers that *causally* move it, spanning the full funnel: **acquisition → activation → retention → referral → revenue**, with **activation and retention operationally defined** (not left as adjectives)
+- the north-star comes with its **input-metric tree** — the 3–5 levers that *causally* move it, spanning the full funnel: **acquisition → activation → retention → referral → revenue**, with **activation and retention operationally defined** (not left as adjectives). **The activation bar (event + count + window) is elicited HERE as a ratify-point** — it is a pre-committed success definition the later growth area only refines, so it must not wait for a post-launch area that may be deferred
 - every metric has an **operational definition** (numerator / denominator / window) — never an adjective
 - name **guardrail/counter-metrics**: what must not degrade while optimising the north-star
 - **kill-criteria are pre-committed** stop conditions, set now — not authored after the fact
@@ -27,7 +27,7 @@ Written under `product/goals/`:
 |---|---|---|
 | `north-star.md` | the north-star metric + its input-metric tree across the funnel | metric + why (1 line) · 3–5 causal levers spanning acquisition→activation→retention→referral→revenue (activation & retention operationally defined) |
 | `success-metrics.md` | supporting metrics + guardrails | metric · operational definition (num/denom/window) · target |
-| `kill-criteria.md` | pre-committed pivot/persevere/kill decision on a fixed cadence, laddering to a minimum-success bar | review cadence · per signal: 'if <metric> not <threshold> by <date>' → pivot/persevere/kill · minimum-success criterion |
+| `kill-criteria.md` | pre-committed pivot/persevere/kill decision on a fixed cadence, laddering to a minimum-success bar | table: `signal · threshold · deadline · verdict (pivot/persevere/kill) · status (unconfirmed/ratified)` + review-cadence and minimum-success rows |
 
 ADRs → `adr/ADR-GOAL-NNN.md`
 Consumes: the **product vision** — the outcome whose north-star, success metrics, and kill-criteria these set.

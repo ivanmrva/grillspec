@@ -155,6 +155,20 @@ expect("coverage-threshold-word-ok", run(proj(record(rows={"coverage": ("84% (th
 expect("coverage-threshold-below-fails", run(proj(record(rows={"coverage": ("61% (threshold 80%)", "PASS")}))),
        must=["ERROR", "below its bar"])
 
+# ── the ratified tier-contract bar is the floor: an evidence cell claiming a LOWER bar is a shrunk
+#    threshold (ERROR), and the measured value must clear the ratified bar, not the claimed one ──
+LEVELS = ("<!-- scope: tiers | excludes: x | format: table -->\n"
+          "| tier | real-deps | may-mock | mock-ceiling | target-env | coverage-bar | mutation-bar |\n"
+          "|---|---|---|---|---|---|---|\n"
+          "| unit | none | none | none | local | 80% | 70% |\n")
+def _with_levels(f):
+    f["spec/09-solution/test/levels.md"] = LEVELS
+    return f
+expect("coverage-shrunk-bar-fails", run(_with_levels(proj(record(rows={"coverage": ("61% (bar 50%)", "PASS")})))),
+       must=["ERROR", "claims bar 50", "ratified", "coverage 61 is below its bar 80"])
+expect("coverage-ratified-bar-met-ok", run(_with_levels(proj(record(rows={"coverage": ("84% (bar 80%)", "PASS")})))),
+       forbid=["claims bar", "below its bar"])
+
 # ── a free-form coverage/mutation cell (no measured+bar, not N/A) is unverifiable ──
 expect("coverage-freeform-fails", run(proj(record(rows={"coverage": ("looks good", "PASS")}))),
        must=["ERROR", "must cite a measured value AND its bar"])

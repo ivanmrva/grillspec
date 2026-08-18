@@ -9,12 +9,16 @@
 import os, re, sys, subprocess, pathlib
 SPEC = pathlib.Path("spec")
 if not SPEC.exists(): print("run from the project root (no spec/)"); sys.exit(2)
-# TYPES mirrors lint_spec.py's vocabulary (selfcheck guards them in sync).
+# TYPES + ID grammar + REFMARK mirror lint_spec.py's vocabulary EXACTLY (selfcheck guards all three in
+# sync) - a reference keyword lint resolves but impact ignores is a silently incomplete propagation frontier.
 TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|OBL|SLO|EXP|AEV|DS|JRN|SCR|ML|FAC|REPO|SVC|IF|MOD|CA|ADR|T"
-ID = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
+_TYPES_PLAIN = "|".join(t for t in TYPES.split("|") if t not in ("DATA", "ADR"))
+ID = (r"(?:ADR-[A-Z][A-Z0-9]*-\d+"
+      r"|DATA-[0-9A-Z](?:[A-Za-z0-9._-]*[A-Za-z0-9])?"
+      r"|(?:" + _TYPES_PLAIN + r")-[0-9A-Z](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)")
 DEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**(" + ID + r")\b")
 DEF2 = re.compile(r"\bid:\s*(" + ID + r")\b", re.I)
-REFMARK = re.compile(r"(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|addresses|supersedes|->|\u2192)\s*:?\s*([^\n]*)", re.I)
+REFMARK = re.compile(r"(?:\b(?:implements?|depends(?:-on)?|refs?|references?|see|satisf(?:y|ies|ied-by)|covers?|covered-by|maps?-?to|reali[sz]es?|traces?-?to|verif(?:y|ies)|validates?|asserts?|upholds?|addresses|supersedes|surfaces?|renders?|displays?|mitigat(?:es|ed-by)|prices?|priced-by|gates?|gated-by|enforces?|enforced-by|evidences?|evidenced-by|elicits?|whenever|reacts?-to|consumed-by|consumes)\b|->|\u2192)\s*:?\s*([^\n]*)", re.I)
 IDTOK = re.compile(r"(?<![A-Za-z0-9-])" + ID)   # left boundary (matches lint_spec): a preceding alnum OR '-' blocks the match, so neither CONTRACT-9 nor a namespaced SUR-AGG-250 yields a phantom id
 def read(p):
     try: return p.read_text(encoding="utf-8")

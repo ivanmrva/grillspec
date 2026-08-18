@@ -129,8 +129,10 @@ equivalent tier/mock/e2e fitness against the same contract (e.g. a native pnpm c
 gate's result over re-running the reference tools · `…/check_e2e_target.py` (e2e tests hit the named
 deployed env, not a local stack) · `…/check_no_skips.py --strict` (no skipped/xfail'd/`.only`-focused test,
 no CI test step that swallows a red — at release every declared deferral has expired, so WARNs are promoted)
-· `…/check_no_fakes.py` / `…/check_deploy_real.py` /
-`…/check_migration_real.py` over the whole tree · `…/check_orphan_tests.py` (every behavioral test traces
+· `…/check_no_fakes.py --strict` / `…/check_deploy_real.py --strict` /
+`…/check_migration_real.py --strict` over the whole tree (same release logic as no-skips: the per-commit
+WARN heuristics — a fallback guard, an unrecognized deploy command, a trivial migration body — are
+promoted at release, where every "review later" has expired) · `…/check_orphan_tests.py` (every behavioral test traces
 to a live spec driver — an orphan test or dangling `@covers` is drift: behavior the spec never absorbed,
 typically an ad-hoc mid-build instruction that skipped the spec) · `…/check_config_drift.py` (the env vars
 the code reads ⊆ the declared `environments.md` matrix — config drift is cross-task by nature: keys
@@ -226,9 +228,9 @@ log of reality, so this is *reconciliation*, not re-derivation — never rewrite
 
 ## The re-audit cycle (fixes never happen here)
 This skill must never gain a `--fix`/`--loop`: **the attestor cannot fix what it attests** — editing a
-record or a test to satisfy the audit is the exact fraud Phase 1 hunts — and build fixes run through the
+record or a test to satisfy the audit is the exact fraud Phase 1 hunts — build fixes run through the
 engineering workflow (a `needs-rework`/focused-change `T-` → implement → run-tests → conformance-review →
-CI → merge), which is asynchronous and branch-shaped, not an in-session edit. The cycle is therefore:
+CI → merge). The cycle is therefore:
 **`NOT-ATTESTED` + routed findings → the owning machinery lands the rework waves → a FRESH audit.** The
 `commit:` stamp plus the release gate's `--require-fresh` already invalidate an attestation the moment HEAD
 moves, so every fix forces the re-audit mechanically. On a re-audit after a remediation wave, you may scope

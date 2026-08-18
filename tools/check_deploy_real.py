@@ -11,12 +11,14 @@
 # It is deliberately conservative (a noisy gate gets `--no-verify`d): it scans only deploy-INTENT artifacts and
 # flags the signals that are almost always a fake.
 #
-# ERROR (a placeholder in a deploy artifact - the deploy doesn't really deploy):
+# ERROR (an unambiguous fake - the deploy doesn't really deploy):
 #   - a TODO/FIXME/placeholder/"not implemented"/"coming soon"/"fill in"/"replace me"/"fake|stub deploy"/no-op
-#     marker on a line of a deploy-intent file.
-# WARN (a likely-skipped deploy - review, don't necessarily block):
-#   - a disabled deploy job/step (`if: false`, `when: never`);
-#   - a deploy-intent script/workflow that invokes NO recognized deploy/IaC command (echo-only "deployment").
+#     marker on a line of a deploy-intent file;
+#   - a disabled deploy job/step (`if: false`, `when: never`, `enabled: false`);
+#   - an echo-only / empty deploy script or Makefile target (literally no command beyond echo/exit/true).
+# WARN (an absence heuristic - review, don't necessarily block):
+#   - a deploy-intent script/workflow that invokes NO recognized deploy/IaC command (the recognized-command
+#     list can't be complete, so absence alone is not proof of a fake).
 # Suppress a finding with an inline `deploy-real: allow <reason>` comment on the line, or a path/substring entry
 # in `.grillspec/deploy-real-allow.txt`. `--strict` promotes WARN -> ERROR.
 #
@@ -156,7 +158,7 @@ def scan_package_json(rel, text):
         if PLACEHOLDER.search(val):
             add("ERROR", where, "package.json script '%s' is a placeholder — this deploy does not really deploy." % key)
         elif is_noop_cmd(val):
-            add("WARN", where, "package.json script '%s' is echo-only / empty — it deploys nothing." % key)
+            add("ERROR", where, "package.json script '%s' is echo-only / empty — it deploys nothing." % key)
     return n
 
 MAKE_TARGET = re.compile(r"^([A-Za-z0-9_.-]*(?:deploy|release|promote|rollout|publish|ship)[A-Za-z0-9_.-]*)\s*:(?!=)", re.I)
@@ -183,8 +185,10 @@ def scan_makefile(rel, text):
         where = "%s:%d" % (rel, start + 1)
         if PLACEHOLDER.search(body):
             add("ERROR", where, "Makefile target '%s' is a placeholder — this deploy does not really deploy." % target)
-        elif is_noop_cmd(body) or not has_real_deploy_cmd(body):
-            add("WARN", where, "Makefile target '%s' invokes no recognized deploy command — an echo-only / empty deploy." % target)
+        elif is_noop_cmd(body):
+            add("ERROR", where, "Makefile target '%s' is echo-only / empty — it deploys nothing." % target)
+        elif not has_real_deploy_cmd(body):
+            add("WARN", where, "Makefile target '%s' invokes no recognized deploy command — verify it really deploys." % target)
     return n
 
 # discover deploy-intent artifacts; skip vendored / VCS trees.
@@ -230,7 +234,7 @@ for p, kind, text in artifacts:
         if PLACEHOLDER.search(line):
             add("ERROR", where, "a placeholder in a deploy artifact — this deploy does not really deploy.")
         if DISABLED.search(line):
-            add("WARN", where, "a disabled deploy job/step (deploy turned off) — re-enable it or remove it.")
+            add("ERROR", where, "a disabled deploy job/step (deploy turned off) — re-enable it or remove it.")
     if kind != "dockerfile" and not has_real_cmd:    # a Dockerfile has no deploy command - don't no-op-warn it
         add("WARN", "%s:1" % rel,
             "a deploy-intent %s that invokes no recognized deploy/IaC command — an echo-only / empty deploy." % kind)

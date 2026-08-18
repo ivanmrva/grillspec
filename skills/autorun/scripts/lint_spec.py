@@ -190,7 +190,18 @@ TYPES = "UC|AC|CMD|EVT|AGG|VO|INV|HOT|POL|RM|ENTL|ENT|NFR|ASR|API|SEC|THR|DATA|O
 # IDCORE = the type-prefixed token, no boundary (used in ANCHORED definition matches).
 # ID = IDCORE behind a left boundary that also excludes '-' so a known prefix is NOT mined out of a
 #      longer token: 'HOT-005' no longer yields 'T-005', 'SUR-AGG-250' no longer yields 'AGG-250'.
-IDCORE = r"(?:" + TYPES + r")-[A-Za-z0-9._-]*[A-Za-z0-9]"
+# The suffix grammar IS the house ID grammar, so ordinary prose never tokenizes as a phantom ID:
+#   - the char after the prefix hyphen must be a digit or UPPERCASE ('T-014', 'AC-014a', 'AGG-SUR-250',
+#     'DATA-Customer', 'MOD-PORT-LLM') — so a prefix glued to a lowercase word ('API-design',
+#     'SLO-burn-rate', 'NFR-evidence', a 'DS-id' column label) is prose, not an ID;
+#   - a DOTTED member suffix is legal only on DATA- ('DATA-Customer.id'); on every other type the token
+#     stops at the dot, so 'MOD-PORT-LLM.method' and a link URL's 'ADR-ARCH-007.md' resolve to the bare id;
+#   - an ADR token is ADR-<AREA>-NNN and stops after the number, so a slugged filename reference
+#     ('ADR-ARCH-007-chosen-stack.md') resolves to the ADR id it names.
+_TYPES_PLAIN = "|".join(t for t in TYPES.split("|") if t not in ("DATA", "ADR"))
+IDCORE = (r"(?:ADR-[A-Z][A-Z0-9]*-\d+"
+          r"|DATA-[0-9A-Z](?:[A-Za-z0-9._-]*[A-Za-z0-9])?"
+          r"|(?:" + _TYPES_PLAIN + r")-[0-9A-Z](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)")
 ID = r"(?<![A-Za-z0-9-])" + IDCORE
 TYPESET = set(TYPES.split("|"))
 # Numeric RANGE / LIST shorthand in prose - 'ML-102..109', 'VO-416..421', 'API-002/003' - is a house-style
@@ -358,10 +369,10 @@ if absent_refs:
 # ignored. This is the safety net that keeps EVERY id upstream-only; registration (11b) is then only about the
 # EXTRA governance (coverage · define-once · owning-area), never about direction safety — and it is how a
 # downstream 'BR-' boundary-rule cited UPWARD by requirements/architecture is caught with no BR- registration.
-GDEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**([A-Z][A-Z0-9]{1,4}-[A-Za-z0-9._-]*[A-Za-z0-9])\b")
-GDEF2 = re.compile(r"\bid:\s*([A-Z][A-Z0-9]{1,4}-[A-Za-z0-9._-]*[A-Za-z0-9])\b", re.I)
-GDEF3 = re.compile(r"(?:^|[·;:,|←→⟵⟶])\s*[*`_]*\s*([A-Z][A-Z0-9]{1,4}-[A-Za-z0-9._-]*[A-Za-z0-9])\s+[A-Z]")
-GTOK = re.compile(r"(?<![A-Za-z0-9-])[A-Z][A-Z0-9]{1,4}-[A-Za-z0-9._-]*[A-Za-z0-9]")
+GDEF1 = re.compile(r"^\s*[-*#]*\s*\|?\s*\**([A-Z][A-Z0-9]{1,4}-[0-9A-Z](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)\b")
+GDEF2 = re.compile(r"\bid:\s*([A-Z][A-Z0-9]{1,4}-[0-9A-Z](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)\b", re.I)
+GDEF3 = re.compile(r"(?:^|[·;:,|←→⟵⟶])\s*[*`_]*\s*([A-Z][A-Z0-9]{1,4}-[0-9A-Z](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)\s+[A-Z]")
+GTOK = re.compile(r"(?<![A-Za-z0-9-])[A-Z][A-Z0-9]{1,4}-[0-9A-Z](?:[A-Za-z0-9_-]*[A-Za-z0-9])?")
 def _gpre(t): return t.split("-")[0].upper()
 gen_layer = {}                                              # unregistered id-shape token -> most-upstream layer it is DEFINED at
 for p, r in cmd_files():
@@ -412,12 +423,25 @@ BARE_AREA_LAYER = {"infra-ops":5,"arch":5,"api":5,"observability":5,"test":5,
     "quality":2,"integration":2,"entitlements":2,"compliance":2,
     "monetization":2,"go-to-market":2,"growth":2,"design-system":3,"ux":4,"ddd":1}
 PATHTOK = re.compile(r"(?<![\w./-])((?:\.\.?/)*[\w][\w.-]*(?:/[\w.-]+)+)")
-def path_layer(pth):
+def _strip_path(pth):
     p = pth
     while p.startswith(("./", "../")): p = p.split("/", 1)[1]
     if p.startswith("spec/"): p = p[5:]
-    seg0 = p.split("/", 1)[0]
+    return p
+def path_layer(pth):
+    seg0 = _strip_path(pth).split("/", 1)[0]
     return STAGE_LAYER[seg0] if seg0 in STAGE_LAYER else BARE_AREA_LAYER.get(seg0)
+# A slashed token is treated as a PATH reference only when it is one: it resolves to something that
+# exists in the tree (bare area names resolve through their numbered stage dir — 'infra-ops/cicd.md'
+# is '09-solution/infra-ops/cicd.md'), or its lead segment is a numbered stage dir (unambiguous layout
+# even if not yet created). Ordinary prose that happens to carry a slash ('verification/cross-check',
+# 'data/security') is neither, and must not tokenize as a downward path reference.
+BARE_DIR = {d.rsplit("/", 1)[-1]: d for d in AREA_DIR.values() if "/" in d}
+def is_real_path(pth):
+    p = _strip_path(pth).rstrip(".")          # PATHTOK swallows sentence-ending punctuation
+    if (SPEC / p).exists() or re.match(r"\d{2}-", p) is not None: return True
+    seg0, _, rest = p.partition("/")
+    return seg0 in BARE_DIR and (SPEC / BARE_DIR[seg0] / rest).exists()
 pdn_seen = set()
 for p, r in cmd_files():
     if is_adr_file(r) or os.path.basename(r) == "traceability.md" or ("/" not in r and r.startswith("_")): continue
@@ -428,7 +452,7 @@ for p, r in cmd_files():
         if fence or s.startswith("<!--"): continue
         for mp in PATHTOK.finditer(l):
             pth = mp.group(1); tl = path_layer(pth)
-            if tl is not None and tl > fl and (r, pth) not in pdn_seen:
+            if tl is not None and tl > fl and is_real_path(pth) and (r, pth) not in pdn_seen:
                 pdn_seen.add((r, pth))
                 add("WARN", r, "illegal downward path reference: L%d file -> '%s' (L%d area); references must be upstream-only — invert it (the downstream artifact references this one), and a requirement STATES its own value, never defers it downstream" % (fl, pth, tl), i)
 
@@ -595,7 +619,19 @@ for tok in sorted(defined):
     if pre == "THR" and tok in thr_covered: continue            # mitigated by a non-SEC control / accepted-risk (its own block)
     if pre == "EVT" and tok in evt_sinks: continue              # intentional audit-only / operator-console-internal sink
     if pre == "INV" and tok in inv_covered: continue            # enforced structurally (by construction / a DATA- constraint) — no AC needed
-    add("WARN", sorted(defsites.get(tok) or def3sites.get(tok) or ["(?)"])[0],
+    # Severity is STAGED per edge: most coverage gaps are WARN (heuristic candidates), but three are hard
+    # violations once the stage that must resolve them is reached — the documented promotion rationale:
+    #  - THR: a threat with no control and no accepted-risk is an unmitigated threat the moment it is
+    #    written (the accepted-risk / non-SEC-control escapes above already remove every legitimate case);
+    #  - OBL: once the solution layer exists (architecture-readiness passed), a compliance obligation no
+    #    control addresses is a compliance failure, not a candidate;
+    #  - AC: once tasks exist (delivery-readiness reached), an acceptance criterion no task owns will
+    #    silently never be built.
+    sev = "WARN"
+    if pre == "THR": sev = "ERROR"
+    elif pre == "OBL" and ccount("09-solution"): sev = "ERROR"
+    elif pre == "AC" and ccount("10-delivery/tasks"): sev = "ERROR"
+    add(sev, sorted(defsites.get(tok) or def3sites.get(tok) or ["(?)"])[0],
         "coverage: '" + tok + "' has no downstream reference - " + COV_HINT[pre] + " (structural gap to resolve or mark N/A)")
 
 
@@ -902,7 +938,7 @@ for p, r in cmd_files():
                 if mk and mk.group(1).split("-")[0].upper() == "CMD": seen_cmds.add(mk.group(1))
                 for ci, actor in enumerate(actors, start=1):
                     if (row[ci].strip() if ci < len(row) else "") == "":
-                        add("WARN", r, "authorization matrix: '%s' × '%s' has no decision - every actor × command cell is allow / deny / a named condition" % (key or "?", actor))
+                        add("ERROR", r, "authorization matrix: '%s' × '%s' has no decision - every actor × command cell is allow / deny / a named condition" % (key or "?", actor))
         elif "actor" in header and ("command" in header or "cmd" in header):            # long form
             have_authz = True
             ai = header.index("actor"); ci2 = header.index("command") if "command" in header else header.index("cmd")
@@ -913,11 +949,11 @@ for p, r in cmd_files():
                         if mk.group(1).split("-")[0].upper() == "CMD": seen_cmds.add(mk.group(1))
                 for idx, label in [(ai, "actor"), (ci2, "command")] + ([(di, "decision")] if di is not None else []):
                     if (row[idx].strip() if idx < len(row) else "") == "":
-                        add("WARN", r, "authorization rule with an empty %s cell - actor, command, and decision are all required (default-deny means every command needs an explicit who-may rule)" % label)
+                        add("ERROR", r, "authorization rule with an empty %s cell - actor, command, and decision are all required (default-deny means every command needs an explicit who-may rule)" % label)
 if have_authz and seen_cmds:
     for cmd in sorted(d for d in defined if d.split("-")[0].upper() == "CMD"):
         if cmd not in seen_cmds:
-            add("WARN", sorted(defsites.get(cmd) or def3sites.get(cmd) or ["(?)"])[0],
+            add("ERROR", sorted(defsites.get(cmd) or def3sites.get(cmd) or ["(?)"])[0],
                 "authorization: command '%s' has no rule/row in any authorization model - default-deny still wants each command's who-may rule explicit (or mark it system/unguarded)" % cmd)
 
 # 23 typed scalar facts, harvested in BOTH authored forms: an inline '<key>: <value>' (attributed to the
@@ -925,7 +961,8 @@ if have_authz and seen_cmds:
 #    row's leading ID). Flag (a) the same (ID, key) carrying differing values across the spec - a likely
 #    contradiction (retention 30d vs 90d); (b) a DATA- element declaring none of class/retention/residency.
 #    WARN throughout — value normalization is heuristic, and a partial element is legal mid-spec.
-TYPED_LIST = ["retention", "residency", "classification", "class", "sla", "limit", "quota", "price", "tier"]
+TYPED_LIST = ["retention", "residency", "classification", "class", "sla", "limit", "quota", "price", "tier",
+              "delivery-guarantee", "interaction-style", "ordering", "hard/soft", "threshold"]
 TF = re.compile(r"\b(" + "|".join(TYPED_LIST) + r")\s*:\s*([^|<>\n]+?)\s*(?:\||$)", re.I)
 EMPTY_CELL = {"", "—", "-", "–", "n/a", "tbd", "…"}
 def nval(v):
@@ -1237,6 +1274,73 @@ for p, r in cmd_files():
     pl = task_dim(txt, "placement")
     if pl and UIISH.search(pl):
         add("WARN", r, "placement names a UI surface (\"%s\") but the ux dimension is %s - a UI-touching slice carries its JRN-/SCR- visual contract (or an explicit reuse claim); if the slice is truly headless, say why the UI-looking placement isn't one" % (pl.strip()[:50], "absent" if ux is None else "N/A"))
+
+# 35 spec-root `_*.md` files bypass the layer checks by design (orchestration handoffs, not spec content) -
+#    so the bypass is an explicit ALLOWLIST, not a filename pattern: an unexpected `_something.md` at the
+#    spec root would otherwise silently inherit full layer exemption.
+SPEC_ROOT_ALLOWED = {"_readiness.md", "_human-input.md", "_provisioning.md"}
+for p, r in cmd_files():
+    if "/" not in r and r.startswith("_") and r not in SPEC_ROOT_ALLOWED:
+        add("WARN", r, "unexpected spec-root underscore file - only %s are sanctioned handoff files (layer-exempt); a stray _*.md silently escapes every layer check, so move the content into its owning area or remove it" % ", ".join(sorted(SPEC_ROOT_ALLOWED)))
+
+# 36 un-ratified values: a value parked with `unconfirmed` status (the ratify queue in _human-input.md, or an
+#    inline `status: unconfirmed` on a typed field) is a PROPOSED default a human never saw. WARN while the
+#    spec is being authored; ERROR once tasks exist - a build against an unratified load-bearing value is the
+#    costliest silent assumption, and delivery-readiness is the last responsible moment to clear the queue.
+RATIFY_TOK = re.compile(r"(?i)(?:\bstatus\s*:?\s*|\|\s*)unconfirmed\b")
+_tasks_exist = bool(ccount("10-delivery/tasks"))
+for p, r in cmd_files():
+    fence = False
+    for i, l in enumerate(read(p).splitlines(), 1):
+        if l.lstrip().startswith("```"): fence = not fence; continue
+        if fence or l.lstrip().startswith("<!--"): continue
+        if RATIFY_TOK.search(INLINE_CODE.sub(" ", l)):
+            add("ERROR" if _tasks_exist else "WARN", r,
+                "unratified value ('unconfirmed') - a proposed default the human never confirmed; surface it for agree/override and flip the status to ratified/overridden%s" % (" (tasks exist: building on an unratified value is a blocking assumption)" if _tasks_exist else ""), i)
+
+# 37 bet-status + criticality vocabulary: the validation axis is a CLOSED set (Untested · Testing · Validated ·
+#    Invalidated · Accepted-risk), and gate 2 keys on `Invalidated`/criticality - a mistyped token silently
+#    suppresses the pivot loop. Scoped to bets.md files, where the columns are the contract. WARN (authoring aid).
+BET_STATUS = {"untested", "testing", "validated", "invalidated", "accepted-risk"}
+BET_CRIT = {"critical", "high", "low"}
+for p, r in cmd_files():
+    if os.path.basename(r) != "bets.md": continue
+    for header, body in md_tables(read(p).splitlines()):
+        if not header: continue
+        si = next((header.index(k) for k in ("status",) if k in header), None)
+        ki = next((header.index(k) for k in ("criticality",) if k in header), None)
+        for row in body:
+            if si is not None and si < len(row):
+                v = re.sub(r"[*`_]", "", row[si]).strip().lower()
+                if v and v not in BET_STATUS:
+                    add("WARN", r, "invalid bet status '%s' - the validation axis is the closed set Untested | Testing | Validated | Invalidated | Accepted-risk (gate 2 and the pivot loop key on these exact tokens)" % row[si].strip())
+            if ki is not None and ki < len(row):
+                v = re.sub(r"[*`_]", "", row[ki]).strip().lower()
+                if v and v not in BET_CRIT:
+                    add("WARN", r, "invalid bet criticality '%s' - the closed set is Critical | High | Low (gate 2 requires every Critical bet Validated or Accepted-risk, so the token must be exact)" % row[ki].strip())
+
+# 38 a `state: provisioned` row in _provisioning.md must carry non-empty evidence - the register exists so
+#    afk-eligibility is VERIFIABLE; a provisioned claim with a blank evidence cell is a rubber stamp nothing
+#    can audit.
+_pv = SPEC / "_provisioning.md"
+if _pv.exists():
+    for header, body in md_tables(read(_pv).splitlines()):
+        if not header or "state" not in header: continue
+        sti = header.index("state"); evi = header.index("evidence") if "evidence" in header else None
+        for row in body:
+            st = re.sub(r"[*`_]", "", row[sti]).strip().lower() if sti < len(row) else ""
+            ev = re.sub(r"[*`_]", "", row[evi]).strip() if evi is not None and evi < len(row) else ""
+            if st == "provisioned" and (evi is None or ev in ("", "—", "-", "n/a", "tbd")):
+                add("WARN", "_provisioning.md", "credential '%s' is provisioned but its evidence cell is empty - record where/when it was set (e.g. 'CI secret, set 2026-08-18') so the eligibility claim is auditable, never a rubber stamp" % (row[0].strip() if row else "?"))
+
+# 39 audit reports are transient session artifacts - committed, their commit-stamp freshness check silently
+#    degrades. INFO: presence at the project root is expected mid-session; just keep them git-ignored.
+_root = SPEC.parent
+_gi = _root / ".gitignore"
+_gitext = read(_gi) if _gi.exists() else ""
+for _rep in ("spec-audit-report.md", "build-audit-report.md"):
+    if (_root / _rep).exists() and _rep not in _gitext:
+        add("INFO", _rep, "audit report present at the project root but not in .gitignore - it is a transient session artifact whose freshness is commit-stamped; git-ignore it so a stale copy is never mistaken for current")
 
 order = {"ERROR": 0, "WARN": 1, "INFO": 2}
 F.sort(key=lambda x: (order[x[0]], x[1], x[2]))

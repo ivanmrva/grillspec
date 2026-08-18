@@ -78,6 +78,29 @@ OBLIGATION_DIMS = ("behavior", "domain", "data", "api", "security", "nfr", "inte
 # per-dimension allow-list of obligation ID prefixes; a dim absent here accepts any spec ID.
 OBLIGATION_DIM_PREFIXES = {"ux": ("JRN-", "SCR-"), "obs": ("SLO-", "EXP-", "AEV-"), "ml": ("ML-",), "tests": ("AC-",)}
 # standard gate rows every task carries, beyond its referenced IDs (from the engine's done-gate).
+# The ratified coverage/mutation bar comes from the tier contract (spec/09-solution/test/levels.md, or the
+# unnumbered test/levels.md slot), NOT from the evidence cell an agent authors: the unit tier's bar governs
+# the diff-scoped rows (changed src logic is unit-level); with no unit row, the strictest declared bar; with
+# no contract at all, None (the evidence cell's own bar stands - standalone use).
+def ratified_bar(key):
+    col = {"coverage": "coverage-bar", "mutation": "mutation-bar"}.get(key)
+    if not col:
+        return None
+    from tier_contract import load_contract
+    contract = {}
+    for cand in (SPEC / "09-solution" / "test" / "levels.md", SPEC / "test" / "levels.md"):
+        contract = load_contract(cand)
+        if contract:
+            break
+    vals = {}
+    for tier, row in contract.items():
+        m = re.search(r"(\d+(?:\.\d+)?)", row.get(col, ""))
+        if m:
+            vals[tier] = float(m.group(1))
+    if not vals:
+        return None
+    return vals.get("unit", max(vals.values()))
+
 GATE_ROWS = [
     ("tests-first", "done-gate", "every AC- has a failing-capable test that drove the code"),
     ("tests:layers", "test-strategy", "every test level the slice touches per the test strategy exists & passes (unit/integration/contract/e2e/NFR-evidence as applicable)"),
@@ -267,21 +290,7 @@ PRUNE_PARTS = {".git", ".grillspec", ".claude", ".codex", ".venv", "venv", "node
                "out", "coverage", "target", "__pycache__", ".next", ".tox"}
 TEST_NAME = re.compile(r"(?:^test_|_test\.|[._](?:test|spec)s?\.|[._](?:e2e|int|integration|unit|contract)\.)", re.I)
 CAMEL_TEST = re.compile(r"[a-z0-9](?:Test|Tests|Spec|Specs)\.[A-Za-z0-9]+$")
-FAILING_CAPABLE = re.compile(
-    r"\b(?:it|test|specify)(?:\s*\.\s*[A-Za-z_]\w*)*\s*\(|"
-    r"\bTEST(?:_F|_P|_CASE)?\s*\(|"
-    r"(?:^|\s)(?:async\s+)?def\s+test_[A-Za-z0-9_]*\s*\(|"
-    r"(?:^|\s)func\s+test[A-Za-z0-9_]*\s*\(|"
-    r"@\s*(?:[A-Za-z_]\w*\.)*(?:Test|ParameterizedTest|RepeatedTest|TestFactory)\b|"
-    r"\[\s*(?:Fact|Theory|Test|TestCase|TestMethod)\b|"
-    r"#\[\s*(?:test|tokio::test|async_std::test)\b|"
-    r"\bfunction\s+test[A-Za-z0-9_]*\s*\(|"
-    r"\((?:deftest|facts?)\s+|"
-    r"\btest_(?:that|case)\s*\(|"
-    r"^\s*(?:Scenario(?:\s+Outline)?):|"
-    r"^\s*@test\s+[\"']|"
-    r"^\s*(?:it|specify|test)\s+[\"'].*(?:do|\{|\$)",
-    re.I | re.M)
+from tier_contract import FAILING_CAPABLE
 
 def _test_source(p):
     try:
@@ -531,6 +540,17 @@ for p in records:
                                     "free-form evidence can't be verified." % key)
             else:
                 bar = float(bar_m.group(1))
+                # The bar is not self-reported: when the ratified tier contract declares one, IT is the floor.
+                # An evidence cell claiming a lower bar than the ratified one is a shrunk threshold - exactly
+                # the "lower a bar to buy a green" cheat the anti-cheat invariants ban - so the ratified bar
+                # both fails the shrunk claim and is the number the measured value must clear. No contract /
+                # no declared bar -> the evidence cell's bar stands (standalone use).
+                ratified = ratified_bar(key)
+                if ratified is not None and bar < ratified:
+                    add("ERROR", where, "row '%s' claims bar %.3g but the ratified tier contract (levels.md) "
+                                        "sets %.3g - a shrunk threshold; the ratified bar is the floor."
+                                        % (key, bar, ratified))
+                    bar = ratified
                 if measured < bar:
                     add("ERROR", where, "%s %.3g is below its bar %.3g." % (key, measured, bar))
 

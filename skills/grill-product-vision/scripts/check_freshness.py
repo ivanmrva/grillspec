@@ -42,8 +42,15 @@ def def_blocks():
             continue   # references ids, never defines them (matches impact.py)
         rel = p.relative_to(SPEC).as_posix()
         lines = read(p).splitlines()
+        # skip fenced code blocks (matches lint_spec): a verbatim example inside ``` fences is content,
+        # not a definition - hashing it as one makes any example edit a false "upstream drifted" flag.
+        fence, in_fence = False, []
+        for l in lines:
+            if l.lstrip().startswith("```"): fence = not fence; in_fence.append(True); continue
+            in_fence.append(fence)
         defs = [(i, (DEF1.match(l) or DEF2.match(l)).group(1))
-                for i, l in enumerate(lines) if DEF1.match(l) or DEF2.match(l)]
+                for i, l in enumerate(lines)
+                if not in_fence[i] and (DEF1.match(l) or DEF2.match(l))]
         for j, (ln, gid) in enumerate(defs):
             end = defs[j + 1][0] if j + 1 < len(defs) else len(lines)
             block = "\n".join(lines[ln:end])

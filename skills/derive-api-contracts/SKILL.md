@@ -19,12 +19,9 @@ description: >-
 3. versioning + compatibility strategy
 
 ## Rules
-- contracts are **real machine-readable specs**, not prose: REST → `openapi.yaml`, async → `asyncapi.yaml`
-- every endpoint has an error model in **RFC 9457 `application/problem+json`**, idempotency keys, pagination/filtering, per-endpoint authz scopes (`SEC-`), and rate-limits; webhooks carry signing/HMAC + retry/dedupe
+- contracts are **real machine-readable specs, not prose** — every element the output rows enumerate lives in the spec files themselves
+- **the deprecation + sunset window is a ratify-point** — an irreversible commitment to external consumers, not an engineering pick: propose a concrete window (+ why), `status: unconfirmed` until the owner agrees/overrides
 - **every operation carries the traceability extensions** so the contract binds to the spec ID graph: `x-grillspec-id: API-NNN` (the endpoint's own id), `x-serves: [UC-… / CMD-…]` (what it serves — no orphan endpoint), and a per-operation `security` scope (mark a deliberately open endpoint `x-public: true`); async channels carry `x-grillspec-id: EVT-NNN`. These are what the contract checks resolve against the rest of the spec
-- every published event has an envelope (id·type·version·time·correlation+causation·source), declared delivery & ordering, schema-evolution rule, and dead-letter
-- versioning + compatibility-test strategy defined (additive-only, deprecation+sunset, consumer-driven contract tests)
-- non-REST styles (gRPC/GraphQL) are contracted via their own IDL, **referenced** from `index.md`, not re-specified here
 
 ## Output
 Written under `solution/api/`:

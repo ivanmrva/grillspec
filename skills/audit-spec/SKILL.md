@@ -31,13 +31,16 @@ conflate them.
   `<module>.md` names its `MOD-` + `T-`) · per-`T-` unresolved-gap (ERROR) · task-graph
   acyclicity (the `depends-on` DAG, ERROR) · task→upstream traceability · **AC single-owner** (each in-scope `AC-` claimed by exactly one task) · NFR `enforced-by` · module `role:` ·
   ADR status · **state-machine integrity (unreachable / dead-end / nondeterministic states)** ·
-  **authorization completeness (every command has a rule; no blank decision cell)** · **typed-field
-  consistency (a `retention`/`residency`/`class`/`SLA`/`price` stated twice must agree; every `DATA-` carries
-  class/retention/residency)** · **task-cell integrity (an `afk:eligible` non-`N/A`-`ux` task's
-  `prototype-review` review-cleared · a non-`N/A` `ux` cell structured — cites its `JRN-` + states · `ux`↔`a11y`
-  consistency · a reuse-claim anchored to its `SCR-`)** · and the INFO heuristics for dev-trace language, skill/tool-name leaks, and
-  adjective-without-a-bar. **Treat every linter ERROR as a `blocking` finding and move on** — your job
-  starts where its soundness ends.
+  **authorization completeness (every command has a rule; no blank decision cell — ERROR)** · **un-ratified
+  `unconfirmed` values (WARN; ERROR once tasks exist)** · **bet-status/criticality vocabulary (WARN)** ·
+  **typed-field consistency (a `retention`/`residency`/`class`/`SLA`/`price`/`delivery-guarantee` stated
+  twice must agree; every `DATA-` carries class/retention/residency — WARN)** · **task-cell integrity (an
+  `afk:eligible` non-`N/A`-`ux` task's `prototype-review` review-cleared · a non-`N/A` `ux` cell structured —
+  cites its `JRN-` + states · `ux`↔`a11y` consistency · a reuse-claim anchored to its `SCR-`)** · and the INFO
+  heuristics for dev-trace language, skill/tool-name leaks, and adjective-without-a-bar. **Severity is the
+  contract: every ERROR → a `blocking` finding, verbatim; every WARN → an `important` candidate you confirm
+  or dismiss with a reason** (the coverage map is WARN-level except `THR-` uncovered — always ERROR — and
+  `OBL-`/`AC-` uncovered once their consuming stage exists). Your job starts where the linter's soundness ends.
 - **Beside it — the per-task code-conformance review.** That checks generated CODE against the spec, per task, after a
   build. This checks the SPEC itself, whole, independent of any build. Complementary, not overlapping.
 
@@ -194,7 +197,7 @@ failure this phase exists to prevent.
 - **Ratify axis — un-ratified user-owned values.** A user-owned VALUE the engines require to be ratified
   (NFR/SLA/SLO numbers · retention/residency · jurisdiction/regimes · pricing & tier limits · environments &
   git workflow · cloud/region/datastore/IdP commitments · a11y level · DR tier · cost ceiling · test-rigor
-  thresholds · accepted-risk · authorization allow-rules · the MVP cut) that is still a `ratify`/`unconfirmed`
+  thresholds · accepted-risk · authorization allow-rules · the MVP cut) that is still an `unconfirmed`
   proposed-default — i.e. a default the human never confirmed — is **not a settled requirement**. Flag every
   load-bearing one `important` (a CRITICAL-path one — an NFR a slice builds to, a price, a residency footprint —
   is `blocking`), routed to "surface for ratification." A green spec built on silently-picked user values is
@@ -207,18 +210,7 @@ failure this phase exists to prevent.
 ## Output
 Write **`spec-audit-report.md` at the PROJECT ROOT** (a sibling of `spec/`, like `GRILLSPEC-FEEDBACK.md` —
 it is meta-commentary, not timeless project documentation, so it never goes inside the closed-world `spec/`).
-Print a summary to the session. The report contains:
-
-**Session summary = ordered fix-chains, never authored/derived buckets.** A single fix often spans both
-zones — a defect *located* in an authored artifact can be *root-caused* upstream and *propagate* into a
-re-derive (a wrong `06-requirements` item whose real cause is `ddd`, fixed by editing ddd → re-deriving
-`05-functional-spec` → re-grilling the requirement against the corrected 05). Splitting findings into a
-flat "authored zone / derived zone" list hides this and reads as a contradiction (consuming a derived
-artifact never makes the consumer derived; the fix-zone is set by who *writes* the file, propagation by the
-reference graph). So print each finding as a **dependency-ordered chain** —
-`<symptom location> → <upstream edit> → <re-derive step(s)> → <re-grill/verify>` — sequenced so every edit
-precedes the re-derivations that depend on it (fix upstream first; re-derive a hinge like 05 before
-re-grilling the authored areas that read it). The report contains:
+Print a summary to the session. **Session summary = ordered fix-chains, never authored/derived buckets** — a single fix often spans both zones, so print each finding as a **dependency-ordered chain** — `<symptom location> → <upstream edit> → <re-derive step(s)> → <re-grill/verify>` — sequenced so every edit precedes the re-derivations that depend on it (fix upstream first; re-derive a hinge like 05 before re-grilling the authored areas that read it); the fix-zone is set by who *writes* the file, propagation by the reference graph. The report contains:
 
 | Section | Contents |
 |---|---|

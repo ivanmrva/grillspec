@@ -59,7 +59,7 @@ Both bookends are reconciled by the per-task **Verification Record** — `spec/1
 | Gate | Green means | Enforced by |
 |---|---|---|
 | build · format · lint · types | all clean | toolchain |
-| tests: layers | unit · integration · contract · e2e green; every level the test strategy requires for this slice present | suite · `check_test_tiers.py` |
+| tests: layers | unit · integration · contract · e2e green; every level the test strategy requires for this slice present (a missing *declared* tier is a per-commit WARN by design — tiers land with their tasks — and an ERROR at release, where the audit passes `--require-all-tiers`) | suite · `check_test_tiers.py` |
 | tests-first trace | every `AC-` exercised by a passing, failing-capable test carrying a literal `@covers AC-…` tag | `check_task_record.py` |
 | no orphan tests | every behavioral test traces to a live spec driver — no orphan source, no dangling `@covers` ID, no off-grammar test filename (`test_*` / `*.test.*` / `*_test.*` / `*Spec.*` — an off-grammar file is invisible to every classifier gate) | `check_orphan_tests.py` |
 | coverage + mutation | diff-scoped: every changed `src/**` line test-executed; mutants on the changed logic killed at the ratified bar (a whole-tree % hides an untested snippet in its slack) | coverage/mutation runs |
@@ -76,6 +76,7 @@ Both bookends are reconciled by the per-task **Verification Record** — `spec/1
 | ml | any `ML-` capability's eval-harness evidence measured against its stated bar — or `N/A` | eval harness |
 | nfr | referenced `NFR-`/`ASR-` targets evidenced by tests, not assertions | evidence tests |
 | ui | every `ux`-cell state exercised by a `@state:`-tagged test; a11y scan zero critical/serious + the `a11y` cell's keyboard/focus path asserted; screens hold at the DS breakpoints and conform to the frozen prototype — or `N/A — headless` | `ux:states` / `a11y` / `ux:rendered` record rows |
+| prototype-review | the slice's prototype human-reviewed at finalization (`frozen — <path>`) or explicitly `waived — <why>` — or `N/A — headless` | `check_task_record.py` record row |
 | traceability | the matrix updated for the slice's IDs | `lint_spec.py` |
 | conformance | a recorded independent `VERDICT: PASS` for this `T-` on disk under `spec/10-delivery/verification/`, produced in a fresh context | the on-disk artifact |
 | record | the Verification Record fully evidenced — `deploy` + `tests:layers` rows carried, `status: done` | `check_task_record.py --task T-NNN` |
@@ -87,7 +88,8 @@ For autonomous work, don't stop at the first failure or hand back a half-done ta
 - **Fix the code, never move the goalposts.** Never delete or weaken a test or assertion, lower a threshold, add `skip`/`xfail`/`ignore`, loosen a lint/type/fitness rule, or stub a function to fake a pass. A test changes only when the spec changed. (The exec-gate denies the edit that introduces a skip/`.only`; `check_no_skips.py` catches the end state.)
 - **The spec is the source of truth** — never edit the spec or an `AC-` to match buggy code; escalate.
 - **Never grow the code past the spec** — chat is spec input (§ Gaps and mid-task instructions), even when the user asked directly.
-- **Green ≠ done** — the independent conformance verdict and the tests-first trace are still required.
+- **Green ≠ done** — the independent conformance verdict and the tests-first trace are still required. **The implementing loop never authors its own review artifact**: the per-task review file and its `VERDICT:` line are written only by the independent reviewer in a fresh context — an implementer writing them is self-certification, the exact fraud the bookend exists to prevent (the checker can verify the file exists, not who wrote it — this invariant is what makes the artifact meaningful).
+- **Gate state is a trust boundary, not a fortress** — the exec-gate's transient RED state under `.grillspec/gate/` is session-scoped and forgeable at the OS level; deleting or forging it to unlock an edit is a violation identical to weakening a test, even though no checker can see it.
 - **Never disable a gate, fitness function, or hook** to make progress.
 - **No fakes in the shipping path** (§ Production-only) — including the deploy/CI surface and the UI contract.
 - **Clean architecture always wins** — never cross a context or layer boundary, reach into another module's internals, bypass a port, fatten an interface, duplicate logic, or introduce a cycle to make a test green. If the clean design genuinely can't satisfy the test/`AC-`, that's a design/spec signal — escalate, not a licence to hack.

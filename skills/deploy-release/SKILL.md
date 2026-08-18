@@ -12,7 +12,7 @@ description: >-
 **Load `references/exec-engine.md` first and follow it.** This skill: **deploy & release to real environments**.
 
 ## Process
-1. **Verify release provenance first** — check the artifact's build-provenance level / attestation digest before it enters an environment; reject an unattested or digest-mismatched artifact.
+1. **Verify release provenance first** — run `python3 scripts/check_release_attestation.py` (the build attestation is fresh — its `commit:` stamp matches HEAD — and deep enough for the target); then check the artifact's build-provenance level / attestation digest. Reject an unattested, stale, or digest-mismatched artifact.
 2. Promote as a **declarative, continuously-reconciled** change (desired revision → reconciler converges the environment); record the reconciled revision rather than hand-applying steps. Strategy: blue-green / canary / rolling.
 3. For canary/progressive rollout, gate promotion on a **metric gate** — explicit queries · thresholds · auto-promote/abort — not a prose "healthy signals" judgment.
 4. Keep deploy decoupled from release via feature flags — ship dark, enable separately.
@@ -22,8 +22,7 @@ description: >-
 
 ## Rules
 - The release-readiness checklist is advisory for **pre-prod** environments — ship to dev/stage freely, an unmet item is a known risk. **A PRODUCTION promotion is a human go/no-go**, not auto-proceed: the metric gate decides canary *health*, but the business *go* to prod requires an **explicit human go — unless a once-ratified auto-promote policy exists** (recommended default to ratify: auto-promote dev→stage; require a human go for stage→prod). This is the deploy analogue of the data migration's owner-ratified cutover. **Never pass on (prod or not):** a missing rollback path · SLOs/alerts not in place · smoke checks failing · an artifact with no verified provenance.
-- **The FIRST production promotion passes a Production-Readiness Review (PRR) — a real gate, not a vibe.** A consolidated checklist that mostly *references* existing artifacts and adds the "verified/rehearsed, not just planned" bar: security review passed (no open blocking `SEC-`) · **rollback rehearsed** (not only designed) · **backups proven restorable** (a test-restore was run, not assumed) · DR mechanism exercised to its tier · SLOs + alerts confirmed **receiving data** in prod · `preflight` green · **`check_config_drift.py` clean** (the matrix matches what the code reads) · cost guardrails/anomaly alerts on · the day-2 runbooks exist. An unmet PRR item is **blocking for go-live**, surfaced for the human go/no-go — not silently shipped.
-- Canary verdict comes from the metric gate's thresholds, never a subjective read of the dashboards.
+- **The FIRST production promotion passes a Production-Readiness Review (PRR) — a real gate, not a vibe.** A consolidated checklist that mostly *references* existing artifacts and adds the "verified/rehearsed, not just planned" bar: security review passed (no open blocking `SEC-`) · **rollback rehearsed** (not only designed) · **backups proven restorable** (a test-restore was run, not assumed) · DR mechanism exercised to its tier · SLOs + alerts confirmed **receiving data** in prod · `preflight` green · **`check_config_drift.py` clean** (the matrix matches what the code reads) · cost guardrails/anomaly alerts on · the day-2 runbooks exist. An unmet PRR item is **blocking for go-live**, surfaced for the human go/no-go — not silently shipped. **The PRR outcome is recorded in the deploy record's checklist-outcome field** (item × verified/unmet), so the gate leaves an auditable artifact (`check_operate_records.py` reconciles deploy records) instead of a vibe.
 
 ## Output
 Written under `12-operate/`:

@@ -59,21 +59,7 @@ ID_TOKEN = re.compile(r"(?<![A-Za-z0-9-])[A-Z]{1,8}-[A-Za-z0-9][A-Za-z0-9._-]*")
 # -- failing-capable: the file contains a runnable test DECLARATION (the mechanical proxy shared with
 # -- check_task_record.py - keep the pattern cores in sync). A helper/fixture file never declares one,
 # -- so it is never flagged.
-FAILING_CAPABLE = re.compile(
-    r"\b(?:it|test|specify)(?:\s*\.\s*[A-Za-z_]\w*)*\s*\(|"
-    r"\bTEST(?:_F|_P|_CASE)?\s*\(|"
-    r"(?:^|\s)(?:async\s+)?def\s+test_[A-Za-z0-9_]*\s*\(|"
-    r"(?:^|\s)func\s+test[A-Za-z0-9_]*\s*\(|"
-    r"@\s*(?:[A-Za-z_]\w*\.)*(?:Test|ParameterizedTest|RepeatedTest|TestFactory)\b|"
-    r"\[\s*(?:Fact|Theory|Test|TestCase|TestMethod)\b|"
-    r"#\[\s*(?:test|tokio::test|async_std::test)\b|"
-    r"\bfunction\s+test[A-Za-z0-9_]*\s*\(|"
-    r"\((?:deftest|facts?)\s+|"
-    r"\btest_(?:that|case)\s*\(|"
-    r"^\s*(?:Scenario(?:\s+Outline)?):|"
-    r"^\s*@test\s+[\"']|"
-    r"^\s*(?:it|specify|test)\s+[\"'].*(?:do|\{|\$)",
-    re.I | re.M)
+from tier_contract import FAILING_CAPABLE
 
 def _without_comments(text):
     """Strip common comments before looking for a test declaration; the driver tags themselves are read
