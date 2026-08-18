@@ -1,8 +1,8 @@
 ---
 name: grill-ddd
 description: >-
-  Turn an idea or existing docs into a complete Domain-Driven Design model — subdomains, bounded
-  contexts, aggregates — building the ubiquitous language and actor roster as it goes. Use when
+  Turn an idea or existing docs into a Domain-Driven Design model — subdomains, bounded
+  contexts, aggregates — building the ubiquitous language and actor roster. Use when
   modelling a domain, even if the user never says DDD. Loads the shared grill engine.
 disable-model-invocation: true
 argument-hint: an idea, existing docs, or a repo to model
@@ -31,7 +31,7 @@ argument-hint: an idea, existing docs, or a repo to model
 ## Output
 Written under `domain/ddd/`:
 
-Not every file is always produced; create one only when the product has that content. The DDD schema is grouped **per bounded context**, then **one block per aggregate** with its commands, events and invariants nested under it — **never a flat dump** of all commands, then all events, then all aggregates.
+The DDD schema is grouped **per bounded context**, then **one block per aggregate** with its commands, events and invariants nested under it — **never a flat dump** of all commands, then all events, then all aggregates.
 
 | File | Captures | Format |
 |---|---|---|

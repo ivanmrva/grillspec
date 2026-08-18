@@ -1,7 +1,7 @@
 ---
 name: grill-quality
 description: >-
-  Turn vague quality wishes into measurable NFR scenarios, walking a standard quality-attribute tree so no dimension is missed, and tag the architecturally-significant ones (ASRs). Use when you need measurable NFRs with the significant ones flagged. Loads the shared grill engine.
+  Turn vague quality wishes into measurable NFR scenarios by walking a standard quality-attribute tree, and tag the architecturally-significant ones (ASRs). Use when you need measurable NFRs with the significant ones flagged. Loads the shared grill engine.
 disable-model-invocation: true
 argument-hint: an idea, existing docs, or a repo
 ---
@@ -22,7 +22,8 @@ argument-hint: an idea, existing docs, or a repo
   - **Flexibility** — adaptability · installability · replaceability · **Scalability** (now a sub-characteristic here, to N)
   - **Functional-suitability** — completeness · correctness · appropriateness: **correctness rates** (accuracy/recall/determinism) where value rests on processing quality
   - plus **observability** (golden signals, MTTD)
-- each NFR = **a number + measurement point + enforcement category** (test/gate/lint/infra/review) — no adjectives. **The number is a user-owned target → a ratify-point, never silently filled to avoid a blank:** propose a profiled default (a concrete recommended value + one-line why — e.g. "p95 < 200 ms at peak; typical for an interactive web app") for the human to agree/override per the engine's user-owned-values rule. Costliest under-ask if assumed.
+- each NFR = **a number + measurement point + enforcement category** (test/gate/lint/infra/review) — no adjectives. **Each number is a user-owned target — a ratify-point** (e.g. "p95 < 200 ms at peak; typical for an interactive web app").
+- **the availability/RTO/RPO row also carries its `dr-tier`** (backup-restore / pilot-light / warm-standby / active-active) — a user-owned cost commitment ratified HERE, so the infra derivation realises a confirmed tier instead of silently picking one from the RTO/RPO numbers
 - tag the **architecturally-significant** ones as ASRs — each a **full 6-part quality-attribute scenario** (source · stimulus · artifact · environment · response · response-measure) keyed to a real flow/use-case
 - **surface NFR conflicts** (e.g. security↔usability, consistency↔availability)
 
@@ -32,7 +33,7 @@ Written under `requirements/quality/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `nfrs.md` | one row per scenario: id NFR-NNN · attribute · stimulus · measurable response (number) · **`enforced-by` column** (test/gate/lint/infra/review — every NFR names one) · ASR? (if architecturally significant, tag ASR-NNN keyed to this NFR — same number, e.g. NFR-014 → ASR-014) | — |
+| `nfrs.md` | one row per scenario: id NFR-NNN · attribute · stimulus · measurable response (number) · **`enforced-by` column** (test/gate/lint/infra/review — every NFR names one) · `dr-tier` on availability/RTO/RPO rows · ASR? (if architecturally significant, tag ASR-NNN keyed to this NFR — same number, e.g. NFR-014 → ASR-014) | — |
 | `asrs.md` | architecturally-significant requirements: ASR-NNN keyed to its NFR (same number) — the full 6-part quality-attribute scenario | — |
 
 ADRs → `adr/ADR-QUAL-NNN.md`

@@ -576,8 +576,12 @@ expect("dangling-link-double-backtick-ok", run(LINT, {"12-operate/rb.md": HDR + 
 
 # ── 11d illegal downward PATH reference: an upstream file pointing at a downstream area by path/link (the ID
 #    direction checks only see id tokens; this catches 'infra-ops/prerequisites.md' cited from a requirement). ──
-expect("path-downward-bare-warns", run(LINT, {"06-requirements/quality/nfrs.md": HDR + "\nRPO target owned by infra-ops/test.\n" + idtable(("NFR-1", "x"))}),
-       must=["illegal downward path reference", "infra-ops/test"])
+expect("path-downward-bare-warns", run(LINT, {"06-requirements/quality/nfrs.md": HDR + "\nRPO target owned by infra-ops/scaling-dr.md.\n" + idtable(("NFR-1", "x")),
+                                              "09-solution/infra-ops/scaling-dr.md": HDR + "\nx\n"}),
+       must=["illegal downward path reference", "infra-ops/scaling-dr.md"])
+# a slashed token that resolves to nothing on disk is PROSE, not a path — must not fire
+expect("path-prose-slash-ok", run(LINT, {"06-requirements/quality/nfrs.md": HDR + "\nThe verification/cross-check step weighs data/security trade-offs.\n" + idtable(("NFR-1", "x"))}),
+       forbid=["illegal downward path reference"])
 expect("path-downward-link-warns", run(LINT, {"06-requirements/security/authz.md": HDR + "\nSee [creds](09-solution/infra-ops/prerequisites.md).\n" + idtable(("SEC-1", "x"))}),
        must=["illegal downward path reference"])
 expect("path-upstream-ok", run(LINT, {"09-solution/infra-ops/topology.md": HDR + "\nRealises 06-requirements/quality/nfrs.md.\n" + idtable(("MOD-1", "x"))}),
@@ -588,6 +592,76 @@ expect("path-adr-exempt", run(LINT, {"adr/ADR-SEC-4.md": "# ADR-SEC-4 thing\nSta
        forbid=["illegal downward path reference"])
 expect("path-nonspec-ignored", run(LINT, {"06-requirements/quality/nfrs.md": HDR + "\nCode in src/billing/charge.py, docs at https://stripe.com/api/keys.\n" + idtable(("NFR-1", "x"))}),
        forbid=["illegal downward path reference"])
+
+# ── contract severities: security invariants ERROR; staged promotions fire at their gate ───
+# an uncovered THR- (no control, no accepted-risk) is an ERROR the moment it is written
+expect("thr-uncovered-error", run(LINT, {
+    "06-requirements/security/threat-model.md": HDR + "\n| ID | asset |\n|---|---|\n| THR-1 | tokens stolen |\n| SEC-1 | x |\n",
+}), must=["ERROR", "coverage: 'THR-1'"])
+# an OBL- with no control is WARN pre-architecture, ERROR once 09-solution has content
+expect("obl-uncovered-warn-early", run(LINT, {
+    "06-requirements/compliance/obligations.md": HDR + "\n| ID | duty |\n|---|---|\n| OBL-1 | erasure |\n",
+    "06-requirements/security/authz.md": HDR + "\n| ID | x |\n|---|---|\n| SEC-1 | x |\n",
+}), must=["WARN", "coverage: 'OBL-1'"], forbid=["ERROR 06-requirements/compliance"])
+expect("obl-uncovered-error-with-solution", run(LINT, {
+    "06-requirements/compliance/obligations.md": HDR + "\n| ID | duty |\n|---|---|\n| OBL-1 | erasure |\n",
+    "06-requirements/security/authz.md": HDR + "\n| ID | x |\n|---|---|\n| SEC-1 | x |\n",
+    "09-solution/arch/a.md": HDR + "\n| ID | m |\n|---|---|\n| MOD-1 | Api |\n",
+}), must=["ERROR", "coverage: 'OBL-1'"])
+# an empty authorization decision cell is an ERROR (an unresolved access decision, not a candidate)
+expect("authz-empty-cell-error", run(LINT, {
+    "04-domain/ddd/a.md": idtable(("CMD-1", "Create")),
+    "06-requirements/security/authz.md": HDR + "\n| command | admin | user |\n|---|---|---|\n| CMD-1 | allow | |\n",
+}), must=["ERROR", "has no decision"])
+
+# ── ratify machinery: an 'unconfirmed' value WARNs while authoring, ERRORs once tasks exist ──
+expect("unconfirmed-warn-early", run(LINT, {
+    "06-requirements/quality/nfrs.md": HDR + "\n| ID | bar | status |\n|---|---|---|\n| NFR-1 | p95<200ms | unconfirmed |\n",
+}), must=["WARN", "unratified value"], forbid=["ERROR"])
+expect("unconfirmed-error-with-tasks", run(LINT, {
+    "06-requirements/quality/nfrs.md": HDR + "\n| ID | bar | status |\n|---|---|---|\n| NFR-1 | p95<200ms | unconfirmed |\n",
+    "10-delivery/tasks/T-001.md": HDR + "\n| field | value |\n|---|---|\n| T-001 | skeleton |\n",
+}), must=["ERROR", "unratified value"])
+
+# ── bet vocab: closed status + criticality sets on bets.md ──────────────────
+expect("bet-status-vocab", run(LINT, {
+    "01-discovery/bets.md": HDR + "\n| bet | type | criticality | uncertainty | status |\n|---|---|---|---|---|\n| b1 | desirability | Critical | high | Checked |\n| b2 | viability | Medium | low | Untested |\n",
+}), must=["invalid bet status 'Checked'", "invalid bet criticality 'Medium'"])
+
+# ── provisioning: a provisioned row with empty evidence is a rubber stamp ───
+expect("provisioned-empty-evidence", run(LINT, {
+    "_provisioning.md": HDR + "\n| key | owner | consuming | state | evidence |\n|---|---|---|---|---|\n| STRIPE_KEY | human | T-002 | provisioned | |\n",
+}), must=["WARN", "evidence cell is empty"])
+
+# ── spec-root underscore allowlist ──────────────────────────────────────────
+expect("stray-underscore-file", run(LINT, {"_notes.md": HDR + "\nscratch\n"}),
+       must=["WARN", "unexpected spec-root underscore file"])
+expect("sanctioned-underscore-ok", run(LINT, {"_provisioning.md": HDR + "\n| key | owner | consuming | state | evidence |\n|---|---|---|---|---|\n"}),
+       forbid=["unexpected spec-root underscore file"])
+
+# ── ID grammar: prose never tokenizes as a phantom ID ──────────────────────
+# a known prefix glued to a lowercase word ('API-design', 'SLO-burn-rate', 'NFR-evidence') is prose,
+# not an ID — no undefined-reference, no downward-reference, from either a registered or generic shape
+expect("prefix-word-is-prose", run(LINT, {
+    "04-domain/ddd/a.md": idtable(("AGG-1", "Order")) + "\nThe API-design follows the SLO-burn-rate policy; NFR-evidence is separate.\n",
+}), must=["0 error(s)"], forbid=["undefined ID", "illegal downward reference"])
+# an 'XXX-id' column label in a non-header row position must not read as an ID either
+expect("id-column-label-is-prose", run(LINT, {
+    "04-domain/ddd/a.md": idtable(("AGG-1", "Order")) + "\nEach row keys on its OBL-id value.\n",
+}), must=["0 error(s)"], forbid=["undefined ID"])
+# a markdown link to an ADR file resolves as a REFERENCE to the ADR id — not a phantom '…007.md' /
+# '…007-chosen-stack.md' undefined ID (dot + slug stop at the ADR's numeric core)
+expect("adr-link-resolves", run(LINT, {
+    "adr/ADR-ARCH-007-chosen-stack.md": "# ADR-ARCH-007 ChosenStack\nStatus: accepted\nx\n",
+    "04-domain/ddd/a.md": idtable(("AGG-1", "Order")) + "\nSee [rationale](../../adr/ADR-ARCH-007-chosen-stack.md).\n",
+}), must=["0 error(s)"], forbid=["undefined ID"])
+# a dotted member on a non-DATA id resolves to the bare id ('MOD-1.method' -> MOD-1);
+# a DATA- field id keeps its dot and resolves against its dotted definition
+expect("dotted-member-resolves", run(LINT, {
+    "09-solution/arch/m.md": HDR + "\n| id | module |\n|---|---|\n| MOD-1 | Port |\n| MOD-1.method | x |\n",
+    "06-requirements/data/d.md": idtable(("DATA-Customer.id", "key")),
+    "05-functional-spec/uc.md": idtable(("UC-1", "Place")) + "\nUC-1 references DATA-Customer.id\n",
+}), forbid=["undefined ID"])
 
 # ── check_contracts (needs PyYAML) ─────────────────────────────────────────
 if HAVE_YAML:

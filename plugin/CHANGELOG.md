@@ -4,6 +4,99 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 4.21.0
+
+### Changed — every stated contract is now an enforced one
+
+4.20.0 removed the instructions a precise model no longer needs. This release asks the inverse
+question — *are the contracts that remain complete, unambiguous, and actually enforced?* — and closes
+the gaps it found. Where prose claimed a gate the tooling only warned about, the tool now blocks;
+where a vocabulary was referenced but never defined, it is a closed set; where two tools carried the
+same constant, one owns it and `selfcheck.py` guards the mirror.
+
+**Heads-up for existing spec repos: `lint_spec.py` can now ERROR where it previously passed** — an
+empty authorization decision cell or an unruled `CMD-`, an uncovered `THR-`, an `unconfirmed`
+(unratified) value once tasks exist, an uncovered `OBL-` once `09-solution` has content, and an `AC-`
+no task owns once tasks exist. Each is a real gap the old severity let slide; none needs a spec
+rewrite, only the missing decision.
+
+- **Severity promotions where the prose already said "blocking".** `check_deploy_real.py`: a disabled
+  deploy step (`if: false`/`when: never`) and a literally echo-only deploy script/target are ERRORs
+  (the "no *recognized* command" absence heuristic stays WARN — that list can't be complete).
+  `check_migration_real.py`: an explicit `operations = []` is an ERROR. Authorization completeness and
+  uncovered threats are ERRORs in `lint_spec.py`; uncovered obligations and unowned acceptance criteria
+  promote **at the gate that consumes them**, so early-stage specs stay quiet.
+- **The coverage/mutation bar is no longer self-reported.** `check_task_record.py` reads the ratified
+  bar from the test strategy's tier contract (`test/levels.md`); an evidence cell claiming a lower one
+  is a shrunk threshold (ERROR) and the measured value must clear the *ratified* number — closing the
+  gap that let a task pass by writing its own bar.
+- **The ratify-point machinery became mechanical.** One closed lifecycle (`unconfirmed` → `ratified` /
+  `overridden`) stated once per engine; `_human-input.md` has a fixed schema (a ratify-queue table plus
+  a task-keyed blockers section) in `repo-layout.md`; and an `unconfirmed` value is now lint-visible —
+  WARN while authoring, ERROR once tasks exist. Ownership holes closed: the DR tier ratifies on the
+  availability NFR row (infra-ops consumes it instead of silently picking), the activation bar moved to
+  `grill-goals` (it gated nothing when it lived in a deferrable post-launch area), and DORA targets and
+  API deprecation/sunset windows are declared ratify-points in the skills that pick them.
+- **Cross-tool drift is guarded, not just commented.** `impact.py`'s reference vocabulary was roughly
+  half of the linter's — so a change linked by `satisfies`/`realizes`/`enforces`/`renders` never
+  entered the propagation frontier; it now mirrors `lint_spec.py` exactly. `check_operate_records.py`'s
+  prefix list mirrors `TYPES` (the stale `MET` is gone). `FAILING_CAPABLE` lives once in
+  `tier_contract.py`. `selfcheck.py` diffs all three, so the next divergence fails the build.
+- **New checks:** provisioned credentials must carry evidence (an unbacked `provisioned` row was a
+  rubber stamp), the spec-root layer-exempt `_*.md` set is an explicit allowlist, bet `status` and
+  `criticality` are closed vocabularies on `bets.md`, and a committed audit report is flagged (INFO)
+  as needing a git-ignore. `check_release_attestation.py` additionally requires the Tier-B run's
+  persisted release verdict — previously "required" in prose and enforced by nothing.
+- **Three shipped checkers no longer orphaned:** `check_release_attestation.py` is cited by
+  `deploy-release`, `check_operate_records.py` by `operate-incident`, `check_contracts.py` by
+  `conformance-review`.
+- **Undefined vocabularies defined:** the area-maturity scale (L0–L3), risk value sets with
+  `risk-status` disambiguated from the bet axis (and a mandatory paydown-trigger on technical debt),
+  the `_readiness.md` / `glossary.md` / `actors.md` column schemas, the kill-criteria table, the three
+  architecture files that shipped with a `—` format, the impl-design filename convention, and a
+  findable `## Read models` heading for the CQRS merge escape.
+- **Stale contract statements corrected:** the conductor claimed three linter ERRORs that no longer
+  exist (bet status, Deferred-without-trigger, duplicate cross-area term — now named as semantic-sweep
+  work); the exec done-gate table gained the `prototype-review` row `check_task_record.py` has always
+  required, plus a note that a missing declared tier is a per-commit WARN by design and an ERROR at
+  release; `conformance-review`'s output path aligns with the engine's `10-delivery/verification/`;
+  `SPEC-CHECKS.md` matches the linter again. Two anti-cheat invariants written down: the implementing
+  loop never authors its own review artifact, and the exec-gate's transient RED state is a named trust
+  boundary, not a fortress.
+- **`audit-build` re-runs the no-fakes/deploy/migration tripwires `--strict` at release**, the same
+  logic already applied to no-skips: per-commit heuristics are promoted once every "review later" has
+  expired.
+
+### Fixed — the linter learned the ID grammar (and the instructions defending against it are gone)
+
+`lint_spec.py`'s tokenizer treated any known prefix followed by anything as an ID, which forced a
+block of authoring rules into `derive-engine.md` purely to avoid false positives. The grammar is now
+the house ID grammar: a suffix begins with a digit or uppercase (so `API-design`, `SLO-burn-rate`,
+`NFR-evidence` and a `DS-id` column label are prose), a dotted member suffix is legal only on `DATA-`,
+an `ADR-` token resolves at its numeric core (so a slugged file link resolves to the ADR it names),
+and a slashed prose token (`verification/cross-check`) is a path reference only when it resolves in
+the tree. The four defensive authoring rules are deleted; the two genuinely semantic ones (a trace
+table may be keyed on a foreign ID; a YAML `x-grillspec-id` is reference-only) stay.
+
+### Changed — residual over-instruction removed (the 4.20.0 sweep, finished)
+
+A full re-read of all 47 skills against their engines found ~2,000 words of restatement the dedup
+pass missed: `derive-tasks`' dimension walk duplicated its own output row (the row is the single
+enumeration; the three lint-enforced invariants it carried moved to Rules), `derive-conventions`
+re-listed every pre-commit hook the output row lists, `derive-infra-ops` stated progressive delivery
+and delivery metrics three times each, `autorun` explained the exec-gate's internals and its own
+prototype cadence, `operate-incident`'s Rules repeated its Process steps, and `diagnose`'s entire
+Rules section was one line copied from the engine. Multi-sentence rationale essays are gone; one-line
+whys stay — they are how a model generalizes a rule to the case the list didn't name.
+
+### Fixed
+
+- `check_freshness.py` skips fenced code blocks, matching the linter — a verbatim ID example inside a
+  fence no longer hashes as a definition and false-flags every downstream artifact as stale.
+- Both bundled subagents (`explorer`, `test-runner`) pin a current model.
+- `diagnose` and `operate-incident` gained machine-checkable done contracts (required record fields,
+  and a `check_operate_records.py` reconciliation before an incident closes).
+
 ## 4.20.0
 
 ### Changed — instruction-layer dedup for precise-instruction-following models: every rule stated once

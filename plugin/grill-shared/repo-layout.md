@@ -47,6 +47,11 @@ spec/
 │   cross-area views — a glossary view, the bet register, risks, readiness — by READING outputs, not as files.
 │   The one operational queue is `_human-input.md` at the spec root: the batched human-in-the-loop asks
 │   `autorun` parks for you to clear in a sitting — an orchestration handoff, not a decision/assumption ledger.
+│   Its schema is fixed so every skill writes it identically and the linter can flag what's unclear:
+│   `## Ratify queue` — table `| topic/ID | recommended value | why | status |`, status ∈ `unconfirmed`
+│   (open ask) → `ratified` / `overridden` (the human's flip; the settled value is then written into the
+│   owning artifact and the row cleared) — and `## Blockers` — per-task entries leading with the `T-` id ·
+│   the precise blocker · the actionable resolution (the id is what the afk:blocked cross-check keys on).
 │   Being layer-free (spec root), it is the ONE place operational "where are the steps" navigation may point
 │   DOWN at a runbook — e.g. a provisioning ask citing `12-operate/bootstrap.md §N` for the click-by-click —
 │   which a layer-bound solution file like `infra-ops/prerequisites.md` (the requirement register) may not.

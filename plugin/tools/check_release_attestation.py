@@ -84,6 +84,24 @@ else:
     issues.append(("ERROR" if REQUIRE_FRESH else "WARN",
                    "freshness UNVERIFIABLE (%s) - can't confirm the attestation covers the current tree." % why))
 
+# Tier-B release verdict: the system/Tier-B run persists its release-readiness verdict to
+# spec/10-delivery/verification/test-run.md (per-NFR/SLO verdict rows) - "an unpersisted release verdict is
+# a release gate that never ran". Nothing else consumes it mechanically, so enforce it here beside the
+# attestation: missing file or no passing release verdict line -> WARN (ERROR under --require-fresh, the
+# strict-release flag - the same opt-in strictness as freshness).
+_trun = ROOT / "spec" / "10-delivery" / "verification" / "test-run.md"
+if not _trun.exists():
+    issues.append(("ERROR" if REQUIRE_FRESH else "WARN",
+                   "no Tier-B release verdict at %s - the system-suite run must persist its release-readiness "
+                   "verdict (per-NFR/SLO rows); a release gate that never ran cannot clear a release." % _trun))
+else:
+    _tv = re.search(r"(?i)\b(?:release[- ]readiness|release)\s*(?:verdict)?\s*:\s*(PASS|FAIL)", _trun.read_text(encoding="utf-8", errors="replace"))
+    if not _tv:
+        issues.append(("ERROR" if REQUIRE_FRESH else "WARN",
+                       "%s carries no 'release verdict: PASS|FAIL' line - persist the Tier-B run's verdict so the release gate is auditable." % _trun))
+    elif _tv.group(1).upper() != "PASS":
+        issues.append(("ERROR", "%s: Tier-B release verdict is FAIL - the system suite did not clear the release bar." % _trun))
+
 errs = [msg for lvl, msg in issues if lvl == "ERROR"]
 warns = [msg for lvl, msg in issues if lvl == "WARN"]
 for msg in errs:

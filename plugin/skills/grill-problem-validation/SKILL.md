@@ -14,10 +14,10 @@ argument-hint: an idea, existing docs, or a repo
 **Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/grill-engine.md` first and follow it.** This skill applies that method to **Problem validation & discovery** — the problem worth solving and the riskiest bets behind it.
 
 ## Rules
-- **every critical bet carries a validation status + a falsifiable test plan** — a prediction with a pass/fail threshold, not a hope
+- **every critical bet carries a validation status + a falsifiable test plan** — a prediction with a pass/fail threshold, not a hope. **Criticality is the closed set `Critical | High | Low`** — a bet is "critical" for the architecture-readiness gate exactly when its criticality cell reads `Critical` (the gate and the pivot loop key on the literal token, so a synonym silently escapes both)
 - pain is **frequency × intensity, painkiller vs vitamin** — and name the **why-now / catalyst**, or it isn't urgent
 - weigh the **forces around a switch** — push of the problem + pull of the new way vs anxiety of switching + habit of today; the solution wins only when push+pull beat anxiety+habit
-- you **plan** validation, you don't run it — the real test happens in the market (cheapest test per risky assumption)
+- plan the **cheapest test per risky assumption**
 - kill-criteria are referenced, not authored here
 
 ## Output

@@ -25,9 +25,11 @@ def opt(flag, default):
 SPEC = ROOT / opt("--spec", "spec")
 OPERATE = SPEC / "12-operate"
 
-# known ID prefixes (mirrors lint_spec's vocabulary; kept local so the tool is self-contained).
-PREFIXES = ("T", "UC", "AC", "CMD", "EVT", "AGG", "INV", "DATA", "API", "NFR", "ASR", "SLO",
-            "SEC", "OBL", "THR", "MOD", "JRN", "ML", "DS", "MET")
+# known ID prefixes (mirrors lint_spec's TYPES exactly; kept local so the tool is self-contained -
+# selfcheck guards the mirror, so a prefix added there without updating this line is caught).
+PREFIXES = ("UC", "AC", "CMD", "EVT", "AGG", "VO", "INV", "HOT", "POL", "RM", "ENTL", "ENT",
+            "NFR", "ASR", "API", "SEC", "THR", "DATA", "OBL", "SLO", "EXP", "AEV", "DS", "JRN",
+            "SCR", "ML", "FAC", "REPO", "SVC", "IF", "MOD", "CA", "ADR", "T")
 IDRE = re.compile(r"\b(" + "|".join(PREFIXES) + r")-([A-Za-z0-9_]+)\b")
 DEPLOY_FILE = re.compile(r"^deploy-([A-Za-z0-9]+)-", re.I)
 

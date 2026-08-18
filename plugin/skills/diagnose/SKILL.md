@@ -18,10 +18,7 @@ argument-hint: a bug or performance regression to diagnose
 3. **Hypothesise.** Generate **3–5 ranked, falsifiable** hypotheses *before* testing any ('if X is the cause, changing Y makes it disappear'). Show the ranked list to the user (they often re-rank instantly); proceed if AFK.
 4. **Instrument.** Each probe maps to one prediction; **change one variable at a time**; prefer a debugger/REPL over logs; **tag every debug log with a unique prefix** (`[DEBUG-a4f2]`) so cleanup is one grep. Perf branch: **measure first** (baseline + profiler/query-plan), then bisect — logs are usually wrong for perf.
 5. **Fix + regression test.** Write the regression test **before** the fix **iff a correct seam exists** (one that exercises the real bug pattern at the call site). **If no correct seam exists, that IS the finding** — the architecture is preventing lockdown → flag it. Otherwise: failing test → watch fail → fix → watch pass → re-run the Phase-1 loop on the original scenario.
-6. **Cleanup + post-mortem.** Original repro gone · regression test passing (or absent-seam documented) · all `[DEBUG-…]` removed (grep) · throwaway harnesses deleted · the correct hypothesis stated in the commit/MR. **Then ask: what would have prevented this?** If architectural (no test seam, tangled callers, hidden coupling) → flag it for the conformance review's design-health lens with specifics (after the fix, not before).
-
-## Rules
-- Code lives in the source tree, never in `spec/`.
+6. **Cleanup + post-mortem.** Original repro gone · regression test passing (or absent-seam documented) · all `[DEBUG-…]` removed (grep) · throwaway harnesses deleted · the correct hypothesis stated in the commit/MR. **Done is the record**: the diagnosis file must carry three fields — `root-cause:` · `fix:` (or `absent-seam: <why lockdown was impossible>`) · `regression-test: <path>` (or the absent-seam note) — a diagnosis missing any of them is not closed. **Then ask: what would have prevented this?** If architectural (no test seam, tangled callers, hidden coupling) → flag it for the conformance review's design-health lens with specifics (after the fix, not before).
 
 ## Output
 Written under `12-operate/`:

@@ -21,13 +21,12 @@ argument-hint: the slice (and the modules it touches) to design
 ## Rules
 - **per-slice & risk-gated** — produced only for a **complex** slice (a hard algorithm · real concurrency · a cross-context saga); a simple/CRUD slice is designed as it is TDD'd, with no design step
 - **internals only** — the seam interface, role, and dependency direction belong to the architecture; never re-open them here (a needed interface change is a **gap raised to the architecture**, not a local override)
-- **each `<module>.md` names the `MOD-` it implements and the `T-` slice it serves, by id** (`implements MOD- · serves T-`) — the doc's reason to exist is traceable, not inferred from the filename
 - **design DEEP modules** — a lot of behaviour behind the *small* interface the architecture fixed; the interface stays the test surface
 - **don't introduce a seam until a second concrete implementation needs it** — exactly why this is JIT: the second consumer reveals the real seam
 - DESIGN fidelity — no code, no heavy pseudocode
 
 ## Output
-Written under `delivery/impl-design/` — **filled incrementally**, one file per module **as a slice touches it** (not all modules up front):
+Written under `delivery/impl-design/` — **filled incrementally**, one file per module **as a slice touches it** (not all modules up front). **Filename = the module's kebab-case name from the architecture's module map** (`booking-scheduler.md` for MOD-007 BookingScheduler) — one module, one file, so two designs can never cover the same `MOD-` under different names:
 
 | File | Captures | Format |
 |---|---|---|

@@ -40,8 +40,7 @@ Deferred/N-A until warranted. A whole area may be **N/A** — record it.
 artifact** (regenerate-only); but you can **skip the two-tier test rig, the fitness-function suite, and
 the full `code-ci.yml` pipeline** (keep one plain test job) until the project grows into them. Lite means
 fewer areas and lighter ceremony — not a different system.
-**The no-fakes bar never relaxes; only the deploy ceremony scales.** The exec engine's production-only bar and
-its tripwires apply unchanged on the lite path. What **scales down** is the *promotion apparatus*, not its
+**The no-fakes bar never relaxes; only the deploy ceremony scales.** What **scales down** is the *promotion apparatus*, not its
 honesty: a lite project may run a **single environment** — a one-env deploy / `npm publish` / a `Dockerfile` +
 one `deploy` job that actually ships (e2e then runs against that one deployed env, not a per-PR preview fleet) —
 and **skip multi-hop promotion + the PRR** until it grows a stage/prod split. The `deploy` row stays required —
@@ -118,10 +117,8 @@ entry modes are first-class:
   folder (the workspace fence in `house-rules.md`); missing prior work is a **tracked gap to
   re-grill**, not a draft to recover.
 
-**Gates are readiness signals, not locks.** Skills are independently invocable, so you may run any
-derive/exec skill whenever you like (e.g. to preview output before its upstream is settled). Whatever it
-produces is just a normal artifact — committed to git like anything else; if its upstream later changes,
-the **same propagation + linter** keep it consistent. No special status, no extra bookkeeping.
+**Gates are readiness signals, not locks** — skills are independently invocable; see
+`${CLAUDE_PLUGIN_ROOT}/grill-shared/operator-map.md` for the full statement.
 
 ## Operations, maintenance & the production lifecycle (spec → build → run → maintain)
 Delivery does not end at merge. The lifecycle continues onto **real/prod systems** and feeds back:

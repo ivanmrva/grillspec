@@ -11,11 +11,12 @@
 # It is deliberately conservative (a noisy gate gets `--no-verify`d): it scans only files under a migration home
 # and flags only the clear fakes.
 #
-# ERROR (a placeholder migration - it doesn't really migrate):
-#   - a TODO/FIXME/placeholder/"not implemented"/"fill in"/"replace me"/"fake|stub|dummy" marker in a migration.
-# WARN (an empty migration - review; a no-op data migration can be legitimate, hence not a hard block):
-#   - a `.sql` migration with no DDL/DML statement; an `operations = []`; a migration with no recognized
-#     migration statement whose only body is `pass`/empty.
+# ERROR (an unambiguous fake - it doesn't really migrate):
+#   - a TODO/FIXME/placeholder/"not implemented"/"fill in"/"replace me"/"fake|stub|dummy" marker in a migration;
+#   - an explicitly empty `operations = []` migration.
+# WARN (an empty-body heuristic - review; a no-op data migration can be legitimate, hence not a hard block):
+#   - a `.sql` migration with no DDL/DML statement; a migration with no recognized migration statement whose
+#     only body is `pass`/empty.
 # Suppress with an inline `migration-real: allow <reason>` comment, or a path/substring entry in
 # `.grillspec/migration-real-allow.txt`. `--strict` promotes WARN -> ERROR.
 #
@@ -140,7 +141,10 @@ for p in migs:
     # an empty DOWN/rollback migration is a legitimate no-op (irreversible-by-design) - don't flag emptiness
     # there; a placeholder (above) is still an ERROR regardless.
     if not has_stmt and not placed and not DOWN_MIG.search(rel):
-        if EMPTY_OPS.search(text) or body_is_trivial(text):
+        if EMPTY_OPS.search(text):
+            add("ERROR", "%s:1" % rel,
+                "an empty migration (operations = []) — it defines no schema/data change.")
+        elif body_is_trivial(text):
             add("WARN", "%s:1" % rel,
                 "an empty migration — it defines no schema/data change (no DDL/DML or migration operation).")
 

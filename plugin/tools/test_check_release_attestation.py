@@ -11,7 +11,7 @@ def git(d, *a):
     return subprocess.run(["git", "-C", str(d), "-c", "user.email=t@t", "-c", "user.name=t", *a],
                           capture_output=True, text=True)
 
-def run(report_text=None, args=(), repo=False):
+def run(report_text=None, args=(), repo=False, tierb="release verdict: PASS\n"):
     d = pathlib.Path(tempfile.mkdtemp(prefix="attest_"))
     try:
         sha = "0" * 40
@@ -20,6 +20,10 @@ def run(report_text=None, args=(), repo=False):
             (d / "f.txt").write_text("x")
             git(d, "add", "-A"); git(d, "commit", "-q", "-m", "init")
             sha = git(d, "rev-parse", "HEAD").stdout.strip() or sha
+        if tierb is not None:
+            tr = d / "spec" / "10-delivery" / "verification" / "test-run.md"
+            tr.parent.mkdir(parents=True, exist_ok=True)
+            tr.write_text(tierb, encoding="utf-8")
         if report_text is not None:
             (d / "build-audit-report.md").write_text(report_text.replace("{SHA}", sha), encoding="utf-8")
         out = subprocess.run([sys.executable, str(TOOL), str(d), *args], capture_output=True, text=True)
@@ -48,6 +52,14 @@ expect("attested-deep-fresh-passes", rc, o, 0, must=["ATTESTED", "fresh"], forbi
 # a --deep report whose BODY says 'sample' still counts as deep (parse the marker, not the prose)
 rc, o = run("BUILD ATTESTATION: ATTESTED · depth: deep\ncommit: {SHA}\nnotes: reviewed a sample of logs.\n", repo=True)
 expect("deep-with-sample-word-passes", rc, o, 0, must=["depth: deep, fresh"], forbid=["WARN", "ERROR"])
+
+# Tier-B release verdict: missing test-run.md → WARN (ERROR under --require-fresh); FAIL verdict → ERROR
+rc, o = run("BUILD ATTESTATION: ATTESTED · depth: deep\ncommit: {SHA}\n", repo=True, tierb=None)
+expect("tierb-missing-warns", rc, o, 0, must=["WARN", "no Tier-B release verdict"])
+rc, o = run("BUILD ATTESTATION: ATTESTED · depth: deep\ncommit: {SHA}\n", repo=True, tierb=None, args=("--require-fresh",))
+expect("tierb-missing-strict-errors", rc, o, 1, must=["ERROR", "no Tier-B release verdict"])
+rc, o = run("BUILD ATTESTATION: ATTESTED · depth: deep\ncommit: {SHA}\n", repo=True, tierb="release verdict: FAIL\n")
+expect("tierb-fail-errors", rc, o, 1, must=["ERROR", "release verdict is FAIL"])
 
 # STALE: the stamped commit doesn't match HEAD (work landed since the audit) → ERROR
 rc, o = run("BUILD ATTESTATION: ATTESTED · depth: deep\ncommit: deadbeefdeadbeefdeadbeef\n", repo=True)

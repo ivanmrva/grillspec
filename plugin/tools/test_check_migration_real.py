@@ -50,13 +50,13 @@ expect("placeholder-sql", run({"migrations/002_orders.sql": "-- TODO: write the 
 expect("empty-sql-warn", run({"migrations/003_noop.sql": "-- just a comment, nothing here\n"}),
        must=["WARN", "empty migration"], forbid=["ERROR"])
 
-# an empty Django operations list is a WARN
+# an explicitly empty Django operations list is an unambiguous fake - ERROR
 expect("empty-django-ops", run({"app/migrations/0002_empty.py":
         "from django.db import migrations\n"
         "class Migration(migrations.Migration):\n"
         "    dependencies = [('app', '0001_initial')]\n"
         "    operations = []\n"}),
-       must=["WARN", "empty migration"], forbid=["ERROR"])
+       must=["ERROR", "empty migration"])
 
 # a pass-only Rails-ish migration (no recognized op) is a WARN
 expect("pass-only-warn", run({"db/migrate/004_change.rb":

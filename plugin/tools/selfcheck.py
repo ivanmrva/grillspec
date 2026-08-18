@@ -228,6 +228,34 @@ if lint.exists() and mt:
             err(f"{toolname} TYPES is out of sync with lint_spec.py TYPES "
                 f"(only in lint_spec: {sorted(want - got) or '-'}; only in {toolname}: {sorted(got - want) or '-'}) "
                 "- copy the linter's TYPES line so it resolves ids against the same vocabulary")
+    # check_operate_records.py carries the same vocabulary as a PREFIXES tuple (self-contained form)
+    opr = ROOT / "tools" / "check_operate_records.py"
+    if opr.exists():
+        mo = re.search(r"^PREFIXES\s*=\s*\(([^)]+)\)", opr.read_text(), re.M | re.S)
+        got = set(re.findall(r'"([A-Z]+)"', mo.group(1))) if mo else set()
+        if not mo:
+            warn("check_operate_records.py: no PREFIXES tuple found - cannot verify it tracks lint_spec.py")
+        elif got != want:
+            err(f"check_operate_records.py PREFIXES is out of sync with lint_spec.py TYPES "
+                f"(only in lint_spec: {sorted(want - got) or '-'}; only in the tool: {sorted(got - want) or '-'}) "
+                "- mirror the linter's TYPES so operate records dangling-check every id type")
+
+# --- 4b-2b. REFMARK sync: impact.py must recognize every reference keyword lint_spec.py resolves ----
+# A keyword lint counts as a reference but impact ignores is an edge missing from the propagation
+# frontier - a change ripples in lint's eyes but impact's re-derive checklist silently omits it.
+if lint.exists():
+    _refmark = lambda path: (lambda m: m.group(1) if m else None)(
+        re.search(r"^REFMARK\s*=\s*re\.compile\(\s*r\"(.+?)\",\s*re\.I\)", path.read_text(), re.M))
+    lm, im = _refmark(lint), _refmark(ROOT / "tools" / "impact.py")
+    if lm is None or im is None:
+        warn("REFMARK constant not found in lint_spec.py and/or impact.py - cannot verify keyword sync")
+    else:
+        kw = lambda s: set(re.findall(r"[a-z]{3,}(?:\?[a-z]*)*",
+                                      re.sub(r"\\u[0-9a-fA-F]{4}|\\[a-zA-Z]", " ", s.split("\\s*:?", 1)[0])))
+        if kw(lm) != kw(im):
+            err(f"impact.py REFMARK keywords diverge from lint_spec.py "
+                f"(lint-only: {sorted(kw(lm) - kw(im)) or '-'}; impact-only: {sorted(kw(im) - kw(lm)) or '-'}) "
+                "- copy lint_spec.py's REFMARK so propagation sees every reference edge lint resolves")
 
 # --- 4b-3. layer-table sync: impact.py layer() must mirror lint_spec.py file_layer() ----------------
 # Both map a spec path -> layer number for upstream->downstream ordering. impact.py carries its own copy
