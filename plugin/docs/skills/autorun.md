@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Autonomous AFK driver for the coding phase — drives the per-task implement → done-gate → conformance loop across the task DAG in parallel, self-correcting code to green, merging on green, unlocking dependents, parking true HITL needs. Use when the spec is implementation-final and you want the coding phase driven AFK across the whole DAG.
+Autonomous AFK driver for the coding phase — runs the per-task implement → done-gate → conformance loop across the task DAG in parallel, self-correcting to green, merging on green, parking true HITL blockers.
 
 ## What it needs (input)
 A task package and the code it touches.

@@ -338,5 +338,19 @@ expect("env-root-extends-discovery", run(_g, covers=None, env_extra={"GRILLSPEC_
 expect("no-records-noop", run({T + "T-014.md": TASK}, args=()),
        must=["no", "records"], forbid=["ERROR", "Traceback"])
 
+# ── omitted [spec_dir] with --task defaults to ./spec — the flag's value must not be eaten as the path ──
+# `check_task_record.py --task T-014` used to double-count "T-014" as the spec_dir positional, resolving the
+# record at the bogus T-014/10-delivery/… path. Correct parse reads ./spec under the cwd.
+_h = pathlib.Path(tempfile.mkdtemp(prefix="trectest_"))
+try:
+    for rel, content in proj(record()).items():
+        p = _h / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(content, encoding="utf-8")
+    _o = subprocess.run([sys.executable, str(TOOL), "--task", "T-014"],
+                        capture_output=True, text=True, cwd=_h)
+    expect("no-positional-defaults-to-spec", _o.stdout + _o.stderr,
+           forbid=["T-014/10-delivery"])
+finally:
+    shutil.rmtree(_h, ignore_errors=True)
+
 print("\n%d passed, %d failed" % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)

@@ -1,7 +1,9 @@
 ---
 name: grill-system-context
 description: >-
-  Nail the system boundary before the domain is modelled — the system as one black box, its external actors and neighbor systems, the interfaces that cross the edge, and the in/out scope line, drawn as the C4 System Context view. Loads the shared grill engine.
+  Nail the system boundary before the domain is modelled — the system as one black box, external
+  actors and neighbor systems, the interfaces crossing the edge, and the in/out scope line, drawn
+  as the C4 System Context view. Loads the shared grill engine.
 disable-model-invocation: true
 argument-hint: an idea, existing docs, or a repo
 ---

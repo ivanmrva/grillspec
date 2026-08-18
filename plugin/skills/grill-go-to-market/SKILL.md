@@ -1,7 +1,9 @@
 ---
 name: grill-go-to-market
 description: >-
-  Pin the go-to-market execution — ICP, channels & per-channel messaging, launch plan, partnerships — aligned to the product's chosen go-to-market motion. Use when you need a GTM plan; late/parallel and optional, not part of the core system spec. Loads the shared grill engine.
+  Pin the go-to-market execution — ICP, channels with per-channel messaging, launch plan,
+  partnerships — aligned to the product's chosen motion. Late, parallel and optional; not part of
+  the core system spec. Loads the shared grill engine.
 disable-model-invocation: true
 argument-hint: an idea, existing docs, or a repo
 ---

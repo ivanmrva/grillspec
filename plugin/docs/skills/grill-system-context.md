@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Nail the system boundary before the domain is modelled — the system as one black box, its external actors and neighbor systems, the interfaces that cross the edge, and the in/out scope line, drawn as the C4 System Context view.
+Nail the system boundary before the domain is modelled — the system as one black box, external actors and neighbor systems, the interfaces crossing the edge, and the in/out scope line, drawn as the C4 System Context view.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Turn an idea or existing docs into a complete Domain-Driven Design model — subdomains, bounded contexts, aggregates — building the ubiquitous language and actor roster as it goes. Use when modelling a domain, even if the user never says "DDD".
+Turn an idea or existing docs into a complete Domain-Driven Design model — subdomains, bounded contexts, aggregates — building the ubiquitous language and actor roster as it goes. Use when modelling a domain, even if the user never says DDD.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

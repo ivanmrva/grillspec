@@ -1,7 +1,9 @@
 ---
 name: grill-monetization
 description: >-
-  Pin the business model & pricing — model, packaging, plans/tiers priced against the entitlement tiers, billing model, unit economics, and the customer-facing SLA/support commitments. Use when the entitlement tiers exist and you need the commercial model nailed down. Loads the shared grill engine.
+  Pin the business model and pricing — model, packaging, plans priced against the entitlement
+  tiers, billing model, unit economics, and customer-facing SLA/support commitments. Use once the
+  entitlement tiers exist. Loads the shared grill engine.
 disable-model-invocation: true
 argument-hint: an idea, existing docs, or a repo
 ---

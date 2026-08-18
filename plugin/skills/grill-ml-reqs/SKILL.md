@@ -1,7 +1,10 @@
 ---
 name: grill-ml-reqs
 description: >-
-  Pin the requirements for an AI/ML feature — what the model must do and how well, its evaluation criteria (the acceptance tests for model behaviour), the training/feedback data it needs, confidence/fallback bars, human-in-the-loop points, and responsible-AI obligations. Use when the product embeds an ML or LLM capability that classical functional/quality requirements don't capture. Loads the shared grill engine.
+  Pin the requirements for an AI/ML capability — what the model must do and how well, evaluation
+  criteria, training/feedback data, confidence and fallback bars, human-in-the-loop points, and
+  responsible-AI obligations. Use when the product embeds ML/LLM behaviour. Loads the shared grill
+  engine.
 disable-model-invocation: true
 argument-hint: an idea, existing docs, or a repo
 ---

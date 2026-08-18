@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the design system as a spec — design tokens (DTCG, primitive→semantic→component), components-as-contracts (variants · states · ARIA), implementation mapping, accessibility baked into the tokens, brand & assets, and voice/content. Provided, partial, or generated from a brand seed. Use when you need the design system specified, not the journeys.
+Pin the design system as a spec — DTCG design tokens (primitive→semantic→component), components- as-contracts with variants, states and ARIA, accessibility baked into the tokens, brand assets, and voice. Provided, partial, or generated from a brand seed.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

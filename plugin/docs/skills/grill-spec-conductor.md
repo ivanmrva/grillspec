@@ -5,7 +5,7 @@
 *The orchestrator — the one skill that knows the whole system. The 46 worker skills know nothing about it.*
 
 ## What it does
-START HERE to spec, design, model, plan, or build a project, product, or feature end-to-end — the single front door and orchestrator for the whole idea-to-spec-to-architecture-to-tasks-to-code-to-operate workflow. Use when starting from an idea or from scratch, when the scope is the whole project rather than one area, or when you don't know which step you need: it scans the spec, re-derives the current state, and recommends or asks which area to work next. Owns the cross-area dependency order, the readiness gates, the global glossary/actors and consistency, the discovery/validation overlay, the pivot loop, and the lite path. Prefer this over any individual grill-, derive-, or exec- skill whenever the work spans more than one area. Run this first.
+START HERE to spec, design, plan, or build a project or feature end-to-end — the front door and orchestrator for the whole idea-to-spec-to-code-to-operate workflow. It scans the spec, re-derives the current state, and routes to the next area; owns the dependency order, readiness gates, and cross-area consistency. Prefer it over any single grill-/derive-/exec- skill whenever work spans more than one area.
 
 ## When to use it
 When you want the full system to drive end to end. It picks the next area, **hands each worker its input and its exact target slot** in the `spec/` tree, then reads each worker's output to reconcile cross-area views, runs the linter + derived-guard, checks cross-area consistency, and propagates changes downstream. Use a worker skill directly instead when you only want one artifact.

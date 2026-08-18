@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the post-launch growth model — activation/retention/referral, an experiment backlog, and the analytics events the product must emit to measure it. Use when you need a growth model plus its instrumentation; closes the loop from launch back to discovery.
+Pin the post-launch growth model — activation, retention and referral, an experiment backlog, and the analytics events the product must emit to measure it; closes the loop from launch back to discovery.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

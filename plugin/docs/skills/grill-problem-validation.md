@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the problem worth solving and score the riskiest bets — problem hypothesis (who hurts, how badly, vs which alternatives, why-now), desirability/viability/feasibility bets scored criticality × uncertainty, value-proposition fit, and a PMF definition with the cheapest test per assumption. Runs first and never closes. Use when you need the problem nailed and the riskiest bets scored before anything is built.
+Pin the problem worth solving and score the riskiest bets — problem hypothesis, desirability/viability/feasibility bets scored criticality × uncertainty, value-proposition fit, and a PMF definition with the cheapest test per assumption. Runs first and never closes.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

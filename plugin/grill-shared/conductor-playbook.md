@@ -26,10 +26,9 @@ Per-area ingestion points one area at a file; migration **scatters** one mixed p
    deltas** (flips `status: unconfirmed` to Resolved/Open) — running each area's full coverage lens over the migrated content, same depth as a fresh interview, sorted into settled / needs-clarification / contradiction, not a file-move plus a provenance tag. Expect it to look worse before better:
    it makes hidden debt legible. Garbage in is garbage migrated — now visible.
 
-**Parallel-drafting checklist (when several subagents draft sibling files at once — multi-context ddd, a scatter migration).** Hand each unit these four rules up front; they are the exact failure modes that turn one clean pass into a multi-pass ID reconciliation:
+**Parallel-drafting checklist (when several subagents draft sibling files at once — multi-context ddd, a scatter migration).** Hand each unit these rules up front; they are the exact failure modes that turn one clean pass into a multi-pass ID reconciliation:
 - **Disjoint numeric bands per unit** — context A mints `AGG-2xx`, context B `AGG-3xx`; no two drafters reuse a number.
-- **Bare type prefix only** — `AGG-250`, never `<CTX>-AGG-250` (a namespaced ID silently fails to register).
-- **ID is the leading table column** (the row key) — a name-first row leaves the ID undefined and its references dangling.
+- **The two ID mechanics from `house-rules.md`** — bare type prefix, ID as the leading table column.
 - **Lint each unit before integrating** — run `lint_spec.py` on each draft on its own; resolve its ERRORs before merging siblings, so cross-file "undefined ID" noise doesn't pile up.
 
 ## Lite path (small products)
@@ -41,14 +40,12 @@ Deferred/N-A until warranted. A whole area may be **N/A** — record it.
 artifact** (regenerate-only); but you can **skip the two-tier test rig, the fitness-function suite, and
 the full `code-ci.yml` pipeline** (keep one plain test job) until the project grows into them. Lite means
 fewer areas and lighter ceremony — not a different system.
-**The no-fakes bar never relaxes; only the deploy ceremony scales.** Even on the lite path the **release path is
-real** — a single-environment deploy / `npm publish` / a `Dockerfile` + one `deploy` job that actually ships,
-never a faked `echo`/`exit 0`/`# TODO` deploy, and any schema change ships a real migration (`check_no_fakes` ·
-`check_deploy_real` · `check_migration_real` still apply). What **scales down** is the *promotion apparatus*, not
-its honesty: a lite project may run a **single environment** (e2e then runs against that one deployed env, not a
-per-PR preview fleet) and **skip multi-hop promotion + the PRR** until it grows a stage/prod split. The `deploy`
-row stays required — it just references the single real environment, or `N/A — no deployable surface` for a pure
-library/spec project.
+**The no-fakes bar never relaxes; only the deploy ceremony scales.** The exec engine's production-only bar and
+its tripwires apply unchanged on the lite path. What **scales down** is the *promotion apparatus*, not its
+honesty: a lite project may run a **single environment** — a one-env deploy / `npm publish` / a `Dockerfile` +
+one `deploy` job that actually ships (e2e then runs against that one deployed env, not a per-PR preview fleet) —
+and **skip multi-hop promotion + the PRR** until it grows a stage/prod split. The `deploy` row stays required —
+it just references the single real environment, or `N/A — no deployable surface` for a pure library/spec project.
 
 ## Progressive elaboration, the per-layer ratchet, and where edge cases are actually found
 Upfront completeness is neither achievable nor desirable — edge cases surface late, and some areas
@@ -118,7 +115,7 @@ entry modes are first-class:
   *partial* spec (actors, contexts, contracts, data model from code) → seed every unknown as a tracked
   gap → then proceed in focused-change mode. Don't pretend a clean greenfield upstream exists. "Existing"
   means the **current working tree only** — never reconstruct from git history or from outside the project
-  folder (see the source-of-truth fence in `grill-engine.md`); missing prior work is a **tracked gap to
+  folder (the workspace fence in `house-rules.md`); missing prior work is a **tracked gap to
   re-grill**, not a draft to recover.
 
 **Gates are readiness signals, not locks.** Skills are independently invocable, so you may run any

@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Map the competitive landscape — direct competitors in a comparison matrix, indirect alternatives incl. status-quo/DIY, defensible differentiation with named moats, switching costs, and order-of-magnitude sizing. Feeds positioning and the viability bet. Use when you need the landscape and rough size mapped, not a financial model.
+Map the competitive landscape — direct competitors in a comparison matrix, indirect alternatives including status-quo/DIY, defensible differentiation with named moats, switching costs, and order-of-magnitude sizing.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

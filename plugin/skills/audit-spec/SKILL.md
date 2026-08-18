@@ -1,7 +1,7 @@
 ---
 name: audit-spec
 description: >-
-  Audit an EXISTING spec for completeness, internal consistency, contradictions, branch coverage (product · domain · software), and whether a coding agent can build it WITHOUT guessing. Two depths: `consistency` (the judgment the linter can't make — semantic contradictions, scope adherence, decision coherence) and `full` (adds the domain/usage completeness pass that finds what's MISSING). Only `full` can declare code-gen readiness. The judgment layer ABOVE the mechanical tools, distinct from the per-task code-vs-spec conformance review. Report-only by default; `--fix` remediates the findings in-session (routed fixes + full propagation through every derived layer, 10-delivery included); `--loop` repeats fix-passes with a parallel read-only auditor fan-out until the spec converges to ZERO findings (K consecutive dry batches). Use --loop when asked to "drive the spec to zero audit findings", "loop the audit until clean", or "exhaustively remediate the spec". Loads the shared exec engine.
+  Audit an EXISTING spec for completeness, consistency, contradictions, and whether a coding agent can build it without guessing — the judgment layer above the mechanical tools. Report-only by default; --fix remediates in-session, --loop converges to zero findings. Only --depth full declares code-gen readiness. Loads the shared exec engine.
 argument-hint: "[--depth consistency|full] [--scope all|<area>] [--fix] [--loop] — default: --depth full --scope all, report-only"
 ---
 
@@ -15,7 +15,7 @@ mechanical; this skill makes only the calls a sound
 script cannot. **Do not re-do what the tools already do** — run them, trust their output, and spend your
 effort on meaning.
 
-Two things stay separate throughout (the engine's two axes): **Axis 1 — is the spec consistent &
+Two things stay separate throughout (the spec's two axes): **Axis 1 — is the spec consistent &
 complete-enough?** vs **Axis 2 — do the BETS hold?** A green spec next to a red bet is the point; never
 conflate them.
 

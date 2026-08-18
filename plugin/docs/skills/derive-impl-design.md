@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Low-level design of the modules a slice touches — algorithm, error handling, concurrency — produced just-in-time for a complex slice, just before it is coded (DESIGN, not code). The architecture already fixed each module's role, dependency direction, and seam interface; this designs the internals behind it. Use for a hard slice (tricky algorithm · real concurrency · cross-context saga) before implementing it.
+Low-level design of the modules a hard slice touches — algorithm, error handling, concurrency — produced just-in-time before that slice is coded (design, not code; the architecture already fixed roles and seam interfaces).
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

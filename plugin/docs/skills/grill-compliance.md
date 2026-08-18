@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin which regulatory/legal regimes apply and turn them into concrete, referenceable obligations (`OBL-`) that flow into security, data, and architecture. Swiss/EU-aware (FADP/GDPR/EU AI Act). Use when you need the applicable regimes and their obligations nailed down.
+Pin which regulatory/legal regimes apply and turn them into concrete, referenceable obligations (OBL-) that flow into security, data, and architecture. Swiss/EU-aware (FADP/GDPR/EU AI Act).
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

@@ -1,7 +1,9 @@
 ---
 name: grill-ddd
 description: >-
-  Turn an idea or existing docs into a complete Domain-Driven Design model — subdomains, bounded contexts, aggregates — building the ubiquitous language and actor roster as it goes. Use when modelling a domain, even if the user never says "DDD". Loads the shared grill engine.
+  Turn an idea or existing docs into a complete Domain-Driven Design model — subdomains, bounded
+  contexts, aggregates — building the ubiquitous language and actor roster as it goes. Use when
+  modelling a domain, even if the user never says DDD. Loads the shared grill engine.
 disable-model-invocation: true
 argument-hint: an idea, existing docs, or a repo to model
 ---

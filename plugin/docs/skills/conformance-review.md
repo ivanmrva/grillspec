@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-The post-task review of generated code against OUR spec — run after each task, before the next. Two lenses: (A) conformance vs spec/architecture/contracts/security/NFR-evidence/traceability (blocking); (B) design health (advisory). The per-task, build-time, self-certifying gate — its own VERDICT becomes the task's conformance gate row. The independent, whole-build, release-time attestation (that the gates across all tasks were genuinely run, cross-task coverage holds, the operate ledger reconciles) is a separate whole-build audit, not this. Complements the current agent host's native code-review workflow.
+The post-task review of generated code against OUR spec — run after each task, before the next. Lens A: conformance vs spec/architecture/contracts/security/NFR-evidence/traceability (blocking); Lens B: design health (advisory). Its VERDICT becomes the task's conformance gate row.
 
 ## What it needs (input)
 A task package and the code it touches.
