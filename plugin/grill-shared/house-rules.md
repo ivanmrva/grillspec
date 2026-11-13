@@ -3,6 +3,8 @@
 The rules that are the same for interview, derivation, and execution. Each engine adds only what is specific to its kind of work.
 
 ## Earn your place
+This is the first rule, and it outranks completeness. Write only the instructions, spec and constraints the reader needs and that lead to a better result. What a capable agent would do correctly anyway is not written down; a rule that restates the stack's idiom, a section that mirrors the code, a constraint with no failure behind it all cost attention on every read and return nothing.
+
 Spec, constraints and gates exist where something reads them: a later step, a tool, or a person who will act on them. Before writing an area, a file, a section or a rule, name its reader. With no reader, leave it out and, where the absence could look like an oversight, say so in one line (`N/A — why`). The project's **profile** (`.grillspec/project.json`: `lite` · `standard` · `regulated`) sets the default scope; within it, depth still follows the product — a concern the product does not have gets no content. Growing the spec later, when a real need shows up, is cheap; keeping spec nobody reads consistent is not.
 
 ## The workspace is the source of truth
