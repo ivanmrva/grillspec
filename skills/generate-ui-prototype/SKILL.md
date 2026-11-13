@@ -1,7 +1,7 @@
 ---
 name: generate-ui-prototype
 description: >-
-  Build a clickable HTML prototype of a UI slice's screens from the real design-system tokens and components, every interaction state included — the visual reference the coding task builds against, reviewed by a human before the build. Loads the shared exec engine.
+  Build a clickable HTML prototype of a UI slice's screens from the real design-system tokens and components, every interaction state included, for a human to review. Use before building a new screen or changing a screen's composition.
 ---
 
 <!-- grillspec-portable-resources -->

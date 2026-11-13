@@ -1,7 +1,7 @@
 ---
 name: conformance-review
 description: >-
-  Independent, fresh-context review of a task's code against the spec. Required for critical tasks; also on request or as a wider re-check. Lens A (blocking) — boundaries, contracts, data, security, NFR evidence, rendered UI. Lens B (advisory) — design health. Loads the shared exec engine.
+  Independent, fresh-context review of a task's code against the spec: boundaries, contracts, data, security, quality bars, rendered UI (blocking) and design health (advisory). Use when a critical task is built and before it is marked done, or when asked to review built work against the spec.
 ---
 
 <!-- grillspec-portable-resources -->

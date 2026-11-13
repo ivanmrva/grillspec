@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # spec-lint - deterministic consistency checks over spec/. Stdlib only.
 # ERROR = hard violation (exit 1). WARN = heuristic candidate. INFO = delegated to the conductor.
-# Run from the project root:  python3 tools/lint_spec.py [spec_dir]
+# Run from the project root:  python3 tools/lint_spec.py [spec_dir] [--errors]
+#   --errors   print only the ERROR lines and the summary (what a commit hook or an agent needs to act on)
 import os, re, sys, pathlib
 
-SPEC = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "spec")
+_ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
+ERRORS_ONLY = "--errors" in sys.argv[1:]
+SPEC = pathlib.Path(_ARGS[0] if _ARGS else "spec")
 if not SPEC.exists():
     print("no spec/ dir at", SPEC); sys.exit(2)
 
@@ -577,6 +580,10 @@ for _p, _r in cmd_files():
     for _tok in set(IDTOK.findall(read(_p))):
         _pre = _tok.split("-")[0].upper()
         if _pre in LOOSE_COV_TYPES and _r not in (defsites.get(_tok) or set()) and _r not in (def3sites.get(_tok) or set()):
+            loose_credit.add(_tok)
+        # a task brief owns the acceptance criteria it lists: its `behavior` row names each one with its
+        # text, and that listing is the ownership statement - no reference keyword is needed beside it
+        if _pre == "AC" and "10-delivery/tasks/" in _r.replace(os.sep, "/"):
             loose_credit.add(_tok)
 # THR / EVT coverage exceptions the back-reference test (tok in refset) structurally misses, read from the
 # element's OWN definition block (its def line through the line before the next def in the same file):
@@ -1200,8 +1207,8 @@ def task_dim(text, name):                                    # a named dimension
 # pending state. It is layer-free because it joins a credential (infra, L5) to the tasks that consume it
 # (delivery, L6) - a map that on a derived L5 file would be an illegal downward ref; state must be authored,
 # not regenerated, so it survives task re-derivation. First table column = the credential key (matches
-# `environments.md`, the join token); a `state` column holds provisioned|pending.
-PROV_STATES = {"provisioned", "pending"}
+# `environments.md`, the join token); a `state` column holds provisioned|pending|unverified (said to be set, but nothing in the repo shows it).
+PROV_STATES = {"provisioned", "pending", "unverified"}
 def parse_provisioning(text):
     reg = {}
     for header, body in md_tables(text.splitlines()):
@@ -1217,7 +1224,7 @@ prov_reg = parse_provisioning(read(_prov)) if _prov.exists() else None
 if prov_reg is not None:                                     # register present: sanity-check each row's state value
     for k, st in prov_reg.items():
         if st and st not in PROV_STATES:
-            add("WARN", "_provisioning.md", "credential '%s' has unrecognized state '%s' - use provisioned | pending" % (k, st))
+            add("WARN", "_provisioning.md", "credential '%s' has unrecognized state '%s' - use provisioned | pending | unverified" % (k, st))
 for p, r in cmd_files():
     if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
     txt = read(p)
@@ -1344,6 +1351,7 @@ for p, r in cmd_files():
         si = next((header.index(k) for k in ("status",) if k in header), None)
         ki = next((header.index(k) for k in ("criticality",) if k in header), None)
         for row in body:
+            if row and re.match(r"\W*RISK-", row[0]): continue   # the vocabulary is the bets' own; a risk register beside them keeps its words
             if si is not None and si < len(row):
                 v = re.sub(r"[*`_]", "", row[si]).strip().lower()
                 if v and v not in BET_STATUS:
@@ -1429,8 +1437,10 @@ if PROFILE_EXPLICIT:
     if PROFILE != "regulated":
         for d, names in FULL_MODE_FILES.items():
             for nm in names:
-                if (SPEC / d / nm).is_file() and read(SPEC / d / nm).strip():
-                    add("WARN", d + "/" + nm, "full-mode artifact under the `%s` profile - below `regulated` this area records decisions only and the code carries the description; fold any decision into the area's decision record and remove the file, or raise the profile" % PROFILE)
+                _fm = read(SPEC / d / nm) if (SPEC / d / nm).is_file() else ""
+                if re.search(r"full-mode:\s*keep\b", _fm): continue      # kept on purpose, with its reason beside the marker
+                if _fm.strip():
+                    add("WARN", d + "/" + nm, "full-mode artifact under the `%s` profile - below `regulated` this area records decisions only and the code carries the description; fold any decision into the area's decision record and remove the file, raise the profile, or keep it with `full-mode: keep <why>` in the file when a tool or a person still reads it" % PROFILE)
 
 # 42 every task carries a risk TIER, from the closed set routine | feature | critical. The tier decides
 #    what the task owes (a design note and a fresh-context review bind `critical` only), so a missing or
@@ -1486,6 +1496,8 @@ F.sort(key=lambda x: (order[x[0]], x[1], x[2]))
 e = sum(1 for x in F if x[0] == "ERROR"); wn = sum(1 for x in F if x[0] == "WARN")
 for sev, path, line, msg in F:
     loc = (path + ":" + str(line)) if line else path
+    if ERRORS_ONLY and sev != "ERROR":
+        continue
     print("%-5s %-44s %s" % (sev, loc, msg))
 print("\n%d error(s), %d warning(s)." % (e, wn))
 sys.exit(1 if e else 0)

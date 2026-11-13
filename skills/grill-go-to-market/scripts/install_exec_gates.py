@@ -125,6 +125,9 @@ def install_host(root: Path, host: str) -> int:
 
 
 def main(argv) -> int:
+    if "-h" in argv[1:] or "--help" in argv[1:]:
+        print((__doc__ or "").strip())
+        return 0
     host = host_option(argv)
     if host not in {"both", "claude", "codex"}:
         print("install_exec_gates: --host must be both, claude, or codex", file=sys.stderr)

@@ -1,7 +1,7 @@
 ---
 name: implement-task
 description: >-
-  Build one task as a minimal, tested vertical slice — tests first, inside the architecture's boundaries, code in the source tree. Use for a task brief (T-NNN), or a routine change that has none. Loads the shared exec engine.
+  Build one change as a minimal, tested vertical slice — tests first, real code, inside the architecture's boundaries. Use when asked to implement a task brief (T-NNN), build a feature that has a brief, or fix a bug or make another routine change in a project with a `spec/` tree.
 ---
 
 <!-- grillspec-portable-resources -->

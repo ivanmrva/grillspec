@@ -1,6 +1,6 @@
 interface:
   display_name: "Generate UI Prototype"
   short_description: "Build a clickable HTML prototype of a UI slice's screens\u2026"
-  default_prompt: "Use $generate-ui-prototype to build a clickable HTML prototype of a UI slice's screens from the real design-system tokens and components, every interaction state included \u2014 the\u2026"
+  default_prompt: "Use $generate-ui-prototype to build a clickable HTML prototype of a UI slice's screens from the real design-system tokens and components, every interaction state included, for\u2026"
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

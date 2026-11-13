@@ -1,7 +1,7 @@
 ---
 name: derive-tasks
 description: >-
-  Break a spec into small, vertically sliced task briefs a coding agent can build from — each self-contained, risk-tiered, phase-tagged and dependency-ordered, walking skeleton first. Use when the spec needs turning into build-ready work.
+  Write small, vertically sliced task briefs a coding agent can build from — each self-contained, risk-tiered, phase-tagged and dependency-ordered. Use when a new feature or change needs a brief before it is built, or when a spec needs turning into build-ready work.
 ---
 
 <!-- grillspec-portable-resources -->

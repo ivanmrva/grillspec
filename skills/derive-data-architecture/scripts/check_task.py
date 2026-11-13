@@ -128,16 +128,36 @@ def acs_of(fields):
     return out
 
 
+STATE_LIST_END = {"prototype", "frozen", "nav", "registered", "incl", "each", "per"}
+
+
 def ux_states(cell):
-    """Interaction states named by a ux cell's `states: a · b · c` list (empty for N/A or no list)."""
+    """Interaction states named by a ux cell's `states: a · b · c` list (empty for N/A or no list).
+
+    The list is the run of short plain names right after `states:`. A parenthetical gloss on a name is
+    dropped (`loading (skeleton)` is `loading`), and the list ends at the first item that is not a state
+    name - the next clause of the cell (`· prototype ...`, `. Nav: ...`) - so prose after the list is
+    never read as a state."""
     if is_na(cell):
         return []
     m = re.search(r"(?i)\bstates?\s*[:\-—]\s*([^|]*)", cell or "")
     if not m:
         return []
-    seg = re.split(r"(?i)<br\s*/?>|→", m.group(1))[0]
-    return [s for s in (_clean(t).lower() for t in re.split(r"[·,;/]", seg))
-            if re.fullmatch(r"[a-z0-9][a-z0-9 _-]*", s)]
+    seg = m.group(1)
+    while re.search(r"\([^()]*\)", seg):                       # a gloss in brackets is not part of the name
+        seg = re.sub(r"\([^()]*\)", "", seg)
+    seg = re.split(r"(?i)<br\s*/?>|→|\.\s", seg)[0]
+    out = []
+    for tok in re.split(r"[·,;/]", seg):
+        name = re.sub(r"\s+", " ", _clean(tok).lower()).rstrip(".")
+        if not name:
+            continue
+        if (not re.fullmatch(r"[a-z0-9][a-z0-9 -]*", name) or len(name.split()) > 3
+                or name.split()[0] in STATE_LIST_END):
+            break
+        if name not in out:
+            out.append(name)
+    return out
 
 
 def depends_of(fields):

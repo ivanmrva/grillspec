@@ -58,6 +58,16 @@ expect("dangling-fires", run({**SPEC, "tests/pay.test.js":
                               "// @covers AC-999\nit('x', () => {})\n"}),
        must=["ERROR", "dangling driver", "AC-999"])
 
+# hyphenated prose after a tag is not an ID; a trailing full stop is not part of one
+expect("prose-after-covers-is-not-an-id", run({**SPEC, "tests/pay.test.js":
+       "// @covers AC-001 — NOT-yet-watched names are RE-VERIFIED on YYYY-MM-DD, D-1 before.\nit('x', () => {})\n"}),
+       must=["0 error(s)"], forbid=["dangling driver"])
+expect("named-id-without-digit-counts", run({"spec/07-design-system/c.md": "- DS-Input the text field\n", "tests/in.test.js":
+       "// @covers DS-Input\nit('x', () => {})\n"}), must=["0 error(s)"], forbid=["ERROR"])
+expect("trailing-dot-is-stripped", run({**SPEC, "tests/pay.test.js":
+       "// @covers AC-001.\nit('x', () => {})\n"}),
+       must=["0 error(s)"], forbid=["dangling driver"])
+
 # multiple IDs on one line: only the unknown one fires
 expect("mixed-ids", run({**SPEC, "tests/pay.test.js":
                          "// @covers AC-001, AC-777\nit('x', () => {})\n"}),

@@ -3,4 +3,4 @@ interface:
   short_description: "Write the short design note for a critical or genuinely\u2026"
   default_prompt: "Use $derive-impl-design to write the short design note for a critical or genuinely complex slice, just before it is coded \u2014 the mechanism, concurrency, failure handling and the\u2026"
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

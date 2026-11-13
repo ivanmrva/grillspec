@@ -26,4 +26,4 @@ npm run verify        # format · lint · types · unit · boundaries · no-fake
 npm run test:int      # integration tier, against a local database
 ```
 
-Root `AGENTS.md` — the agent guide, about 600 words: what the product is; where code and spec live; the two commands above; the delivery mode; three rules no gate enforces, each with its reason (for example: "no external call inside a database transaction — the database rolls back, the outside world does not"); where tasks are defined. Root `CLAUDE.md` contains only `@AGENTS.md`.
+Root `AGENTS.md` — the agent guide, about 900 words: what the product is; where code and spec live; the two commands above; the delivery mode; the change lifecycle in five steps (size it · align with the spec · brief it · build it test-first · prove it and land it), each naming its skill; three rules no gate enforces, each with its reason (for example: "no external call inside a database transaction — the database rolls back, the outside world does not"); where tasks are defined. Root `CLAUDE.md` contains only `@AGENTS.md`.

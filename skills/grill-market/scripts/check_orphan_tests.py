@@ -54,7 +54,17 @@ if not SPEC.is_dir():
 # -- (@covers) and its @state sibling.
 COVERS = re.compile(r"@covers\b", re.I)
 STATE_TAG = re.compile(r"@state:[A-Za-z0-9][A-Za-z0-9_-]*")
-ID_TOKEN = re.compile(r"(?<![A-Za-z0-9-])[A-Z]{1,8}-[A-Za-z0-9][A-Za-z0-9._-]*")
+# A candidate is a 2-8 character upper-case prefix, a hyphen and a body. It is a spec ID when its body holds
+# a digit (AC-101a, NFR-001, ADR-TEST-009) or the spec defines it (DS-Input). Hyphenated prose after a tag
+# (NOT-yet-watched, RE-VERIFY, YYYY-MM-DD) is neither, and is ignored rather than reported.
+ID_TOKEN = re.compile(r"(?<![A-Za-z0-9-])[A-Z][A-Z0-9]{1,7}-[A-Za-z0-9][A-Za-z0-9._-]*")
+def id_tokens(text):
+    out = []
+    for tok in ID_TOKEN.findall(text):
+        tok = tok.rstrip("._-")
+        if re.search(r"\d", tok.split("-", 1)[1]) or in_spec(tok):
+            out.append(tok)
+    return out
 
 # -- failing-capable: the file contains a runnable test DECLARATION (the mechanical proxy shared with
 # -- check_task.py - keep the pattern cores in sync). A helper/fixture file never declares one,
@@ -131,7 +141,7 @@ for posix, name, p in iter_test_files(ROOT, TEST_DIRS):
         m = COVERS.search(line)
         if not m:
             continue
-        toks = ID_TOKEN.findall(line[m.end():])
+        toks = id_tokens(line[m.end():])
         drivers += len(toks)
         for tok in toks:
             if not in_spec(tok):

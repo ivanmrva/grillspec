@@ -1,6 +1,6 @@
 interface:
   display_name: "Conformance Review"
   short_description: "Independent, fresh-context review of a task's code against\u2026"
-  default_prompt: "Use $conformance-review to independent, fresh-context review of a task's code against the spec. Required for critical tasks; also on request or as a wider re-check. Lens A\u2026"
+  default_prompt: "Use $conformance-review to independent, fresh-context review of a task's code against the spec: boundaries, contracts, data, security, quality bars, rendered UI (blocking) and\u2026"
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true
