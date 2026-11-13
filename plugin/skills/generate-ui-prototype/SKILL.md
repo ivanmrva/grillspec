@@ -1,48 +1,48 @@
 ---
 name: generate-ui-prototype
 description: >-
-  Generate a clickable HTML prototype of a UI slice's screens from the real design-system tokens
-  and components, every interaction state included — produced and frozen at task finalization as
-  the coding task's visual reference. Loads the shared exec engine.
+  Build a clickable HTML prototype of a UI slice's screens from the real design-system tokens and components, every interaction state included — the visual reference the coding task builds against, reviewed by a human before the build. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: the UI slice (its screen[s], from the UX requirements + design system)
 ---
 
 # generate-ui-prototype
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill: **a clickable HTML prototype of the screen(s) a UI slice implements** — the exact reference the coding task builds against (kept + versioned, not a throwaway spike). It is produced **when the task is finalized** — the human design-review/tweak window — then **frozen into the task**; the coding step (later, possibly unattended) builds against it.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill builds a clickable HTML prototype of the screens one UI slice implements. It is a kept reference, not a throwaway spike: the coding task builds against it, and the conformance review compares the built screen with it.
 
-## When it runs (and when it doesn't)
-- **Produced at task finalization, before the build run — not inside the coding loop.** Finalization is the attended, batched step where you review + tweak the screen and freeze it; an AFK build then runs against the frozen prototype and never breaks to show you a screen. A tweak that arrives once code is flowing is too late by design — the window is here.
-- **Not obligatory.** A prototype earns its place only when the slice has **slice-specific composition** to pin (a new screen/flow, non-obvious states). A slice the **IA + design system already fully determine** (existing components, obvious composition — a copy change, a field added to an existing form) needs **none**; that slice marks its `ux` dimension `N/A — reuses DS-… on the existing screen`. Same opt-in logic as the just-in-time per-slice low-level design (design-first slices only).
-- **Reaches autorun without one? Generated JIT, then built against — no pause.** A UI slice that enters the AFK build queue with no frozen prototype (you chose not to pre-review it) has one generated just-in-time and builds against it unattended — you still get the prototype as the build reference and an after-the-fact record, you just forgo the review-first window (autorun is unattended by definition). To *review* a specific screen first, simply **don't finalize/queue that slice** until you have — withholding it from the queue is the review gate; no separate flag exists or is needed.
+## When it runs
+The prototype is made when the slice's task brief is being finalized, before the build. That is the attended moment when a human can look at the screen, ask for changes and approve it. Once approved, the brief's `prototype-review` row reads `frozen` and its `ux` row names the prototype's path, and a later build, possibly unattended, works against it without stopping to show anyone a screen.
+
+Not every UI slice needs one. A prototype earns its place when the slice has composition of its own to pin down: a new screen or flow, states that are not obvious. A slice the information architecture and the design system already determine — a copy change, a field added to an existing form — has none, and its `ux` row reads `N/A — reuses DS-… on SCR-NNN`.
+
+A slice with a real `ux` row is built unattended only after a human has seen its screen. The one exception is a brief that records `prototype-review: waived — <why>`: then the prototype is generated just before the build as the reference, and the owner has knowingly given up the review. Without the review or the waiver, the slice waits; an unreviewed screen is a visual decision nobody made.
 
 ## Process
-1. **Take the slice's screen(s)** from the UX requirements — the journey step, its place in the information architecture, and its required interaction states.
-2. **Render each screen** from the **real design-system tokens & components** (semantic/component tokens, the actual component variants/states — never ad-hoc styling), covering every interaction state (empty · loading · success · error · permission-denied).
-3. **Wire it into the navigation** the IA defines (so it clicks through in context); cross-link the screen to its `JRN-` journey + `UC-`/`DS-` IDs (the journey **by `JRN-` id**, never by its prose name — the same id the slice's `ux` dimension references).
-4. **Freeze it into the task** as the `ux` resolution; **regenerate** on a UX/design-system change (propagation re-flags it) — it's a projection, not hand-maintained.
+1. **Take the slice's screens from the UX requirements**: the journey step, its place in the information architecture, and the interaction states it must have.
+2. **Render each screen from the real design system** — its semantic and component tokens and the actual component variants and states — so the prototype and the code share one source for how things look. A component the design system lacks is a gap to raise there; inventing it in the prototype would freeze a design nobody specified.
+3. **Include every interaction state the journey names** (empty, loading, success, error, permission-denied, as they apply), since the states are where a built screen most often falls short of its design.
+4. **Wire the screen into the navigation the information architecture defines**, so it clicks through in context, and link it to its IDs: the `SCR-` it realises, its `JRN-` journey by ID, and the `UC-` and `DS-` elements it uses.
+5. **Put it in front of the human**, apply what they ask for, and record the approval on the brief.
 
-## Rules
-- **per-slice, at finalization** — generated for the screen(s) of the slice being finalized, not as a global pre-built gallery; the *global* UI structure is already the **information architecture** (nav/layout/menu — a UX-requirements spec) plus the **design system** (the visual contract)
-- the **app shell / nav / layout** is itself a slice (often the walking skeleton) — its screen is prototyped the same way; there is no separate global prototype pass
-- built from the **design system** so prototype and code share one source of truth — no bespoke styling; a missing component is a **gap raised to the design system**, never invented here
-- **every interaction state** present, not just the happy screen
-- self-contained HTML (CDN ok); no build step to click through it
+The prototype is rendered from the UX requirements and the design system, so a change belongs in those sources first and the screen is then rebuilt from them. An edit made only in the HTML would disagree with its sources and be lost at the next rebuild.
+
+## Scope
+- One slice's screens at a time. There is no global gallery to build: the overall structure is already the information architecture (navigation, layout, menus) and the design system.
+- The app shell — navigation and layout — is itself a slice, usually the walking skeleton, and its screen is prototyped the same way.
+- Self-contained HTML that opens without a build step (assets from a CDN are fine).
+- Not production code, not the design-system definition, not the UX requirements, and not an exploratory spike (`prototype` is the disposable kind).
 
 ## Output
-Written under `prototypes/ui/` (repo root, a non-spec zone):
+Written under `prototypes/ui/` at the repo root, outside `spec/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `<screen>.html` | the slice's screen — the file realises one `SCR-` from the IA's screen inventory (name the file after it): real components + tokens · all interaction states · wired into the IA's navigation · linked to `SCR-`/`JRN-`/`UC-`/`DS-` IDs | self-contained HTML |
-| `flows.md` | per journey (keyed by its `JRN-` id): the `SCR-` → `SCR-` screen path, mapped to its `UC-` IDs — **the conformance review's rendered lens walks this path** when it judges the built journey, so keep it current as slices land | journey (`JRN-`) · `SCR-` path · UC- |
+| `<screen>.html` | one screen, named after the `SCR-` it realises: real components and tokens · every interaction state · wired into the navigation · linked to its `SCR-`, `JRN-`, `UC-` and `DS-` IDs | self-contained HTML |
+| `flows.md` | per journey, keyed by its `JRN-` ID: the `SCR-` → `SCR-` screen path and the `UC-` it serves. The conformance review walks this path on the built app, so keep it current as slices are added | table: journey · screen path · use-case |
 
-(generated per ux-heavy UI slice at its finalization; the screens accrete as UI slices are finalized — the global structure is the UX-requirements IA + the design system, not a separate pass; no spec changes)
-Consumes: the UX requirements (the slice's journey · its IA placement · interaction states), the design system (tokens · components), and the slice's use-cases.
+The set of screens grows as UI slices are finalized.
 
-## Excludes
-a global pre-built screen gallery (not needed — structure = the IA spec + the design system; the shell is a slice) · production code (→ implementation) · the design-system *definition* and the UX *requirements* (→ the UX requirements) · throwaway empirical spikes (those are disposable; this is the **kept** reference, regenerated from the spec)
+Reads: the UX requirements (the slice's journey, its place in the information architecture, its states), the design system (tokens and components), and the slice's use-cases.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`

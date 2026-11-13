@@ -1,22 +1,25 @@
 # deploy-release — worked example
 
-Promoting a merged increment to production, gated on a real metric gate.
+Illustrative. A `standard` project with `trunk` delivery and the promotion path staging → production. The checkout service at version 2.7.0 (tasks T-014 and T-016) is on the default branch.
 
-> **Agent:** Artifact `checkout-svc@2.7.0` — provenance SLSA-L3, attestation digest `sha256:9f1c…b4` matches the registry. Provenance OK, it can enter staging.
-> Staging reconciled to revision `r-4471` (declarative; the reconciler converged it — no hand-apply). Smoke checks green. Promoting to prod as a **canary** behind flag `checkout.split-tender` (shipped dark).
-> Canary 10% for 15 min, metric gate: `error_rate < 0.5%` AND `p95_latency_ms < 400`. Observed `error_rate 0.21%`, `p95 312ms` → **gate PASS, auto-promote** to 100%. (Verdict is the gate's, not my read of the dashboard.)
+**Staging.** The push deployed it; the smoke check is green. Nothing more to do for this hop.
 
-Recorded — `12-operate/deploy-prod-2.7.0.md`:
+**Production — the request to the human.**
+
+> 2.7.0 is ready for production. `preflight` against production is green, staging has run it since the push with no alerts, and the rollback (redeploy 2.6.3) was rehearsed on staging and takes about two minutes. The split-tender feature ships dark behind the flag `checkout.split-tender`. I recommend promoting. Go?
+
+The owner gave the go.
+
+**Rollout.** Deployed through the pipeline as a canary at 10% for 15 minutes. The pipeline's metric gate requires `error_rate < 0.5%` and `p95_latency_ms < 400`; it measured 0.21% and 312 ms and promoted to 100%. Smoke checks green; the checkout availability objective stayed inside its budget for the following hour.
+
+Record — `12-operate/deploy-prod-2.7.0.md`:
 
 | field | value |
 |---|---|
-| what · env · version | checkout-svc · prod · 2.7.0 |
-| provenance | SLSA-L3 · `sha256:9f1c…b4` (verified) |
-| reconciled revision | `r-4471` |
-| rollout + gate verdict | canary 10→100% · gate PASS (`err 0.21%`, `p95 312ms`) |
-| **change-failed?** | **N** |
-| intervention | none |
-| **recovery-time** | n/a |
-| checklist outcome | rollback path ✓ · SLOs/alerts ✓ · smoke ✓ |
+| date | 2026-06-02 |
+| what · environment · version | checkout service · production · 2.7.0 (T-014, T-016) |
+| rollout · gate | canary 10% → 100% · passed (error rate 0.21%, p95 312 ms) |
+| go given by | the product owner |
+| outcome | live; `checkout.split-tender` still off — enabling it is a separate step |
 
-(change-failed?/intervention/recovery-time feed the change-failure-rate + recovery-time rollup across deploys. The flag stays off; release is a separate, later toggle.)
+Had the gate failed, the pipeline would have aborted the canary, and the record would say so with the rollback and the time to recover.

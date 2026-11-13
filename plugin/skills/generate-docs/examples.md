@@ -1,28 +1,24 @@
 # generate-docs — worked example
 
-Projecting the **whole** spec tree into the project's doc-site — every area, organized by the **four documentation modes** rather than mirroring the spec folders.
+Illustrative. Publishing the docs site for a `standard` project with a UI and an API. The outline below is what lands under `docs-site/`; each section is tagged with its mode.
 
-> **Agent:** The spec sections feed the modes, they don't define the top-level shape. Every area is covered (discovery → delivery), so the site is the complete project documentation. Each section is tagged by its mode; releases are tagged, so the root carries a version selector. API contracts exist → the API reference folds in under `api/`. Module internals were designed **per-slice**, so the scattered `10-delivery/impl-design/*` files + the per-task `design:` decisions are consolidated into one **Implementation design** section, grouped by module — read as a document, not per-task fragments.
+| Mode | Section | Built from |
+|---|---|---|
+| tutorial | Getting started: book your first repair, end to end | the book-a-repair journey and the setup runbook |
+| how-to | Reschedule a job · Issue a refund · Add a branch · Wire up webhooks | the use-cases and journeys |
+| how-to | Bring up an environment · Respond to a checkout outage | `12-operate/bootstrap.md` and the incident runbook |
+| reference | Requirements by ID: use-cases and criteria, quality, data, security, obligations, design system | the requirement areas |
+| reference | API and events | `api/`, built by the API-reference step and embedded |
+| reference | Criterion → test trace · Task status | the output of `check_task.py spec --trace` and `--json` |
+| reference | Glossary | the domain glossary |
+| explanation | Overview: vision, goals, constraints, system context | the foundation areas |
+| explanation | Domain model: context map, aggregates, events (Mermaid) | the domain area |
+| explanation | Solution: architecture, module map and seams, storage, security, environments, objectives, the test tiers | the solution areas (decision records, on this profile) |
+| explanation | Implementation design, grouped by module | the design notes under `10-delivery/impl-design/` |
+| explanation | Decisions | the ADRs |
 
-Doc-site outline written to `docs-site/` (regenerated wholesale — pure projection, mints no IDs):
+Root: `index.html` with the navigation, every section cross-linked by stable ID, and a version selector (v1.0 · v1.1) because releases are tagged. `assets/` holds the CSS and JS.
 
-- **Tutorial** (learning-oriented) — `tutorial/`
-  - Getting started: book your first repair end-to-end (the one required starter path)
-- **How-to** (task-oriented) — `how-to/`
-  - Reschedule a job · Issue a refund · Add a branch · Wire up webhooks · Operate an incident (from the runbooks)
-- **Reference** (information-oriented)
-  - All requirements: use-cases (UC-/AC-), NFRs (NFR-/ASR-), data (DATA-), security (SEC-), obligations (OBL-), design-system (DS-), ML (ML-)
-  - The API / event reference (API-/EVT-) → `api/` · the data classes
-  - Traceability matrix · Glossary
-- **Explanation** (understanding-oriented) — the full narrative spec
-  - Overview: vision / goals / north-star · market & positioning
-  - Constraints & stakeholders · System context (boundary + C4 L1)
-  - Domain model: context-map · aggregates · events (Mermaid)
-  - Solution architecture: style · C4 · stack · **module map & seam contracts** · key sequences — plus data / security / infra / observability / test / **ML** architecture
-  - **Implementation design** — consolidated from the per-module `10-delivery/impl-design/*` internals + the per-task `design:` decisions, grouped by module / subsystem
-  - Commercial model & growth · ADRs · key decisions
-- Plus: readiness dashboards
-- `index.html` — navigable root, sections cross-linked by stable ID, each tagged by mode, **version selector** (v1.0 / v1.1)
-- `assets/` — Tailwind + Mermaid via CDN (self-contained)
+One documentation gap was reported instead of filled: there is no source in the spec for a "Rotate the payment gateway credentials" guide, since the setup runbook's day-2 phase is not written yet.
 
-(no spec changes — read-only projection of the whole `spec/` tree. Wired in CI: a push to `main` touching the spec rebuilds `docs-site/` and Pages deploys it.)
+The project has no ML area and no commercial area in its spec, so the site has no pages for them.

@@ -1,36 +1,40 @@
 # derive-impl-design — worked example
 
-Designing one module behind the *reschedule-a-job* command — produced JIT for a complex slice, the last layer before code, no implementation written.
+Illustrative. T-016, "Refund a payment", is `critical` (a money path), so its brief carries `design | design-first — 10-delivery/impl-design/T-016-refund-payment.md`. The note is written just before the slice is coded.
 
-**Given by the architecture (not re-decided here)** — the module map already fixed this module's role, dependency direction, and seam interface:
-
-```
-module: reschedule-job-service
-role: application-service     dep-direction: inward only (→ domain AGG-Job; out via driven-ports)
-seam interface (the test surface, fixed in the architecture):
-  reschedule(jobId: JobId, newSlot: Slot, actor: DispatcherId) -> Result<JobRescheduled, RescheduleError>
-```
-
-This slice is flagged `design-first` (real concurrency + a cross-system notification), so we design the **internals behind that seam** — a deep module: much behavior, the small interface unchanged.
-
-## Output
-`delivery/impl-design/reschedule-job-service.md`
+Given by the architecture and not re-decided here: the module's role, its dependency direction and its seam interface.
 
 ```
-implements MOD-07 (reschedule-job-service) · serves T-031 (reschedule a job)
-algorithm (sketch)
-  1. load Job via JobRepository (driven-port)         5. publish EVT-JobRescheduled
-  2. job.reschedule(newSlot, actor)  ← aggregate rule     (outbox, same tx as persist)
-  3. on Err → return propagated
-  4. persist via repository
-concurrency
-  optimistic lock on Job.version; retry-once on stale read; load→mutate→persist→publish atomic
-  (publish via the outbox in the same tx — no dual-write); cancellation: none (single short tx)
-errors  (taxonomy + each designed-out | masked | propagated)
-  - NotOwningBranch     designed-out — the aggregate rejects; the typed error is propagated
-  - LeadTimeViolated    propagated — surfaced to the caller as-is (maps to AC rejection)
-  - SlotTaken           propagated — from the slot reservation, returned unchanged
-  - NotifierUnavailable masked-at-boundary — publish is via the outbox, so a down notifier never
-                        fails the command; the event drains on recovery
+MOD-012 refund-service   role: application-service   depends inward (→ the Payment aggregate; out via driven ports)
+refund(paymentId, amount, actor, idempotencyKey) -> Result<PaymentRefunded, RefundError>
 ```
-No seam invented for the notifier beyond the one outbound port the architecture fixed — a second transport would justify a second adapter, not yet (JIT: the second consumer reveals the real seam). A needed interface change would be raised as a **gap to the architecture**, not patched here.
+
+## Output — `spec/10-delivery/impl-design/T-016-refund-payment.md`
+
+```
+implements MOD-012 · serves T-016
+
+Mechanism
+  1. look up the idempotency key; a known key returns the stored result (AC-016d)
+  2. load the Payment; payment.requestRefund(amount, actor) applies the aggregate rules
+  3. persist the Payment (refund pending), the idempotency record and an outbox entry in one transaction
+  4. the outbox consumer calls the gateway's refund API with the same key; on success it settles
+     the refund and publishes EVT-PaymentRefunded
+
+The risk and its containment
+  Money leaves once and cannot be recalled. The gateway call is the only irreversible step, so it
+  runs outside the transaction, after the commit, and carries the idempotency key: a retry or a
+  redelivered outbox entry cannot refund twice, and a failed call leaves a pending refund to retry.
+
+Concurrency
+  optimistic lock on Payment.version; one retry on a stale read; no long-held lock
+
+Errors
+  | error              | retryable | handling     | why                                             |
+  | AmountExceedsPaid  | no        | propagated   | the caller must correct the amount              |
+  | OverBranchLimit    | no        | propagated   | SEC-044 denial, shown to the actor              |
+  | DuplicateRequest   | —         | designed-out | the key lookup returns the first result         |
+  | GatewayUnavailable | yes       | masked       | the consumer retries; the refund stays pending  |
+```
+
+The note does not repeat the brief's criteria, shows no code, and adds no port beyond the gateway port the architecture already has. Calling the gateway from the outbox consumer is a costly-to-reverse choice a reader might not expect, so it is also recorded as `adr/ADR-IMPL-003.md` with the rejected alternative (call the gateway inside the command, then commit).

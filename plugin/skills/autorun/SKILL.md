@@ -1,45 +1,60 @@
 ---
 name: autorun
 description: >-
-  Autonomous AFK driver for the coding phase — runs the per-task implement → done-gate → conformance loop across the task DAG in parallel, self-correcting to green, merging on green, parking true HITL blockers. Loads the shared exec engine.
+  Unattended driver for the coding phase — works the build order one task at a time (or in parallel waves under pr delivery), drives each task to a green gate, lands it, and parks what needs a human. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: the task wave to run autonomously
 ---
 
 # autorun
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill: **autonomous execution of the task DAG (AFK)** — implement → done-gate → conformance, in parallel, until each task's gate is fully green.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill drives the build order while nobody is watching: pick the tasks that are ready, build each to green, land it, and leave a clear queue of what only a human can clear. Each task is built the way `implement-task` describes; the engine's "Working unattended" section governs how far to push and when to stop.
+
+## Before starting
+The run needs a build-ready spec: briefs derived, `lint_spec.py` clean, and no `UNRESOLVED` gap on a task it is about to build. If that does not hold, route the gap to the spec area that owns it first; building against an ambiguous spec produces code that has to be redone.
+
+If `spec-audit-report.md` exists at the project root and its verdict reads `NOT-READY`, do not start. The spec's own audit says the run would build on guesses, so re-audit until it reads ready, or have the human override explicitly.
 
 ## Process
-1. **Select the ready wave.** From `10-delivery/tasks/build-order.md`, take every task that is **AFK-eligible** (`afk: eligible` — no HITL trigger, no unresolved gap) **and** whose `depends:` are all merged. **If a `spec-audit-report.md` exists at the project root and its verdict reads `NOT-READY`, do not dispatch** — the spec's own audit says the wave would build against guesses; re-audit (or run the fix loop) until `CODE-GEN READY`, or have the human explicitly override. **Cross-check the credential register (`_provisioning.md`) FIRST, before dispatching** — a task whose `human-prereq` names a credential that is `pending` (or absent from the register) is **not actually ready**: park it upfront with the precise missing credential, rather than dispatching it to discover the block mid-slice and burn a run. (`lint_spec.py` flags this `afk:eligible` + un-provisioned contradiction statically; autorun is the runtime gate.) **Also cross-check the prototype-review gate:** a task with a non-`N/A` `ux` dimension whose prototype is **not frozen (human-reviewed)** and which carries no explicit `prototype-review: waived — <why>` is **not ready** — park it `blocked — visual/UX review pending` rather than letting a JIT-generated, never-seen screen build unattended. (Cadence: freeze every ux-heavy slice queued for the wave in one attended sitting, then dispatch.)
-2. **Run the wave in parallel.** Prefer the active host's managed parallel workflow for the whole wave; otherwise use one subagent or headless process (`claude -p` or `codex exec`) per task. Each task runs the full done-gate loop — implement → run the whole gate → self-correct the *code* → repeat until green — honoring the engine's anti-cheat invariants.
-3. **Merge, propagate, recompute.** On a task meeting the merge bar (below): merge → run propagation (`impact.py`) → **run the wave-level integration gate** (the system/Tier-B suite after this wave's merges, before launching the next) → recompute the ready wave (dependents now unlocked) → launch the next wave. If the integration gate turns main red, **park the wave** and stop launching. Repeat until no AFK-eligible, dependency-ready task remains.
+1. **Select what is ready.** Read `10-delivery/tasks/build-order.md` and the status table (`python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task.py spec`). A task is ready when its `phase` row reads `afk: eligible`, every task it `depends` on is done, and it is not done or blocked itself. Two things are checked up front, because finding them mid-slice wastes a run:
+   - a `human-prereq` whose credential is not `provisioned` in `spec/_provisioning.md` → mark the task `blocked — <the missing credential>`;
+   - a UI slice whose `prototype-review` row is not `frozen`, `reviewed` or `waived — <why>` → mark it `blocked — visual/UX review pending`. An unattended run should not build a screen no human has seen. The practical cadence is to review the prototypes for all queued UI slices in one attended sitting before the run.
+2. **Run the tasks the way the project's `delivery` setting allows** (the engine's Delivery table).
+   - `trunk`: one task after another on the default branch, in build order. Each push deploys, so push a locally green task (or a small batch of related ones) and see its smoke check pass before building what depends on it.
+   - `pr`: the ready tasks may run as a parallel wave, one branch or worktree per task, each with its own pull request. Tasks that touch the same files or module run one after another, since parallel workers cannot see each other's changes. Use the host's managed parallel workflow where it has one; otherwise one subagent or headless process (`claude -p`, `codex exec`) per task.
+3. **Land a task when it meets the bar** (below). After it lands, if the task changed the spec, run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/impact.py --since <the ref before the task>` to see which later briefs the change reaches.
+4. **Confirm the default branch is healthy before building on it.** After a wave merges (`pr`) or a push deploys (`trunk`), run the system suite the project runs at that point and read the deploy's smoke check. If either is red, stop launching tasks and report; work stacked on a red default branch has to be untangled later.
+5. **Recompute the ready set and repeat** until no eligible task with satisfied dependencies remains.
+
+## The landing bar
+A task lands when all of these hold:
+
+| Bar | Checked by |
+|---|---|
+| the project's gate is green | the gate command from its conventions, plus any tier it leaves out that the slice touches |
+| the done-claim holds against the tree | `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task.py spec --task T-NNN` |
+| `critical` only: an independent review passed | the brief's `review` row reads `PASS`, set by the reviewer |
+
+Under `pr`, merge on a green pull request where the project's review policy lets an agent merge; where the policy reserves the merge for a human, leave the pull request open and list it in the report. Under `trunk`, push, and treat the smoke check as the confirmation.
 
 ## Rules
-- **The merge bar** — a task merges only when its gate is fully green, the conformance review ran **in a fresh / independent context** (never the implementing loop's own verdict — a loop can't certify itself) with its `VERDICT: PASS` physically on disk under `spec/10-delivery/verification/`, and its Verification Record is green (`python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task_record.py spec --task T-NNN` exits clean). The artifacts are the proof the bookends ran — "I reviewed it" without them does not count. A task with a back-filled test (an `AC-` without a passing traceability row), a missing/`FAIL` verdict, or an unmet/dropped obligation is **parked, not merged**.
-- **The tool-call-time exec-gate enforces every task in the wave, independently** — `gate_exec.py` (red-before-green · no hollow done-claim) is keyed off each task's **`task/T-NNN` branch** and parallel-safe; run each parallel task in **its own branch/worktree**, so the committed hook adapters + `.grillspec/tools/` travel with it. (If you dispatch a task *without* a `task/T-NNN` branch, the implementing agent must `gate_exec.py --start T-NNN` for the gate to engage.)
-- **Held-out acceptance criteria (anti-overfitting — the strongest lever)** — to stop an agent implementing *exactly to the visible tests and no further*, **withhold a small subset of each task's `AC-`** from the implementing agent. The mechanism, which you (the orchestrator) own because only you see the full task:
-  1. partition the task's `AC-` into **shown** (the bulk) and **held-out** (1–2, or ~20% — pick **black-box, observably-testable** criteria, never ones needing the implementer's internal design);
-  2. dispatch the task package **and** its `--init` Verification Record with the held-out `AC-` **stripped** — the implementer TDDs only what it can see;
-  3. at the gate, the **independent reviewer** (full task in hand) authors fresh acceptance tests for the held-out `AC-` — or runs the Tier-B system acceptance tests that already cover them — against the built slice;
-  4. a held-out `AC-` that **fails** is overfitting/incompleteness → back to implementation (the `AC-` is now revealed, because it must be fixed); all pass → strong evidence the slice generalizes beyond the visible tests.
-  The backstop is automatic: `check_task_record.py` regenerates the obligation set from the **frozen full task**, so the held-out `AC-` are required at the gate no matter what the implementer's stripped record showed — they surface as ordinary obligation rows the reviewer must evidence. **Scope:** this is an **AFK/orchestrated-mode** policy (it needs a separate dispatcher and verifier); it's inherently **N/A for a solo `implement-task` run**, where the human reviewer is the independent check. Record the held-out set + their independent result in the Verification Record (a `held-out:` line) so the withholding is itself auditable.
-- **Wave-level integration gate** — after each wave's merges, run the system/Tier-B suite before launching the next wave; if main goes red, **park the wave** (stop launching dependents) and report, rather than building on a red main.
-- **Keep the credential register live** — when a provisioning-owner task merges (or a human clears a credential ask in `_human-input.md`), flip that credential's row in `_provisioning.md` to `state: provisioned` (+ evidence: where/when), which unlocks the tasks that consume it for the next wave. The register is the single live truth of what's provisioned — never infer provisioned-state from which tasks happened to pass.
-- **Don't thrash — park** — a task that hits an anti-cheat wall, a genuine HITL need, the loop's no-converge cap, **or its per-task token/iteration ceiling** → mark it `blocked` with the **precise blocker** (and, for a UX/decision block, a **proposed default for the human to ratify**), and continue with the rest of the wave. The token/iteration ceiling is an explicit park trigger, not a reason to weaken the gate.
-- **Parallelism safety** — never parallelize tasks that touch the same files/module (merge-conflict risk) — serialize those; subagents can't share state mid-run. Keep each task one focused slice.
-- **Cost** — parallel subagents/headless runs may use a separate host or CI quota — size the wave to the selected host's budget; use the strongest reasoning model for orchestration and a capable faster model for bounded per-task workers.
-- **Stop & report** — when the DAG is drained, report **merged** (`T-` ids) · **blocked** (reasons, awaiting human input) · **remaining** (HITL/deferred). Never mark a task done on red; never merge a non-green gate. Code lives in the source tree, never in `spec/`.
+- **Review in a fresh context where the tier requires it.** A `critical` task gets one `conformance-review` from a subagent or separate session that did not write the code, for at most two rounds; a disagreement that survives them goes to the human. `routine` and `feature` tasks are covered by the gate, `check_task.py` and the implementer's own diff review. A reviewer per task would multiply the cost of the run without adding a check the tier asked for.
+- **Hold out acceptance criteria on reviewed tasks.** An agent that sees every criterion can build exactly to the visible tests and no further. For a task that will get a fresh-context review, withhold one or two criteria (black-box, observable ones that need no knowledge of the internal design) by passing the implementer the brief's text with those lines left out. The reviewer, holding the full brief, tests them against the built slice. A held-out criterion that fails goes back to the implementer, revealed, because it has to be fixed. `check_task.py` reads the full brief, so a held-out criterion still needs its `@covers` test before the task is done. This applies only where there is a separate implementer and reviewer.
+- **Keep the credential register current.** When a provisioning task lands, or a human clears a credential ask, set that row in `spec/_provisioning.md` to `provisioned` with its evidence. The next ready set is computed from the register, so provisioned state is recorded there rather than inferred from which tasks passed.
+- **Park instead of thrashing.** A task that needs a human decision, stops converging, or reaches its per-task token or iteration ceiling is escalated as the engine describes: the blocker, a recommended default for the human to ratify, and what they must do, in `spec/_human-input.md`; `status` set to `blocked — <why>`; then on to the next task. A ceiling is a reason to park the task, not to loosen its gate.
+- **Size the run to the budget.** Parallel workers may draw on a separate host or CI quota. A strong reasoning model suits orchestration; a capable faster one suits a bounded per-task worker.
 
 ## Output
-Written under `<working-root>/` (drives the per-task implement → test → conformance loop; merges code on green — code lives in the source tree):
+The run leaves code on the default branch (or open pull requests), the briefs' `status` rows, and the escalation queue. It keeps no log of its own: `check_task.py spec` prints the current state of every task from the tree.
 
-| File / target | Captures | Format |
-|---|---|---|
-| `<working-root>/autorun-log.md` | the run record: merged (T- ids) · blocked (reason + awaiting-human input · proposed default to ratify) · remaining (HITL/deferred); for each merged task, the **tool-vouched completion report** (`check_task_record.py spec --report T-NNN`) so the whole AFK run is auditable after the fact | — |
+When no ready task remains, report to the user as the engine's Reporting section says:
 
-(no spec changes)
-Consumes: an **implementation-final** spec — tasks derived, `lint_spec` clean, **no task carrying an `UNRESOLVED` gap**. If not, stop and route to the owning upstream area first (don't implement against an ambiguous spec).
+| Group | Content |
+|---|---|
+| landed | task ids with a few words each, and how each was confirmed (smoke check, merged pull request) |
+| blocked | task id · the blocker · the recommended default · what the human must do |
+| waiting on a human merge | open pull requests the review policy reserves, under `pr` |
+| remaining | tasks not eligible for an unattended run, or deferred |
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`

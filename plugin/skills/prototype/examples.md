@@ -1,15 +1,20 @@
 # prototype — worked example
 
-One open question, settled by running code instead of arguing.
+Illustrative. One open question, settled by running code.
 
-> **Agent:** Before we commit the architecture: can we price a 50-leg shipping route **under 200ms** at p95? That's the assumption that kills the design if it's wrong — so spike the riskiest one first. This is a **feasibility** question (will it perform), not usability or desirability.
-> Branch chosen by the question: a tiny interactive terminal app that pushes the routing rule through the hard cases (50 legs, worst-case fan-out), state surfaced after every run. One command: `python prototypes/route-pricing-latency/run.py`. No persistence, no tests — throwaway.
-> Ran the worst case 1 000×: p95 **148ms**, p99 212ms with a memoized leg-cost table; naive recompute was 1.4s. **Answer: feasible** with memoization; the cache shape is load-bearing.
+**Question.** Before the architecture is committed: can a 50-leg shipping route be priced in under 200 ms at p95? If not, the design does not hold, so this is the assumption to test first. It is a feasibility question.
 
-Recorded, then the code deleted (only the answer persists):
+**Spike.** A small terminal app under `prototypes/route-pricing-latency/` that pushes the pricing rule through the worst case (50 legs, maximum fan-out) and prints timings after every run. One command: `python prototypes/route-pricing-latency/run.py`. No persistence, no tests.
 
-- **Question:** feasibility — price a 50-leg route < 200ms p95?
-- **Answer:** yes, p95 148ms with a memoized leg-cost cache (naive = 1.4s, fails).
-- **Routed to:** the load-bearing latency verdict → an **ADR** (`adr/ADR-PROTO-014.md`); the memoization decision encoded as a reducer snippet inlined into the implementing task's manifest. A bet-status update goes back to the owning area.
+**Result.** Over 1 000 worst-case runs, a naive recompute takes 1.4 s. With a memoized leg-cost table, p95 is 148 ms and p99 is 212 ms.
 
-(had it been usability, the verdict would route to the UX requirements instead; had it been desirability, it'd be tested with N target users and fed back to discovery. The prototype itself is never shipped.)
+**Answer.** Feasible, and only with memoization: the cache shape is load-bearing.
+
+**Where it went.**
+
+| Answer | Recorded in |
+|---|---|
+| the latency verdict and the memoization decision | `adr/ADR-PROTO-014.md` |
+| the leg-cost cache shape | the design note of the task that implements route pricing |
+
+The spike was then deleted. Had the question been about usability, the verdict would have gone to the UX requirements; had it been about desirability, it would have been tested with target users and fed back to discovery.

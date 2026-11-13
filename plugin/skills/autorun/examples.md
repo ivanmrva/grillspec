@@ -1,27 +1,27 @@
 # autorun — worked example
 
-Driving the coding phase AFK across the task DAG: select the ready wave, run it in parallel, each task runs its full done-gate loop, merge on green, propagate, recompute. The spec is implementation-final (tasks derived, lint clean, no task carrying an unresolved gap) — the precondition to even start.
+Illustrative. Two runs over the same build order, to show what the `delivery` setting changes. The spec is build-ready: briefs derived, the linter clean, no unresolved gap on the tasks below.
 
-**Wave 2** ready: `depends:` all merged, each `afk: eligible`. T-014 and T-016 touch different modules (Scheduling vs Billing) → safe to parallelize; T-018 also touches Scheduling/job → **serialized after T-014** (same files = merge-conflict risk).
+Ready set: T-014 reschedule-job (`feature`, Scheduling) and T-016 refund-payment (`critical`, Billing) are `afk: eligible` with their dependencies done. T-018 notify-on-reschedule depends on T-014 and turns on a product decision: whether a customer who already confirmed by SMS is notified again when the slot moves.
 
-Each task self-corrects its *code* to green (never the goalposts; never disables a gate). On a green gate the merge is gated by a conformance review **run in a fresh, independent context** — a loop can't certify itself — against a small held-out AC subset the implementing agent never saw.
+## Under `pr` delivery
 
-## Output — `autorun-log.md`
+T-014 and T-016 touch different modules, so they run as one wave, each in its own worktree and pull request. T-016 is reviewed by a separate subagent with one criterion held out; T-014 gets no reviewer, because its tier does not ask for one.
 
-```
-WAVE 2  (2026-06-15)
-  merged:
-    T-014 reschedule-job   gate green → conformance VERDICT: PASS (independent ctx) → merged
-    T-016 refund-payment    gate green → conformance VERDICT: PASS (independent ctx) → merged
-  parked:
-    T-018 notify-on-reschedule
-      reason: HITL — UX decision: should a customer already SMS-confirmed be re-notified
-              on a slot move, or silently updated? No invariant decides it.
-      proposed default (for human to ratify): re-notify only when new slot moves the
-              appointment day; otherwise silent update. Blocked, not guessed.
-  post-wave integration gate (Tier-B, after merges): journey + fitness fns + contract
-      suite GREEN on main → safe to launch Wave 3.
-  next wave recomputed: T-020, T-021 now unlocked (depended on T-014/T-016).
-```
+Final report:
 
-If the integration gate had turned main red, the wave is **parked** and no dependents launch — never build on a red main. Drain-time report: **merged** T-014, T-016 · **blocked** T-018 (awaiting the ratified default) · **remaining** Wave 3 (T-020, T-021).
+Two tasks landed and one is waiting on a decision. The default branch is green after the wave.
+
+| Task | State | Detail |
+|---|---|---|
+| T-014 reschedule-job | landed | gate and `check_task.py` green; pull request merged |
+| T-016 refund-payment | landed | review passed on the second round (a context-boundary import was removed); held-out AC-016d passed; pull request merged |
+| T-018 notify-on-reschedule | blocked | needs a product decision. Recommended default: notify again only when the appointment day changes. The ask is in `spec/_human-input.md`. |
+
+Remaining: T-020 and T-021 are unlocked by this wave and will run next.
+
+## Under `trunk` delivery
+
+The same tasks run one after another on the default branch. T-014 is built, the gate run locally, pushed, and its deploy's smoke check read before T-016 starts. T-016 is built, reviewed in a fresh context, and pushed once the review passes. The report has the same shape; "landed" cites the smoke check instead of a merged pull request.
+
+Had the smoke check gone red after T-014, the run would have stopped there and reported, leaving T-016 unstarted.

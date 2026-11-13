@@ -1,42 +1,46 @@
 ---
 name: operate-incident
 description: >-
-  Triage a production incident via runbooks, mitigate, and capture every learning as a new assumption or gap that propagates upstream. Use during or just after an incident. Loads the shared exec engine.
+  Work a production incident — triage, restore service by the runbook, keep the timeline, find the root cause, and turn what was learned into a fix and a spec change. Use during or just after an incident. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: a production incident to work
 ---
 
 # operate-incident
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill: **operate an incident on real systems**.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill works an incident on a real system: restore service first, understand it second, and make sure the system and its spec are different afterwards.
 
 ## Process
-1. **Intake & triage first.** A signal arrives — a firing alert **or** a human report (support escalation, user complaint, product feedback). Triage it: a **live incident** (user/data/revenue impact *now*) continues here; a **non-urgent bug** routes to the backlog as a task (or the diagnosis loop if hard); a **feature-gap** routes to discovery; an **invalidated bet** routes to bets/risks. Only a true incident proceeds below — the rest propagate upstream like any learning.
-2. **Classify severity & stabilize.** **Severity first** (sev1..sevN by user/data/revenue impact → paging, comms cadence, status-page), then **stop the bleeding to restore service** via the runbook (roll back · fail over · flag off; for data loss, the backup/DR procedure). **Mitigation restores service — it is not the root fix.**
-3. **Stand up incident-command roles for sev1/sev2** — a **commander** (decides), **scribe** (keeps the timeline), **comms-lead** (status-page/stakeholders), and **SME(s)** (hands-on). One person may double up on lower sevs; the commander is not the one debugging.
-4. **Run the timeline + comms log as you go.** Stamp **detected · acknowledged · mitigated · recovered**; keep a **comms log** (channel · timestamp · message) for every external/stakeholder update.
-5. **Security-incident branch.** If it is a security/data breach, switch to **containment → eradication → forensics → evidence-preservation** (distinct from an availability incident — preserve evidence before you clean up) and **start the compliance clock now** — the breach-notification `OBL-` (regulator/data-subject timelines, e.g. 72h) triggers here, not after the postmortem.
-6. **Find the root cause, then fix it as a task.** Once stable, hand the root-cause hunt to the disciplined diagnosis loop (hypothesise → fix → regression-test) rather than ad-hoc poking; the **durable fix lands as a normal tested task** (a slice), never a hot patch left behind in the incident.
-7. **Blameless postmortem — capture the learning:** focus on systems/contributing factors, never individuals. Every root cause becomes a new assumption or `GAP` (a missing rule, NFR, or runbook) and propagates upstream via the standard machinery — a postmortem is a focused change, not a dead document. Record **action items as owned + tracked** (owner · tracking-ref · status), never free text.
+1. **Triage the signal.** It may be a firing alert or a human report (a support escalation, a complaint). Only a live incident — users, data or revenue affected now — continues here. The rest is routed like any other learning:
 
-## Rules
-- **Done is the record, machine-checkable** — the incident file carries all four timeline stamps (detected · acknowledged · mitigated · recovered), the error-budget row (SLO-ref · %), and every action item as `owner · tracking-ref · status`; run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_operate_records.py` to reconcile the record (dangling spec refs, a deploy off the ratified path) before closing the incident.
-- **Error-budget consumed** (SLO-ref · %) is recorded every incident; **above the agreed threshold, a postmortem is mandatory** (not at the team's discretion).
-- The reported **acknowledge** and **recovery** durations (from the timestamps) are raw inputs to a higher-level rollup — this skill does not compute or own a running average.
-- **Never pass on:** an incident with no postmortem · a recurring failure with no new runbook/rule · a learning that doesn't reach the spec.
+   | It is | Goes to |
+   |---|---|
+   | a bug that can wait | an ordinary fix, or `diagnose` if the cause is not obvious |
+   | a missing capability | the product or discovery area |
+   | evidence against a product bet | the area that owns the bet |
+2. **Set the severity, then stabilize.** Severity follows impact on users, data and revenue, and decides paging, how often stakeholders hear from you, and whether the status page changes. Then stop the damage by the runbook: roll back, fail over, turn a flag off; for data loss, the backup and recovery procedure. Mitigation restores service. It is not the fix, and the hunt for the cause waits until the system is stable.
+3. **Name who does what, for a severe incident.** Someone decides (the commander), someone keeps the timeline, someone talks to stakeholders, and someone has hands on the system. On a small team one person holds several roles; what matters is that the person deciding is not also the one debugging.
+4. **Keep the timeline and the communications log as you go.** Record the four times — detected, acknowledged, mitigated, recovered — and each external or stakeholder update with its channel, time and message. Reconstructing them afterwards is unreliable.
+5. **For a security incident or data breach, switch procedure.** Contain, then eradicate, and preserve evidence before cleaning anything up, since forensic evidence is destroyed by the same steps that restore service. Start the compliance clock at detection: a breach-notification obligation (an `OBL-` with a deadline to the regulator or the people affected) runs from then, not from the postmortem.
+6. **Find the root cause, then fix it properly.** Once stable, hand the hunt to `diagnose`. The durable fix lands as normal tested work under the engine's rules — a failing test first — because a hot patch left behind from the incident is untested production code.
+7. **Write the blameless postmortem.** It describes systems and contributing factors and names no one as the cause. Each root cause becomes a change: a new or corrected rule, quality target or runbook in the spec area that owns it, or a recorded gap where the answer is the user's to give. Action items carry an owner, a tracking reference and a status, so they can be followed up.
+
+## What closes an incident
+- The record below is complete, with all four times and every action item owned.
+- The learning has reached the spec or the runbooks. A recurring failure with no new rule or runbook will recur again.
+- Where the project has objectives, the share of the error budget the incident consumed is recorded against its `SLO-`. Above the threshold the team agreed, a postmortem is required; below it, write one when there is something to learn.
+
+The acknowledge and recovery durations come straight from the recorded times. A project that tracks delivery metrics rolls them up elsewhere; this skill only records them.
 
 ## Output
-Written under `12-operate/`:
+One dated record per incident, under `12-operate/`. Its readers are the people who ask later what happened, what was decided and what is still open, so write for them and leave out what they would not use.
 
-| File / target | Captures | Format |
+| File | Captures | Format |
 |---|---|---|
-| `incident-<id>.md` | incident record + **blameless** postmortem: severity · roles (commander/scribe/comms-lead/SME) · timeline (**detected · acknowledged · mitigated · recovered**) · comms log (channel · timestamp · message) · impact · **error-budget consumed (SLO-ref · %)** · root cause · action items (**owner · tracking-ref · status**) · learnings → new bets/gaps/risks (fed to discovery) · security branch (containment/eradication/forensics/evidence) where applicable | — |
+| `incident-<id>.md` | severity · who held which role · timeline (detected · acknowledged · mitigated · recovered) · communications log · impact · error budget consumed (`SLO-` and share), where the project has objectives · root cause · action items (owner · tracking reference · status) · what changed in the spec or runbooks · for a security incident, containment, eradication and the evidence preserved | a `field \| value` table, then a short blameless narrative |
+| `adr/ADR-INC-NNN.md` | a costly-to-reverse decision the incident forced | ADR |
 
-(timeline stamps yield acknowledge + recovery durations as inputs to an upstream rollup; over the error-budget threshold the postmortem is mandatory)
-
-ADRs → `adr/ADR-INC-NNN.md`
-(no spec/code changes)
-Consumes: the firing alert + its linked `SLO-` and runbook (`09-solution/observability/`) + the DR/backup procedures (`09-solution/infra-ops/`).
+Reads: the alert or report, the objective and runbook linked to it (`09-solution/observability/`, where the project has them), and the backup and recovery procedures.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`

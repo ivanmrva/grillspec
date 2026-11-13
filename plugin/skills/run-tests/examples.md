@@ -1,21 +1,24 @@
 # run-tests — worked example
 
-Gating **T-014 — Reschedule a booked job**. Running the suite *is* the verification: each acceptance criterion proven at the right level, coverage and mutation-adequacy met, one verdict line emitted.
-
-Each `AC-` is checked at the level its nature demands — a user-observable outcome through the real interface, a persistence rule against a real DB, a pure rule as a unit test:
-
-| AC | nature | level run | asserts |
-|---|---|---|---|
-| AC-014a happy | user-observable | **e2e** through `POST /jobs/{id}/slot` | resulting state: job slot = new time, old slot released |
-| AC-014b owning-branch | pure domain rule | unit | rejection `not-owning-branch` |
-| AC-014c lead-time | pure domain rule | unit | rejection `lead-time-violated` (incl. boundary: exactly 2h) |
-| AC-014d slot-taken | persistence / concurrency | **integration** (real Postgres) | rejection `slot-taken` under a held slot |
-
-EVT-JobRescheduled flows through the **real outbox path** — a real worker drains it, the observable publish is asserted with **poll-with-timeout (no sleep)** on a controlled clock; re-delivery asserted idempotent. Assertions are on observable outcome (state / emitted event), never on interactions. Every AC test was confirmed able to fail (mutated the rule, watched it go red).
-
-Coverage 94% vs 90% target — pass. **Mutation score on the changed domain logic (job.reschedule): 88% vs 85% target** — the surviving mutant was the `>= 2h` boundary flipping to `>`; AC-014c's boundary case already kills it, so no real gap. Async retry/idempotency/dead-letter paths all exercised.
+Illustrative. Slice scope, for T-014 "Reschedule a booked job".
 
 ```
 VERDICT: PASS
 ```
-Suite green · every AC exercised at the right level · coverage + mutation targets met. (Had AC-014a been mock-only instead of e2e, or a surviving mutant uncovered → `VERDICT: FAIL`, back to implementation.)
+
+The project gate and the integration tier are green with nothing skipped, and `check_task.py spec --task T-014` is green: all four criteria have a `@covers` test. Each criterion is tested at the level its nature needs:
+
+| Criterion | Nature | Level run | Asserts |
+|---|---|---|---|
+| AC-014a happy path | user-observable | e2e through `POST /jobs/{id}/slot` | the job holds the new slot and the old slot is released |
+| AC-014b owning branch | pure domain rule | unit | rejected as `not-owning-branch` |
+| AC-014c lead time | pure domain rule | unit | rejected as `lead-time-violated`; exactly 2h is accepted |
+| AC-014d slot taken | persistence, concurrency | integration, real Postgres | rejected as `slot-taken` while another job holds the slot |
+
+The `EVT-JobRescheduled` event goes through the real outbox: a worker drains it, the publish is asserted by polling with a timeout under a controlled clock, and a second delivery changes nothing. Retry and the dead-letter path are exercised.
+
+The gate's bars are met: 94% branch coverage against 90%, and 88% mutation score on the changed domain logic against 85%. The one surviving mutant flips `>= 2h` to `> 2h` in a log message, not in the rule; the boundary case in AC-014c kills the rule mutation.
+
+What ran where: unit, integration and contract locally; the e2e against the preview environment. Nothing was left unrun.
+
+Had AC-014a been covered only by a mocked handler test, the first line would read `VERDICT: FAIL — AC-014a is user-observable and has no test through the real interface`, and the slice would go back to implementation.

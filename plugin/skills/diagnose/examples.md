@@ -1,24 +1,28 @@
 # diagnose — worked example
 
-A "sometimes wrong" bug: invoice totals occasionally off by one cent.
+Illustrative. A "sometimes wrong" bug: invoice totals are occasionally off by one cent.
 
-> **Agent:** Built a fast deterministic signal first — a property loop generating 10 000 random line-item sets, asserting `sum(lines) == invoice.total`. Fails ~3% of runs → reproducible. **Minimized** the failing input to two lines: `[0.10, 0.20]` → expected `0.30`, got `0.29`.
+**Feedback loop.** A property loop generates 10 000 random line-item sets and asserts `sum(lines) == invoice.total`. It fails on about 3% of runs, so the bug is reproducible. Shrinking the failing input gives two lines: `[0.10, 0.20]` should total `0.30` and totals `0.29`.
 
-**Three ranked, falsifiable hypotheses** (shown before testing any):
-1. *Float accumulation* — totals summed as IEEE-754 floats. → If true, switching the accumulator to integer cents makes it vanish.
-2. *Rounding-mode mismatch* — half-even vs half-up at line vs total. → If true, totals diverge only on `.5` boundaries (not `.10/.20`).
-3. *Currency-scale off-by-one* — wrong decimal places per currency. → If true, JPY (0-decimal) also fails.
+**Hypotheses**, ranked before testing any:
 
-> **Bisect** narrowed the suspect range to one commit: `git bisect run` flagged `a91f3` "switch Money to double for speed" — confirms **H1**, rules out H2/H3. **Fix:** accumulate in integer minor units, format at the edge. Regression test written **at the totals seam first**: `[0.10,0.20]→0.30` → watched it fail → applied fix → watched it pass → re-ran the 10 000× property loop, 0 failures.
+| # | Hypothesis | Prediction |
+|---|---|---|
+| 1 | totals are accumulated as binary floats | switching the accumulator to integer cents removes the failure |
+| 2 | rounding mode differs between line and total | totals diverge only on `.5` boundaries, not on `0.10 + 0.20` |
+| 3 | wrong decimal scale for some currencies | a zero-decimal currency (JPY) fails too |
 
-Recorded — `12-operate/diagnosis-0091.md`:
+**Test.** `git bisect run` with the two-line repro narrows the range to one commit, "switch Money to double for speed". That confirms hypothesis 1; the repro is not on a `.5` boundary and JPY passes, which rules out 2 and 3.
+
+**Fix.** A regression test at the totals seam, tagged `@covers AC-052a` (an invoice total equals the sum of its lines), asserts `[0.10, 0.20] → 0.30`. It failed, the accumulator was changed to integer minor units with formatting at the edge, and it passed. The 10 000-run property loop then showed no failures. The temporary `[DEBUG-7c1e]` lines were removed.
+
+**Record.** The cause is structural (nothing stops a float from being used for money) and wrong invoices reached customers, so a record is worth keeping — `12-operate/diagnosis-0091.md`:
 
 | field | value |
 |---|---|
-| repro | property loop 10 000× (~3% fail), minimized to `[0.10,0.20]→0.29` |
-| hypotheses | H1 float-accum (✓ via bisect to `a91f3`) · H2 rounding-mode · H3 currency-scale |
-| root cause | money summed as `double`; binary float can't represent `0.10` |
-| fix + regression | integer-cents accumulator · seam test `[0.10,0.20]→0.30` |
-| prevention → conformance review | ban float for money — add a lint/ASR; flagged for the design-health lens |
-
-(the fix + regression test land in the project source tree, never `spec/`; all `[DEBUG-…]` probes grepped out.)
+| date | 2026-03-04 |
+| symptom · repro | invoice totals off by one cent on ~3% of invoices · `[0.10, 0.20] → 0.29` |
+| root-cause | money summed as `double`; `0.10` has no exact binary representation |
+| fix | integer minor-unit accumulator, formatted at the edge |
+| regression-test | `tests/unit/invoice.total.spec.ts` |
+| prevention | a fitness function banning float types in the money module; raised as a task |

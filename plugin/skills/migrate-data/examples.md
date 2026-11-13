@@ -1,21 +1,28 @@
 # migrate-data — worked example
 
-An online expand-contract migration for `DATA-Order`: split a free-text `address` column into structured fields, no downtime.
+Illustrative. `DATA-Order` splits a free-text `address` column into structured fields, on a 4.2 million-row table, with no downtime.
 
-> **Agent:** Deployed code must tolerate **both** shapes mid-rollout, so I'll expand first, never drop in the same release.
-> **Expand** — add nullable `address_line1/city/postcode` + dual-write trigger (forward); rollback = drop the new columns (reversible, guarded).
-> **Backfill** — 4.2M rows, chunked at **batch 5 000**, throttle **pause on replica-lag > 1s**; ran via shadow-table copy + cutover (non-blocking).
-> **Verify** — on a prod copy first: counts match (4 204 118 = 4 204 118), FK integrity clean. High-value, so a **checksum shadow-compare** of `md5(address)` vs `md5(concat(line1,city,postcode))` over all rows: 0 mismatches.
-> Switch reads → new columns. **Contract** (next release): drop `address` + trigger.
+**Plan.** The deployed code must work with both shapes while the rollout is in progress, so the old column is not dropped in the same release.
 
-Recorded — `12-operate/migration-DATA-Order.md`:
+| Step | Forward | Rollback |
+|---|---|---|
+| expand | add nullable `address_line1`, `city`, `postcode`; write to both shapes | drop the three columns |
+| backfill | batches of 5 000 rows, paused while replica lag exceeds 1 s | none needed; the old column is untouched |
+| switch reads | read the new columns | read the old column again |
+| contract (next release) | drop `address` and the dual write | not reversible — needs the data owner's approval |
+
+**Verification, on a copy of production first.** Row counts match (4 204 118 on both sides) and foreign keys are intact. Because order addresses are high-value, every row was also reconciled: a checksum of the old `address` against the concatenated new fields, with no mismatches.
+
+**Approval.** The data owner approved the production cutover after seeing the verification numbers. The contract step is queued as its own change and will be put to the owner separately, since it deletes the old column for good.
+
+Record — `12-operate/migration-DATA-Order.md`:
 
 | field | value |
 |---|---|
-| change | `DATA-Order.address` → structured `line1/city/postcode` |
-| forward + rollback | expand (add cols + dual-write) ↔ drop new cols |
-| online strategy | shadow-table + cutover · **batch 5 000** · throttle on replica-lag>1s |
-| verification | counts equal · FK clean · **checksum shadow-compare 0 mismatches** |
-| result | reads switched · contract step queued for next release |
-
-(migration CODE lives in the project source tree at `src/migrations/`, never `spec/`. The contract step is a separate landed change so no schema drops while old code may still run.)
+| date | 2026-05-11 |
+| change | `DATA-Order.address` → `address_line1` · `city` · `postcode` |
+| forward · rollback | expand and dual-write · drop the new columns |
+| online strategy | batches of 5 000, throttled on replica lag over 1 s |
+| verification | counts equal · foreign keys intact · checksum reconcile, 0 mismatches |
+| cutover approved by | the data owner |
+| result | reads switched to the new columns; contract step pending in the next release |
