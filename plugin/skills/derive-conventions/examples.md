@@ -1,46 +1,29 @@
 # derive-conventions — worked example
 
-From the architecture (TypeScript · ports-and-adapters · Scheduling and FieldWork contexts): the coding-agent's standards and runway. Boundary rules are written as *enforceable* fitness checks, not prose advice.
+Illustrative. From the architecture (TypeScript · ports-and-adapters · Scheduling and FieldWork contexts), a `standard` profile, `trunk` delivery.
 
-## Output
-`delivery/conventions/boundary-rules.md` — one boundary rule, machine-checked:
+`delivery/conventions/boundary-rules.md` — boundaries as checks:
 
 ```
-RULE bnd-01  "Scheduling never imports FieldWork internals"
+RULE bnd-01  Scheduling reaches FieldWork only through its contracts
   deny   src/scheduling/**  ->  src/fieldwork/!(contracts)/**
-  allow  src/scheduling/**  ->  src/fieldwork/contracts/**   # cross-context only via published contract
-  check  dependency-cruiser rule `no-cross-context-internals` (CI + pre-commit)
-RULE bnd-02  "domain depends on nothing outward"
+  allow  src/scheduling/**  ->  src/fieldwork/contracts/**
+  check  dependency-cruiser `no-cross-context-internals`, part of `npm run verify`
+RULE bnd-02  the domain depends on nothing outward
   deny   src/*/domain/**  ->  src/*/{infra,adapter,api}/**
-RULE dep-01  "no unpinned deps; lockfile committed"
-  check  npm ci --frozen-lockfile  +  `npm audit --audit-level=high` (in-hook)
+RULE dep-01  dependencies are pinned
+  check  `npm ci --frozen-lockfile` in `verify`
 ```
 
-`delivery/conventions/pre-commit-hooks.md` — the CODE hooks (govern `src/` + `tests/` only; spec is governed by a separate spec-governance enforcer):
+`delivery/conventions/workflow.md` — the delivery mode, the gate, the definition of done:
+
+> **Delivery: `trunk`.** Work lands on `main`; related slices may share one push. Run the tests a change touches while iterating and `npm run verify` before a push. CI deploys `main` to staging and runs the smoke check; the security scan, the accessibility check and the mutation run are dispatch-only until the first production release.
+>
+> **Done:** every acceptance criterion in the brief has a `@covers` test; `npm run verify` is green; `check_task.py --task` is green; for a `critical` task the fresh-context review passed. Commits follow Conventional Commits.
 
 ```bash
-# .pre-commit (changed scope only)
-biome format --write          # format
-biome lint                    # lint
-tsc --noEmit                  # type
-gitleaks protect --staged     # secret-scan
-semgrep --config auto --error # fast SAST
-npm ci --frozen-lockfile && npm audit --audit-level=high  # dependency-audit / lockfile-integrity
-vitest related --run          # fast unit (changed)
-depcruise --validate          # mechanical conformance subset: boundary fitness fns (bnd-01/02)
-# commit-msg hook:
-commitlint --edit "$1"        # Conventional Commits enforced
+npm run verify        # format · lint · types · unit · boundaries · no-fakes · no-skips · orphan-tests · config-drift
+npm run test:int      # integration tier, against a local database
 ```
 
-`delivery/conventions/frontend-conventions.md` — design-system usage as fitness rules:
-
-```
-RULE fe-01  "semantic/component tokens only — never primitives/raw hex/px"   check  stylelint design-token-only + CI scan of src/ui/**
-RULE fe-02  "build only design-system components (variants · sizes · states), per the implementation mapping"
-RULE fe-03  "token pipeline: one DTCG source-of-truth → Style Dictionary → CSS vars; token-pair contrast ≥ the WCAG target (CI)"
-```
-
-`delivery/conventions/workflow.md` — workflow + build provenance:
-> trunk-based · branch per task · one MR/PR per task · Conventional Commits (commit-msg hook). **Provenance:** target **SLSA Build L3** · sign artifacts (cosign) · **≥2-person review + branch protection** on `main`. DoD: AC green · in-boundary · CI green · merged.
-
-Root `AGENTS.md` emitted as the canonical guide: spec map · these conventions · trunk-based + branch-per-task workflow · task index · DoD ("merged via green CI"). Root `CLAUDE.md` contains only `@AGENTS.md`. The *checks* are non-optional; the *release* decision stays the team's.
+Root `AGENTS.md` — the agent guide, about 600 words: what the product is; where code and spec live; the two commands above; the delivery mode; three rules no gate enforces, each with its reason (for example: "no external call inside a database transaction — the database rolls back, the outside world does not"); where tasks are defined. Root `CLAUDE.md` contains only `@AGENTS.md`.
