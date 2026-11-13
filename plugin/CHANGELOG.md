@@ -29,6 +29,8 @@ All notable changes to the `grillspec` plugin. Versions follow
   sentence) as state names and reported them as uncovered. The list is the run of short plain names after
   `states:`; a gloss in brackets is dropped and the list ends at the next clause.
 - `install_exec_gates.py --help` prints its usage instead of running the installer.
+- `check_orphan_tests.py` read hyphenated words after a tag (`NOT-yet-watched`, `YYYY-MM-DD`) and a
+  trailing full stop as spec IDs. An ID now holds a digit or is defined in the spec.
 - `lint_spec.py` reported an acceptance criterion as owned by no task when a brief listed it in its
   `behavior` row without a reference keyword beside it. A criterion listed in a brief is owned by it.
 - The bet status vocabulary is applied to bets only; a risk register in the same file keeps its own words.
