@@ -54,7 +54,7 @@ Two helper roles keep the main session's context clean. The Claude Code bundle s
 
 ## Building unattended
 
-`autorun` takes every task that is eligible for unattended work and whose dependencies are done, and runs each through the same loop a single task follows.
+Ask for the ready tasks to be built unattended and the agent takes every task that is eligible and whose dependencies are done, and runs each through the same loop a single task follows. There is no separate mode for this: the exec engine's queue rules say what counts as ready and how tasks are ordered.
 
 **The loop per task.** One behaviour at a time: a failing test, the smallest real code that passes, refactor on green. Then the project's whole gate (format, lint, types, build, the test tiers the slice touches, the coverage and mutation bars, the architecture checks) and `check_task.py --task T-NNN`. Anything that fails is fixed in the code and the gate is run again. A `critical` task also gets a design note before coding and one review in a fresh context.
 
@@ -64,9 +64,9 @@ Two helper roles keep the main session's context clean. The Claude Code bundle s
 
 **Where you are still needed.** A task is eligible for unattended work only when it has no unresolved gap and needs none of: a visual or UX decision, a product or strategy call, a legal sign-off, an external credential, or a choice that is purely your preference. To keep those round trips few:
 
-- the asks are batched in `spec/_human-input.md`, so you clear them in one sitting and start `autorun` again;
+- the asks are batched in `spec/_human-input.md`, so you clear them in one sitting and start the run again;
 - for a visual or product decision the system proposes a concrete default for you to confirm or adjust;
-- `autorun` keeps working on everything that is not blocked.
+- the run keeps working on everything that is not blocked.
 
 The limit on autonomy is the spec, not the coding. A brief whose criteria carry their text, whose rules are listed and whose gaps are closed can be built without a person; a vague one cannot.
 

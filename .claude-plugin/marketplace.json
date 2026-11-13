@@ -16,7 +16,7 @@
         "repo": "ivanmrva/grillspec",
         "ref": "marketplace"
       },
-      "description": "Spec-driven engineering system: a conductor plus 44 grilling/derivation/execution skills and deterministic checks. Turns an idea or existing docs into a DDD spec sized to the project, derives architecture and task briefs, and runs the build loop.",
+      "description": "Spec-driven engineering system: a conductor plus 43 grilling/derivation/execution skills and deterministic checks. Turns an idea or existing docs into a DDD spec sized to the project, derives architecture and task briefs, and runs the build loop.",
       "keywords": [
         "spec-driven",
         "domain-driven-design",

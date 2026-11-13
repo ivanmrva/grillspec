@@ -90,7 +90,7 @@ Each stage builds on the ones before it. "From" is the smallest profile that inc
 | 10 Delivery | `derive-conventions` · `derive-tasks` | `lite` | coding conventions, `AGENTS.md`, the task briefs (`T-`) and their build order |
 | | `derive-impl-design` | any | a short design note, written just before a `critical` task |
 | 11 Commercial | `grill-monetization` · `grill-go-to-market` · `grill-growth` | optional | pricing and plans; channels and launch; experiments and analytics events |
-| Build | `implement-task` · `conformance-review` · `autorun` · `generate-ui-prototype` | any | working code, one vertical slice at a time |
+| Build | `implement-task` · `conformance-review` · `generate-ui-prototype` | any | working code, one vertical slice at a time |
 | Audit | `audit-spec` · `audit-build` | any | a report on the spec; a pre-release report on the build |
 | Publish | `generate-docs` | any | a documentation site built from the spec |
 | Operate | `deploy-release` · `migrate-data` · `operate-incident` · `diagnose` | any | deploys, migrations, incident and diagnosis records |
@@ -196,5 +196,5 @@ Behind the skills are three shared method files — `grill-engine.md` for interv
 1. Run the conductor. It reports where the spec stands and recommends a next move.
 2. Answer its questions, or confirm the default it proposes. It decides what engineering merit settles and asks only for facts that you, your organisation or your platform hold.
 3. When the spec is ready for the profile, it derives conventions and tasks and drives the build, one task at a time.
-4. `autorun` runs that loop across the task list on its own and stops only where a person is needed: a visual or product decision, a legal sign-off, a credential. Those asks are collected in `spec/_human-input.md` so you can clear them in one sitting.
+4. Asked to, it runs that loop across every ready task on its own and stops only where a person is needed: a visual or product decision, a legal sign-off, a credential. Those asks are collected in `spec/_human-input.md` so you can clear them in one sitting.
 5. Before a release, `audit-build` checks the whole build. At `lite` and `standard` that is a short check; at `regulated` it is the full attestation.

@@ -540,18 +540,6 @@
       "method": "exec",
       "profile": "any"
     },
-    "autorun": {
-      "stage": "7-execution",
-      "skill": "autorun",
-      "folder": "(driver)",
-      "kind": "exec",
-      "consumes": [
-        "derive-tasks"
-      ],
-      "produces_ids": [],
-      "method": "exec",
-      "profile": "any"
-    },
     "deploy-release": {
       "stage": "8-operate",
       "skill": "deploy-release",

@@ -26,7 +26,7 @@ Recommend the smallest profile that fits and say what would justify the next one
 ## The flow
 Square brackets mark what `standard` adds to `lite`.
 
-`problem-validation` → `product-vision` → `constraints` [`goals` · `system-context`] → `ddd` → `derive-functional` → `quality` [`data-reqs` · `security-reqs` · `compliance` · `entitlements` · `integration-reqs` · `ml-reqs` for an AI product] [`design-system` → `ux-reqs` for a UI product] → *architecture-readiness* → `derive-architecture` [the seven further solution areas] → *implementation-readiness* → `derive-conventions` → `derive-tasks` → *delivery-readiness* → per task: `implement-task` (→ `conformance-review` for a `critical` task), or `autorun` across the build order → before a release: `audit-build` → `deploy-release` → operate (`migrate-data` · `operate-incident` · `diagnose`).
+`problem-validation` → `product-vision` → `constraints` [`goals` · `system-context`] → `ddd` → `derive-functional` → `quality` [`data-reqs` · `security-reqs` · `compliance` · `entitlements` · `integration-reqs` · `ml-reqs` for an AI product] [`design-system` → `ux-reqs` for a UI product] → *architecture-readiness* → `derive-architecture` [the seven further solution areas] → *implementation-readiness* → `derive-conventions` → `derive-tasks` → *delivery-readiness* → per task: `implement-task` (→ `conformance-review` for a `critical` task), or every ready task unattended (the exec engine's queue rules) → before a release: `audit-build` → `deploy-release` → operate (`migrate-data` · `operate-incident` · `diagnose`).
 
 Available at any point: `prototype` (answer one empirical question), `audit-spec`, `generate-docs`.
 
@@ -53,9 +53,8 @@ A skill runs when its situation arises. Most are never loaded in a given week, a
 | `derive-conventions` | once | rarely: a new gate, a changed delivery mode |
 | `derive-tasks` | the build order and the first briefs | one brief per `feature` or `critical` change |
 | `derive-impl-design` · `conformance-review` | for each `critical` task | for each `critical` change |
-| `implement-task` | every task | every change |
+| `implement-task` | every task; also the whole ready queue, unattended | every change |
 | `generate-ui-prototype` | each new screen | each new or reshaped screen |
-| `autorun` | to build the queue unattended | when several briefs are ready at once |
 | `prototype` · `diagnose` | when an unknown needs running code; when a bug resists | the same |
 | `migrate-data` · `deploy-release` · `operate-incident` | when a slice changes stored data; at each promotion; when production breaks | the same |
 | `audit-spec` · `audit-build` | before the build starts; before a release | after adoption or when the spec has drifted; before a release |

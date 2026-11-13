@@ -94,6 +94,16 @@ A few shortcuts make a gate pass without making the software right, and each one
 - crossing a module or layer boundary, or duplicating logic, to get a test green — if the clean design cannot do it, that is a design finding to raise;
 - disabling a hook, a fitness function or a gate.
 
+### A queue of tasks
+Asked to work through the build order without supervision, repeat the single-task loop over whatever is ready. It needs no separate method, only these points:
+
+- **Ready** means the brief's `phase` row reads `afk: eligible`, the tasks it depends on are done, and it is neither done nor blocked. Two things are checked before starting a task, because finding them mid-slice wastes the run: a `human-prereq` credential must read `provisioned` in `spec/_provisioning.md`, and a slice that changes a screen must have its prototype `frozen` or `waived`. Otherwise set the task `blocked — <why>` and take the next. `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task.py spec` prints the current state of every task.
+- **Order** follows the delivery mode (the table below): one task after another on `trunk`; under `pr`, tasks that touch different modules may run in parallel, one branch or worktree and one worker each.
+- **Between tasks**, confirm the default branch is healthy — the smoke check after a deploy, or the system suite after a wave merges — before building on it. Work stacked on a red branch has to be untangled later.
+- **For a `critical` task** built by one worker and reviewed by another, withhold one or two observable acceptance criteria from the implementer's copy of the brief; the reviewer, holding the full brief, tests them against the built slice. It shows whether the slice was built to the behaviour or only to the visible tests.
+- **When a credential gets provisioned**, set its row in `spec/_provisioning.md`, since the next ready set is read from that register.
+- **When nothing ready remains**, report what landed and how each was confirmed, what is blocked with your recommended default and what the human must do, and what is left.
+
 ## Delivery
 
 | | `trunk` | `pr` |

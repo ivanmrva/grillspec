@@ -250,7 +250,7 @@ _WORKFLOW_MD = """## The workflow (end to end)
 5. **Delivery prep** - `derive-conventions` + `derive-tasks` produce the gate, the agent guide and
    short task briefs, each with a risk tier (walking skeleton first).
 6. **Execution** - per task: `implement-task`, plus `conformance-review` in a fresh
-   context for `critical` tasks (or `autorun` for the whole queue). Code lives in the project source
+   context for `critical` tasks. Asked to, it works the whole ready queue unattended. Code lives in the project source
    tree, never in the spec; done is checked against the tree by `check_task.py`.
 7. **Operate & maintain** - `deploy-release`, `migrate-data`, `operate-incident`, `diagnose`;
    learnings feed back to discovery.

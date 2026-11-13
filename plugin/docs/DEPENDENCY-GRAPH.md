@@ -43,7 +43,6 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `derive-conventions` | derive-conventions | derive | any | derive-architecture, derive-test-strategy | — |
 | `derive-tasks` | derive-tasks | derive | any | derive-functional, ddd, derive-architecture, derive-conventions, product-vision, ux-reqs, derive-api-contracts | T- |
 | **7 · Execution** | | | | | |
-| `autorun` | autorun | exec | any | derive-tasks | — |
 | `conformance-review` | conformance-review | exec | any | derive-tasks, implement-task, derive-architecture, derive-api-contracts, derive-data-architecture, security-reqs, compliance, quality, derive-conventions, ddd | — |
 | `derive-impl-design` | derive-impl-design | derive | any | derive-architecture, derive-tasks | — |
 | `implement-task` | implement-task | exec | any | derive-tasks, derive-architecture, derive-conventions, derive-impl-design | — |
@@ -110,7 +109,6 @@ flowchart TD
     derive_tasks["derive-tasks<br/>T-"]
   end
   subgraph stage_7_execution["7 · Execution"]
-    autorun["autorun"]
     conformance_review["conformance-review"]
     derive_impl_design["derive-impl-design"]
     implement_task["implement-task"]
@@ -206,7 +204,6 @@ flowchart TD
   product_vision --> derive_tasks
   ux_reqs --> derive_tasks
   derive_api_contracts --> derive_tasks
-  derive_tasks --> autorun
   derive_tasks --> conformance_review
   implement_task --> conformance_review
   derive_architecture --> conformance_review

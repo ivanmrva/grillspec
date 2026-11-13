@@ -2,7 +2,7 @@
 
 **Invoke:** `/grillspec:grill-spec-conductor` in Claude Code or `$grillspec:grill-spec-conductor` in Codex — or just describe a spec task; it is model-invocable.
 
-*The orchestrator — the one skill that knows the whole system. The 44 worker skills know nothing about it.*
+*The orchestrator — the one skill that knows the whole system. The 43 worker skills know nothing about it.*
 
 ## What it does
 START HERE to spec, design, plan, or build a project or feature end to end. The front door and orchestrator: it reads the spec, works out the current state, recommends the smallest next step, and runs the chosen area. Use it whenever work spans more than one area.
