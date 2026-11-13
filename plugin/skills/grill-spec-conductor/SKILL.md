@@ -102,15 +102,14 @@ Worker skills stay unaware of the rest of the system; they name the IDs they cha
 - **Execution** (`implement-task` · `conformance-review` and the operate skills) — acts on the code; governed by `exec-engine.md`.
 
 ## What you write
-You own no area artifact and write no ADRs. At the spec root you keep three reconciled views, each a table:
+You own no area artifact and write no ADRs. At the spec root you keep two reconciled views, each a table:
 
 | File | Holds |
 |---|---|
 | `glossary.md` | the system-wide vocabulary reconciled from the areas — `term · definition · context`, one term one meaning |
 | `actors.md` | one actor roster — personas, domain roles and boundary actors merged: `actor · type · owning area · description` |
-| `_readiness.md` | per in-profile area: `area · status · maturity (L0–L3) · open count · gate state` |
 
-The ADR index, the bet register and the risk register are read from the areas on demand, not stored. A file at a path `repo-layout.md` does not list is relocated or merged on scan.
+Readiness is computed, not stored: `python3 ${CLAUDE_PLUGIN_ROOT}/tools/spec_status.py spec` reports what each area holds, the task status and what is not clear to build, and a stored dashboard would drift from the tree. The ADR index, the bet register and the risk register are likewise read from the areas on demand. A file at a path `repo-layout.md` does not list is relocated or merged on scan.
 
 ## Release readiness
 The system has no concept of a release; promoting to production is the user's action (`deploy-release` runs it). When they decide to ship, the things worth checking are: every MVP task done; `check_task.py` clean; quality targets backed by measured evidence; the objectives and their alerts in place where the profile includes them; required data migrations done; the critical obligations and security rules verified; sign-off from the named owners. In `trunk` delivery this is also the moment to run the CI jobs that are otherwise dispatch-only (security scan, accessibility, visual baseline, mutation), and `audit-build` gathers the evidence. This is a checklist to consult, not a lock.

@@ -42,7 +42,6 @@ One leaf folder is the output of one skill. The only shared location is `adr/`. 
 spec/
 │  glossary.md / actors.md   the reconciled system-wide views (the domain model owns the canonical vocabulary)
 │  adr/                      every ADR, one file each: ADR-<PREFIX>-NNN.md (PREFIX = the area code)
-│  _readiness.md             the per-area readiness view the conductor keeps
 │  _human-input.md           the one queue of asks for the human (schema below)
 │  _provisioning.md          the live credential register (schema below)
 │

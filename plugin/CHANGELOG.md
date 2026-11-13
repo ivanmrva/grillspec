@@ -15,6 +15,8 @@ All notable changes to the `grillspec` plugin. Versions follow
 - The agent guide `derive-conventions` writes carries the change lifecycle: size the change, align with the
   spec, brief it, build it test-first, prove it and land it. A request typed into chat follows the project's
   method without the user naming a skill.
+- Readiness is computed by `spec_status.py`, not stored in `spec/_readiness.md`. A stored dashboard drifted
+  from the tree; the conductor reads the report when it needs the picture. An existing file can be deleted.
 - `lint_spec.py --errors` prints only the errors and the summary. The pre-commit hook uses it, so a blocked
   commit shows what blocks it.
 
