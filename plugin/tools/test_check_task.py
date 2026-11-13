@@ -73,6 +73,10 @@ UX = "| ux | JRN-7 · SCR-3 · states: empty · loading · error → prototypes/
 expect("ui-states-need-state-tags", run(dict(COVERED, **{T: brief(extra=UX)})), code=1, must=["no `@state:` test for empty, loading, error"])
 expect("ui-states-covered", run({T: brief(extra=UX), "tests/pay.test.js":
        "// @covers AC-1a\n// @state:empty @state:loading @state:error\nit('x', () => {})\n"}), code=0, must=["| 3/3 |"])
+UX_PROSE = ("| ux | JRN-7 · states: empty/loading (skeleton)/cold-start (empty → first run)/error · prototype "
+            "`N/A — reuses DS-Table · DS-Modal` on the console. Nav: Operations group |\n")
+expect("state-list-ends-at-the-next-clause", run(dict(COVERED, **{T: brief(extra=UX_PROSE)})), code=1,
+       must=["no `@state:` test for empty, loading, cold-start, error"], forbid=["prototype", "ds-table", "nav"])
 expect("ux-na-needs-no-states", run(dict(COVERED, **{T: brief(extra="| ux | N/A — headless |\n")})), code=0)
 rc, out = run(dict(COVERED, **{T: brief()}), "--json")
 try:
