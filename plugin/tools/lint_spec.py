@@ -1435,12 +1435,15 @@ if PROFILE_EXPLICIT:
 # 42 every task carries a risk TIER, from the closed set routine | feature | critical. The tier decides
 #    what the task owes (a design note and a fresh-context review bind `critical` only), so a missing or
 #    off-vocabulary tier leaves that undecided. WARN (a brief is still buildable; the conductor sets it).
-#    A `critical` brief names its design note when it declares design-first, and may not be afk-eligible
-#    while its review cell is absent - the review is what an unattended run would otherwise skip.
+#    Finished briefs are exempt: the tier says what is owed, and nothing is owed on work already done.
 TIERS = ("routine", "feature", "critical")
+def task_done(text):                                         # a finished brief: its `status` row reads done
+    st = task_dim(text, "status")
+    return bool(st) and re.sub(r"[*`_]", "", st).strip().lower().startswith("done")
 for p, r in cmd_files():
     if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
     txt = read(p)
+    if task_done(txt): continue                              # the tier decides what is OWED; nothing is owed on finished work
     tier = task_dim(txt, "tier")
     tv = re.sub(r"[*`_]", "", tier or "").strip().lower()
     tname = next((t for t in TIERS if re.match(t + r"\b", tv)), None)
@@ -1448,7 +1451,10 @@ for p, r in cmd_files():
         add("WARN", r, "task carries no `tier` row - set routine | feature | critical (the tier decides whether a design note and a fresh-context review are owed)")
     elif tname is None:
         add("WARN", r, "unrecognized tier \"%s\" - use routine | feature | critical" % tier.strip()[:40])
-    elif tname == "critical" and task_dim(txt, "review") is None:
+    dz = task_dim(txt, "design")
+    if dz and re.match(r"\s*[*`_]*design-first", dz, re.I) and not re.search(r"[\w./-]+\.md", dz):
+        add("WARN", r, "`design-first` brief names no design note - give its path (`design-first - 10-delivery/impl-design/T-NNN-<slug>.md`) so the note can be found and check_task.py can confirm it exists")
+    if tname == "critical" and task_dim(txt, "review") is None:
         add("WARN", r, "`critical` task has no `review` row - add `review | pending`; the fresh-context reviewer flips it to PASS, and check_task.py will not accept `done` without it")
 
 # 43 a task brief is SELF-CONTAINED: each acceptance criterion in its `behavior` cell carries its text, not
@@ -1456,6 +1462,7 @@ for p, r in cmd_files():
 ACTOK = re.compile(r"(?<![A-Za-z0-9-])AC-[A-Za-z0-9._-]*[A-Za-z0-9]")
 for p, r in cmd_files():
     if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    if task_done(read(p)): continue                          # only work still to be built is read as a brief
     beh = task_dim(read(p), "behavior")
     if not beh: continue
     bare = []

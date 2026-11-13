@@ -519,19 +519,6 @@
       "method": "exec",
       "profile": "any"
     },
-    "run-tests": {
-      "stage": "7-execution",
-      "skill": "run-tests",
-      "folder": "(test run)",
-      "kind": "exec",
-      "consumes": [
-        "derive-tasks",
-        "implement-task"
-      ],
-      "produces_ids": [],
-      "method": "exec",
-      "profile": "any"
-    },
     "conformance-review": {
       "stage": "7-execution",
       "skill": "conformance-review",
@@ -630,18 +617,7 @@
       "folder": "docs-site/",
       "kind": "publish",
       "consumes": [
-        "conformance-review"
-      ],
-      "produces_ids": [],
-      "method": "exec",
-      "profile": "any"
-    },
-    "generate-api-reference": {
-      "stage": "any",
-      "skill": "generate-api-reference",
-      "folder": "docs-site/",
-      "kind": "publish",
-      "consumes": [
+        "derive-functional",
         "derive-api-contracts"
       ],
       "produces_ids": [],

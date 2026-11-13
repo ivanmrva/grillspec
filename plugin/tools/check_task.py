@@ -8,9 +8,11 @@ and carries one `status` row. Whether that claim holds is read from the working 
     source that declares a runnable test;
   - every interaction state the `ux` cell names has a `@state:<name>` tag in such a source;
   - no `GAP ... UNRESOLVED` remains in the brief;
-  - every task it `depends` on is itself `done`;
-  - a `critical` task carries `review | PASS` (written by the fresh-context reviewer), and a `design-first`
-    task's design note exists.
+  - a `critical` task carries `review | PASS` (written by the fresh-context reviewer), and the design
+    note a `design-first` task names exists.
+
+A dependency whose own status is not `done` is reported beside the task as a note: it means one of the
+two status rows is out of date, which is for a person to settle, not evidence missing from the tree.
 
 Whether the tests PASS, and coverage/mutation bars, belong to the project's own gate (the test runner and
 its config) - this tool never parses a number someone typed.
@@ -251,21 +253,23 @@ def evaluate(path, all_status):
         problems.append("no `@state:` test for %s" % ", ".join(missing_states))
     if gaps:
         problems.append("%d unresolved GAP(s)" % gaps)
+    notes = []
     if open_deps:
-        problems.append("depends on %s (not done)" % ", ".join(open_deps))
+        notes.append("depends on %s (not marked done)" % ", ".join(open_deps))
     if tier == "critical" and not review.startswith("pass"):
         problems.append("`critical` task without `review | PASS` (the fresh-context review)")
     if design.startswith("design-first"):
         m = re.search(r"([\w./-]+\.md)", f.get("design", ""))
         note = m.group(1) if m else None
-        found = bool(note) and any((base / note).is_file() for base in (ROOT, SPEC, SPEC / "10-delivery" / "impl-design"))
-        if not found:
-            problems.append("`design-first` task whose design note %s" % ("is missing: " + note if note else "is not named"))
+        # Checked only when the brief names the note: a named file that is absent is evidence missing from
+        # the tree. Whether an open brief names one at all is the linter's question, not a done-claim's.
+        if note and not any((base / note).is_file() for base in (ROOT, SPEC, SPEC / "10-delivery" / "impl-design")):
+            problems.append("`design-first` task whose design note is missing: " + note)
     return {
         "task": tid, "tier": tier or "-", "phase": (_clean(f.get("phase", "")).split("·")[0].strip() or "-"),
         "status": status_of(f), "acs": len(acs), "acs_covered": len(acs) - len(uncovered),
         "states": len(states), "states_covered": len(states) - len(missing_states),
-        "review": (review.split()[0] if review else "-"), "problems": problems,
+        "review": (review.split()[0] if review else "-"), "problems": problems, "notes": notes,
     }
 
 
@@ -301,7 +305,7 @@ def main():
         print("| %s | %s | %s | %s | %d/%d | %s | %s | %s |" % (
             r["task"], r["tier"], r["phase"], r["status"], r["acs_covered"], r["acs"],
             ("%d/%d" % (r["states_covered"], r["states"])) if r["states"] else "—",
-            r["review"], "; ".join(r["problems"]) or "—"))
+            r["review"], "; ".join(r["problems"] + ["note: " + n for n in r["notes"]]) or "—"))
     counts = {}
     for r in rows:
         counts[r["status"]] = counts.get(r["status"], 0) + 1

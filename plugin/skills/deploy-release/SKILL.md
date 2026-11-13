@@ -32,7 +32,7 @@ The first promotion to production passes a production-readiness review. It mostl
 
 | Item | Verified means |
 |---|---|
-| system-suite results | the latest run's measured results against their bars (from `run-tests`), for this increment |
+| system-suite results | the latest run's measured results against their bars (from the system-suite run), for this increment |
 | security | no open blocking finding against a `SEC-` rule |
 | rollback | rehearsed in a pre-production environment, not only designed |
 | backups and recovery | a test restore was run; the recovery mechanism was exercised to its tier |

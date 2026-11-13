@@ -39,7 +39,7 @@ if [ -f "$T/check_contracts.py" ]; then
 fi
 
 # 3) a task that claims done is backed by the tree — every acceptance criterion in its brief has an
-#    `@covers` test, every named UI state a `@state:` test, no unresolved gap, its dependencies done, and a
+#    `@covers` test, every named UI state a `@state:` test, no unresolved gap, and a
 #    `critical` task its review. An in-progress task never blocks. No-ops cleanly with no task briefs.
 if [ -f "$T/check_task.py" ]; then
   tr_out=$(python3 "$T/check_task.py" "$root/spec" 2>&1) || {

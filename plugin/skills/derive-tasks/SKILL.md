@@ -23,6 +23,9 @@ Briefs exist for work that adds behaviour. A bug fix, a copy change, a refactor 
 5. **Resolve gaps.** An undecided point is `GAP <what is missing> — <owning area> — UNRESOLVED` and forces one choice: complete it in the owning area, mark it `N/A — why`, or accept a default as an ADR. For a visual or product decision, propose a concrete default for the user to ratify.
 6. **Order.** Tag each task's phase (MVP · near · deferred) and dependencies; the build order is the topological sort, MVP first.
 
+## One change to an existing product
+When the product exists and a single change is being specified, write just that brief. There is no walking skeleton to add and no build order to re-derive: set the tier and what the brief depends on, quote the acceptance criteria as they now read, and add one line for it to `build-order.md`. A `routine` change gets no brief at all.
+
 ## The brief
 One file per task, `T-NNN.md`, a single `field | value` table. Multi-line cells use `<br>`.
 

@@ -8,6 +8,23 @@ Three ways in, all first-class:
 - **Focused change** — the normal mode for ongoing work: enter at the one artifact that changes (a new rule, a price, one feature), make the change, let `impact.py` name what depends on it, and re-work only that. A one-feature change touches a thin slice of the graph.
 - **Brownfield** — existing code or docs: reverse-derive a partial spec from what is there (actors, contexts, contracts, the data model as the code has it), record every unknown as a gap, then continue in focused-change mode. "Existing" means the current working tree; missing prior work is a gap to re-elicit. Keep it lean here too: write the decisions and rules the code cannot tell a reader, not a prose copy of the code.
 
+## Adopting an existing project
+A project that already has code is adopted once; after that it is ongoing work. Two cases.
+
+**It has never used this system** — follow Brownfield above, and stop early. The code already holds the description, so write only what it cannot tell a reader: the product scope and non-goals, the domain vocabulary and invariants, the rules a later change must not break (authorization, retention, entitlements, quality targets), and the costly-to-reverse decisions as ADRs. A `lite` or `standard` profile is nearly always right. Acceptance criteria are written for behaviour as it is next changed, not back-filled for everything that exists.
+
+**It was built with an earlier major version** — the spec exists and is larger than the current layout wants. The mechanical part is one command, a dry run until `--apply` is given:
+
+`python3 ${CLAUDE_PLUGIN_ROOT}/tools/migrate_project.py --profile <p> --delivery <d>`
+
+It writes the project settings, carries each task's status into its brief, removes the verification ledger, the locks and dangling host links, vendors the current tools, and prints the linter's findings grouped by check. Then work through that list by removing what has no reader, not by completing it:
+- edit-trace stamps and change notes go (the fact stays; git has the history);
+- an area beyond the profile, or a full-mode solution file, goes once nothing reads it — search the project's own scripts for the path first, because a project gate may parse a spec file (a tier contract, an environments matrix, a contract file), and that file stays until the script is repointed;
+- open briefs get a tier and a status when they are next worked on; finished ones need nothing;
+- the agent guide is rewritten short with `derive-conventions`.
+
+Areas are not re-derived to bring them up to date; each is amended when a change reaches it. Expect the project to use a small part of the system from then on: the conductor in ongoing-work mode, `derive-tasks` and `implement-task` for each change, `derive-impl-design` and `conformance-review` for critical ones, and the interview skills only when a change needs a fact the spec does not hold.
+
 ## Starting from a document
 A document rarely enters at the first stage. A feature list presupposes a domain model, actors and a scope; an architecture document presupposes requirements. When you ingest a downstream document and the areas above it are empty, derive the upstream facts it implies and seed them marked `inferred` and `status: unconfirmed`, then confirm them with the user before trusting what sits on top. Derive only what the document actually implies; a feature list cannot support an invented strategy, so that stays open for the interview.
 

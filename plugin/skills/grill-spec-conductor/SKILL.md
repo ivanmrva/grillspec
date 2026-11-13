@@ -11,6 +11,25 @@ For situational modes, read `${CLAUDE_PLUGIN_ROOT}/grill-shared/conductor-playbo
 ## Lean by default
 The aim is the smallest spec that lets the build proceed without guessing. An area, a file, a rule or a gate earns its place by having a reader — a later step, a tool, or a person who will act on it. Recommend the smallest profile that fits, offer the next area only when something downstream needs it, and treat spec that restates code or another area as a defect to remove, the same as a gap. Growing the spec when a real need appears is cheap; keeping unread spec consistent is not.
 
+## Building from scratch, or changing something that exists
+Work out which of the two you are in first; they use very different amounts of this system.
+
+**From scratch** — there is no product yet, or a whole new product area is being designed. Walk the in-profile areas in dependency order, as Session start below describes.
+
+**Ongoing work** — the product exists and the user brings a change: a bug, a tweak, a feature. Once the walking skeleton is built this is the normal case, and it needs no scan, no menu and no dashboards. Size the change with the exec engine's risk tiers and do what that tier owes:
+
+| The change | What happens |
+|---|---|
+| `routine` — a bug fix, a copy or visual tweak, a refactor, a dependency bump | straight to `implement-task`: a failing test, the fix, the gate. The spec is touched only where a statement in it is now false. |
+| `feature` — new behaviour in an existing part of the product | amend what the change alters and nothing else: the acceptance criteria, plus any rule it changes in the area that owns that rule, asking the user only what the spec and the code cannot answer. Then one brief (`derive-tasks`, for this slice only) and `implement-task`. |
+| `critical` — a new aggregate or context, a migration, authentication, authorization, erasure, billing, a model seam, a one-way door | as `feature`, plus an ADR where the change embodies a decision, a design note before coding (`derive-impl-design`), and a fresh-context `conformance-review` after. |
+
+Find what a change touches by reading the area that owns the behaviour, or with `impact.py <IDs>`; leave the rest of the spec unread and unchanged. Run `lint_spec.py` after a spec edit and fix what the edit caused. Findings that were already there are not this change's job: mention their count once, and offer `audit-spec` as separate work. Several small related changes can share one brief and one push.
+
+In ongoing work most skills stay unused, and that is the intended state: an interview or derivation skill runs only when a change reaches its area, and then only to amend it.
+
+A project that already has code or documents but has not used this system, or was built with an earlier major version of it, is adopted once before ongoing work starts (playbook: Adopting an existing project).
+
 ## First session — settle the two project settings
 When `.grillspec/project.json` is absent (`python3 ${CLAUDE_PLUGIN_ROOT}/tools/project_config.py` says so), ask the two questions it holds before anything else. Both are facts only the user has; lead each with your recommendation and its reason, then write the answer with `project_config.py --set profile=<p> --set delivery=<d>`.
 
@@ -24,10 +43,12 @@ When `.grillspec/project.json` is absent (`python3 ${CLAUDE_PLUGIN_ROOT}/tools/p
 
 Either setting can be raised later; say so. For a project that already has a spec, read the tree and propose the profile it actually needs rather than the one its size implies.
 
-## Session start
+## Session start — from scratch, or when the user asks where things stand
 1. Run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/lint_spec.py`. Its ERRORs are the structural truth (paths, headers, references, the profile, the timeless rule, unratified values once tasks exist); fix or surface them before anything else. Then scan the area outputs and rebuild the state (below).
 2. Offer a short menu grounded in what the scan found, with one recommended default: the next area the profile calls for; resume an area in progress; fix a cross-area inconsistency; test the riskiest untested bet; an area the user names; migrate existing docs; audit the spec (`audit-spec`); once the solution is ready, prepare delivery (`derive-conventions` → `derive-tasks`); once tasks exist, work the next task. Show what is blocked and what unblocks it. Optional areas (market, customer discovery, monetization, go-to-market, growth) appear only when the user asks for them.
-3. Run the chosen area yourself. The area skills are reference documents (`disable-model-invocation: true`), not agents: load the skill's `SKILL.md` and its engine and carry out the interview or derivation in line, or in a subagent you brief with that text. One focus per session; finish or park it, then start again. Start only what the user chose.
+3. Run the chosen area yourself. The decision-mode solution areas are small and read the same inputs, so after the architecture write them together in one session rather than one session each.
+
+   The area skills are reference documents (`disable-model-invocation: true`), not agents: load the skill's `SKILL.md` and its engine and carry out the interview or derivation in line, or in a subagent you brief with that text. One focus per session; finish or park it, then start again. Start only what the user chose.
 
 When several sessions run at once, keep one area per session. Each area owns its own folder, so parallel areas do not contend; after a merge, rebuild the cross-area state from the tree.
 
@@ -44,7 +65,7 @@ Three views, reported separately because they answer different questions:
 - **Bet health** — of the critical bets recorded across areas, how many are Validated / Testing / Accepted-risk / Untested / Invalidated, plus kill-criteria status. A consistent spec beside an untested bet is the point of keeping these apart.
 - **Delivery health** — once tasks exist: `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task.py spec` prints every task's tier, status, criteria covered and open items, computed from the tree.
 
-The stage chain, the per-area folders and the gates are in `repo-layout.md`; consult it rather than restating it. What the tree cannot show: discovery runs first and never closes; `derive-impl-design` is written just in time for a `critical` slice; the per-task loop is `implement-task` → `run-tests` → (for `critical`) `conformance-review`, with any failure routing back; `autorun` drives that loop across the build order; `prototype` answers one empirical question at any stage; the `generate-*` skills publish from the spec on demand.
+The stage chain, the per-area folders and the gates are in `repo-layout.md`; consult it rather than restating it. What the tree cannot show: discovery runs first and never closes; `derive-impl-design` is written just in time for a `critical` slice; the per-task loop is `implement-task`, followed for a `critical` task by `conformance-review`, with any failure routing back; `autorun` drives that loop across the build order; `prototype` answers one empirical question at any stage; the `generate-*` skills publish from the spec on demand.
 
 ## Readiness — offer what is answerable
 Offer a topic when its prerequisites have content, not when its area is merely started: nobody can answer a subscription question before a product function exists. A topic whose prerequisite is empty is recorded as `Deferred` with the trigger that reopens it, and promoted when the trigger is met. At the foundation, accept coarse answers ("roughly these areas") and let them sharpen later.
@@ -78,7 +99,7 @@ Worker skills stay unaware of the rest of the system; they name the IDs they cha
 ## Skill kinds
 - **Interview (`grill-*`)** — elicits what only the human or the market holds: vision, domain, the values behind requirements. May ask.
 - **Derivation (`derive-*`)** — writes from the recorded spec; decides engineering trade-offs, surfaces user-owned values for ratification, and raises a gap to the owning interview skill rather than asking. Confirm its inputs exist before running it.
-- **Execution** (`implement-task` · `run-tests` · `conformance-review` · `autorun` and the operate skills) — acts on the code; governed by `exec-engine.md`.
+- **Execution** (`implement-task` · `conformance-review` · `autorun` and the operate skills) — acts on the code; governed by `exec-engine.md`.
 
 ## What you write
 You own no area artifact and write no ADRs. At the spec root you keep three reconciled views, each a table:

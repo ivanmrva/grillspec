@@ -68,6 +68,9 @@ jobs:
       - name: neutral project state — project settings and the canonical agent guide stay host-independent
         run: python3 plugin/tools/test_project_state.py
 
+      - name: project migration — adopting the current layout keeps task status and removes the ledger
+        run: python3 plugin/tools/test_migrate_project.py
+
       - name: standalone emitter — auxiliary bundles remain portable and dual-host
         run: python3 plugin/tools/test_emit_standalone.py
 

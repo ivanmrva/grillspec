@@ -8,7 +8,7 @@ Code and Codex plugin manifests.
 Usage:
   python3 tools/emit-standalone.py grill-ddd                 -> dist/standalone/grill-ddd/
   python3 tools/emit-standalone.py --public grill-ddd        -> dist/public/grill-ddd/
-  python3 tools/emit-standalone.py --public --name post3 implement-task conformance-review run-tests
+  python3 tools/emit-standalone.py --public --name post3 implement-task conformance-review
 """
 import sys, json, shutil, argparse, re
 from pathlib import Path

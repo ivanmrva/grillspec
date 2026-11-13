@@ -52,7 +52,7 @@ OWNER       = "ivanmrva"               # marketplace name == GitHub owner
 CLUSTERS = {
     "grill-ddd":            ["grill-ddd"],
     "derive-tasks":         ["derive-tasks"],
-    "implement-and-review": ["implement-task", "run-tests", "conformance-review"],
+    "implement-and-review": ["implement-task", "conformance-review"],
 }
 
 SHARED_REF   = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/([A-Za-z0-9_-]+\.(?:md|json))")
@@ -249,7 +249,7 @@ _WORKFLOW_MD = """## The workflow (end to end)
    `regulated` projects.
 5. **Delivery prep** - `derive-conventions` + `derive-tasks` produce the gate, the agent guide and
    short task briefs, each with a risk tier (walking skeleton first).
-6. **Execution** - per task: `implement-task` -> `run-tests`, plus `conformance-review` in a fresh
+6. **Execution** - per task: `implement-task`, plus `conformance-review` in a fresh
    context for `critical` tasks (or `autorun` for the whole queue). Code lives in the project source
    tree, never in the spec; done is checked against the tree by `check_task.py`.
 7. **Operate & maintain** - `deploy-release`, `migrate-data`, `operate-incident`, `diagnose`;

@@ -726,6 +726,10 @@ expect("tier-critical-needs-review-row", run(LINT, dict(BR, **{"10-delivery/task
        must=["`critical` task has no `review` row"])
 expect("tier-critical-with-review-clean", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("| tier | critical — money path |\n", GOODB, "| review | pending |\n")})),
        forbid=["has no `review` row"])
+expect("tier-and-brief-checks-skip-finished-work", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("", "UC-1<br>AC-1a", "| status | done |\n")})),
+       forbid=["carries no `tier` row", "cited by bare id"])
+expect("design-first-names-its-note", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("| tier | feature |\n", GOODB, "| design | design-first — tricky concurrency |\n")})),
+       must=["names no design note"])
 expect("brief-bare-ac-warns", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("| tier | feature |\n", "UC-1<br>AC-1a")})),
        must=["cited by bare id"])
 

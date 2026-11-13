@@ -56,9 +56,9 @@ expect("covers-id-must-match-whole-token", run({T: brief(), "tests/pay.test.js":
 expect("colocated-test-counts", run({T: brief(), "src/billing/pay.test.ts": "// @covers AC-1a\ntest('x', () => {})\n"}), code=0)
 expect("nested-source-root-counts", run({T: brief(), "code/apps/pay/src/pay.test.ts": "// @covers AC-1a\ntest('x', () => {})\n"}), code=0)
 expect("unresolved-gap-fails", run(dict(COVERED, **{T: brief(extra="| rules | GAP retention period — data — UNRESOLVED |\n")})), code=1, must=["1 unresolved GAP(s)"])
-expect("open-dependency-fails", run(dict(COVERED, **{T: brief(extra="| depends | T-001 |\n"),
+expect("open-dependency-is-a-note-not-a-failure", run(dict(COVERED, **{T: brief(extra="| depends | T-001 |\n"),
        "spec/10-delivery/tasks/T-001.md": HDR + "\n| field | value |\n|---|---|\n| tier | critical |\n| status | in-progress |\n"})),
-       code=1, must=["depends on T-001 (not done)"])
+       code=0, must=["note: depends on T-001 (not marked done)"], forbid=["ERROR"])
 expect("done-dependency-passes", run(dict(COVERED, **{T: brief(extra="| depends | T-001 |\n"),
        "spec/10-delivery/tasks/T-001.md": HDR + "\n| field | value |\n|---|---|\n| tier | feature |\n| status | done |\n"})), code=0)
 expect("critical-needs-review-pass", run(dict(COVERED, **{T: brief(tier="critical — money path", extra="| review | pending |\n")})),
@@ -68,6 +68,7 @@ expect("design-first-needs-its-note", run(dict(COVERED, **{T: brief(extra="| des
        code=1, must=["design note is missing"])
 expect("design-first-with-note", run(dict(COVERED, **{T: brief(extra="| design | design-first — 10-delivery/impl-design/T-002-pay.md |\n"),
        "spec/10-delivery/impl-design/T-002-pay.md": HDR + "\nnote\n"})), code=0)
+expect("design-first-without-a-named-note-is-not-a-done-failure", run(dict(COVERED, **{T: brief(extra="| design | design-first — the platform spine is load-bearing |\n")})), code=0)
 UX = "| ux | JRN-7 · SCR-3 · states: empty · loading · error → prototypes/pay.html |\n"
 expect("ui-states-need-state-tags", run(dict(COVERED, **{T: brief(extra=UX)})), code=1, must=["no `@state:` test for empty, loading, error"])
 expect("ui-states-covered", run({T: brief(extra=UX), "tests/pay.test.js":

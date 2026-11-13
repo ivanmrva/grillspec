@@ -26,16 +26,40 @@ Recommend the smallest profile that fits and say what would justify the next one
 ## The flow
 Square brackets mark what `standard` adds to `lite`.
 
-`problem-validation` → `product-vision` → `constraints` [`goals` · `system-context`] → `ddd` → `derive-functional` → `quality` [`data-reqs` · `security-reqs` · `compliance` · `entitlements` · `integration-reqs` · `ml-reqs` for an AI product] [`design-system` → `ux-reqs` for a UI product] → *architecture-readiness* → `derive-architecture` [the seven further solution areas] → *implementation-readiness* → `derive-conventions` → `derive-tasks` → *delivery-readiness* → per task: `implement-task` → `run-tests` (→ `conformance-review` for a `critical` task), or `autorun` across the build order → before a release: `audit-build` → `deploy-release` → operate (`migrate-data` · `operate-incident` · `diagnose`).
+`problem-validation` → `product-vision` → `constraints` [`goals` · `system-context`] → `ddd` → `derive-functional` → `quality` [`data-reqs` · `security-reqs` · `compliance` · `entitlements` · `integration-reqs` · `ml-reqs` for an AI product] [`design-system` → `ux-reqs` for a UI product] → *architecture-readiness* → `derive-architecture` [the seven further solution areas] → *implementation-readiness* → `derive-conventions` → `derive-tasks` → *delivery-readiness* → per task: `implement-task` (→ `conformance-review` for a `critical` task), or `autorun` across the build order → before a release: `audit-build` → `deploy-release` → operate (`migrate-data` · `operate-incident` · `diagnose`).
 
 Available at any point: `prototype` (answer one empirical question), `audit-spec`, `generate-docs`.
 
 The three gates in italics are readiness signals, not locks, and count only in-profile areas. They tell the user when downstream work can be trusted; a skill run early still produces an ordinary artifact that later changes will update.
 
 ## Ways in
-- **Greenfield** — from an idea: settle the two settings, then walk the in-profile areas in order.
-- **Focused change** — the normal mode for ongoing work: enter at the artifact that changes and re-work only what depends on it.
-- **Brownfield** — existing code or documents: reverse-derive a partial spec from what is there, record unknowns as gaps, confirm it, then continue as focused changes. Documents are grilled like interview answers, not filed.
+- **From scratch** — from an idea: settle the two settings, then walk the in-profile areas in order.
+- **Ongoing work** — the normal mode once a product exists: size the change by tier, amend only what it alters, build it. No scan, no menu.
+- **Adoption** — existing code or documents, or a project built with an earlier major version: done once (`migrate_project.py` for the latter), then ongoing work. Documents are grilled like interview answers, not filed.
+
+## Which skills, when
+A skill runs when its situation arises. Most are never loaded in a given week, and none costs anything while unused.
+
+| Skill | From scratch | Ongoing work |
+|---|---|---|
+| `grill-spec-conductor` | drives every step | the intake: sizes the change and routes it |
+| `grill-problem-validation` · `grill-product-vision` · `grill-constraints` · `grill-ddd` · `grill-quality` | once, in order (`lite` and up) | amended when a change alters scope, a domain rule, a constraint or a target |
+| `grill-goals` · `grill-system-context` · `grill-data-reqs` · `grill-security-reqs` · `grill-compliance` · `grill-entitlements` · `grill-integration-reqs` | once, from `standard` | amended when a change brings a new rule of that kind |
+| `grill-ml-reqs` · `grill-design-system` · `grill-ux-reqs` | once, for an AI or a UI product | amended when a change adds a model capability, a component or a screen |
+| `grill-customer-discovery` · `grill-market` · `grill-monetization` · `grill-go-to-market` · `grill-growth` | only on request | only on request |
+| `derive-functional` | once, after the domain model | amended for each `feature` or `critical` change (its acceptance criteria) |
+| `derive-architecture` | once | amended when a change adds a module, a seam or a costly-to-reverse choice |
+| the seven further `derive-*` solution skills | one session, decision records, from `standard` | amended when a change alters one of their decisions |
+| `derive-conventions` | once | rarely: a new gate, a changed delivery mode |
+| `derive-tasks` | the build order and the first briefs | one brief per `feature` or `critical` change |
+| `derive-impl-design` · `conformance-review` | for each `critical` task | for each `critical` change |
+| `implement-task` | every task | every change |
+| `generate-ui-prototype` | each new screen | each new or reshaped screen |
+| `autorun` | to build the queue unattended | when several briefs are ready at once |
+| `prototype` · `diagnose` | when an unknown needs running code; when a bug resists | the same |
+| `migrate-data` · `deploy-release` · `operate-incident` | when a slice changes stored data; at each promotion; when production breaks | the same |
+| `audit-spec` · `audit-build` | before the build starts; before a release | after adoption or when the spec has drifted; before a release |
+| `generate-docs` | when someone outside the team needs a documentation site | the same |
 
 ## Tasks, tiers and done
 A task is one brief, `spec/10-delivery/tasks/T-NNN.md`: a `field | value` table an agent can build from without chasing IDs, because its acceptance criteria carry their text.
@@ -46,7 +70,7 @@ A task is one brief, `spec/10-delivery/tasks/T-NNN.md`: a `field | value` table 
 | `feature` | new behaviour inside an existing module | the brief, test-first, the gate |
 | `critical` | a new aggregate or context, a migration, an authorization, erasure or billing path, a model seam, any one-way door | the brief, a short design note, the gate, one fresh-context conformance review |
 
-Done is read from the tree, not from a record. `check_task.py` computes each task's status and checks a done-claim: every criterion in the brief has a `@covers` test, every named UI state a `@state:` test, no unresolved gap, dependencies done, and for a `critical` task `review | PASS`, written by the reviewer. The only stored progress is the brief's `status` row.
+Done is read from the tree, not from a record. `check_task.py` computes each task's status and checks a done-claim: every criterion in the brief has a `@covers` test, every named UI state a `@state:` test, no unresolved gap, and for a `critical` task `review | PASS`, written by the reviewer. A dependency not marked done is shown as a note. The only stored progress is the brief's `status` row.
 
 ## Where a fact belongs
 | The fact | Where it goes |

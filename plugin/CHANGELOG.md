@@ -58,6 +58,19 @@ reader who has not seen the conversation.
   only in-profile areas.
 - **Removed checkers.** `check_release_attestation.py` and `check_operate_records.py`; release
   readiness and operations records remain skill guidance.
+- **Two ways of working.** The conductor separates building from scratch from ongoing work on an
+  existing product. Ongoing work needs no scan or menu: a change is sized by tier, only the areas it
+  reaches are amended, and most skills stay unused. `operator-map.md` lists which skill runs in which
+  situation.
+- **Adoption.** `migrate_project.py` brings a 4.x project onto this layout in one command (dry run by
+  default): it writes the settings, carries each task's status from its verification record into the
+  brief, removes the ledger, the locks and dangling host links, vendors the current tools, and lists
+  the linter's findings by check. Finished briefs are exempt from the tier and self-contained-brief
+  checks.
+- **Two skills merged away (45 skills, down from 47).** `run-tests` repeated the last step of
+  `implement-task`; its judgments about test level and what a test must assert now live in the exec
+  engine, and the system-suite run belongs to `audit-build` and `deploy-release`.
+  `generate-api-reference` is a section of `generate-docs`.
 - **Skill instructions rewritten** against Anthropic's prompt-audit guidance: prohibitions kept only
   where the failure is real and stated with its reason, emphasis reserved for terms and IDs, long
   accreted bullets split into a rule and its reason, each skill's depth stated per profile, and output
@@ -72,15 +85,16 @@ reader who has not seen the conversation.
 
 ### Migrating a 4.x project
 
-1. Set the project settings: `python3 tools/project_config.py --set profile=<p> --set delivery=<d>`.
-2. Delete `spec/10-delivery/verification/` and `.grillspec/{derived,freshness}.lock` (the linter now
-   reports files under `verification/` as outside the structure).
-3. Re-run `install_exec_gates.py` to vendor `check_task.py` in place of `check_task_record.py`, and
-   reinstall `spec_governance_hook.sh`.
-4. Add a `tier` and a `status` row to each task brief still to be built; finished briefs need only
-   `status | done`.
-5. Run `lint_spec.py` and work through check 40 (edit-trace stamps) and check 41 (content outside the
-   profile, full-mode files): remove what has no reader rather than completing it.
+1. From the project root, on a clean tree, preview and then apply the mechanical steps:
+   `python3 tools/migrate_project.py --profile <p> --delivery <d>` (add `--apply`). It writes the
+   settings, moves each task's status into its brief, removes `spec/10-delivery/verification/`, the two
+   locks and dangling host links, and vendors the current tools.
+2. Reinstall the spec pre-commit hook from `.grillspec/tools/spec_governance_hook.sh`.
+3. Work through the findings it prints: check 40 (edit-trace stamps and change notes) and check 41
+   (content beyond the profile, full-mode files). Remove what has no reader rather than completing it,
+   and before deleting a solution file make sure no project script reads it.
+4. Give an open brief its `tier` when it is next worked on; finished briefs need nothing more.
+5. Rewrite the agent guide short with `derive-conventions`.
 
 ## 4.21.0
 

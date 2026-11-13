@@ -2,7 +2,7 @@
 
 Grill Spec is a plugin for Claude Code and Codex that turns an idea into a specification a coding agent can build from, and then drives the build. What it does and how to use it is in [plugin/README.md](plugin/README.md).
 
-This repository is the single source for the system and holds the one pipeline that produces every distribution artifact. Nothing is duplicated in source: the 47 skills (one conductor and 46 workers) and the three method engines they share live once under `plugin/`, and `build/build.py` assembles every output from them.
+This repository is the single source for the system and holds the one pipeline that produces every distribution artifact. Nothing is duplicated in source: the 45 skills (one conductor and 44 workers) and the three method engines they share live once under `plugin/`, and `build/build.py` assembles every output from them.
 
 ## Layout
 
@@ -11,9 +11,9 @@ grillspec/
 ├── plugin/                  # the source — also a working plugin as it stands
 │   ├── .claude-plugin/plugin.json
 │   ├── .codex-plugin/plugin.json
-│   ├── skills/              # 47 skills, one folder each (SKILL.md, plus a worked example for each worker)
+│   ├── skills/              # 45 skills, one folder each (SKILL.md, plus a worked example for each worker)
 │   ├── grill-shared/        # 3 method engines (grill, derive, exec), the shared rules, the dependency graph
-│   ├── tools/               # 25 Python tools, the pre-commit hook script, a Spectral ruleset, 15 regression suites
+│   ├── tools/               # 25 Python tools, the pre-commit hook script, a Spectral ruleset, 16 regression suites
 │   ├── agents/              # 2 helper agents (explorer, test-runner)
 │   ├── docs/                # how it works, the checks, a guide per skill
 │   └── CHANGELOG.md
@@ -62,7 +62,7 @@ Or build one target: `python build/build.py skills | claude | codex | marketplac
 
 | `dist/` output | What it is | License | Goes to |
 | :-- | :-- | :-- | :-- |
-| `dist/skills/` | the skill database: 46 worker skills, each a self-contained Agent Skill with its references, scripts and Codex metadata | MIT | a public skills repository, or direct copy |
+| `dist/skills/` | the skill database: 44 worker skills, each a self-contained Agent Skill with its references, scripts and Codex metadata | MIT | a public skills repository, or direct copy |
 | `dist/marketplace/` | the combined release: one plugin bundle with both the Claude Code and the Codex marketplace manifests | Apache-2.0 | the release ZIP and the `marketplace` branch |
 | `dist/claude/` | the Claude Code marketplace artifact | Apache-2.0 | an optional host-specific release |
 | `dist/codex/` | the Codex marketplace artifact | Apache-2.0 | an optional host-specific release |

@@ -90,9 +90,9 @@ Each stage builds on the ones before it. "From" is the smallest profile that inc
 | 10 Delivery | `derive-conventions` · `derive-tasks` | `lite` | coding conventions, `AGENTS.md`, the task briefs (`T-`) and their build order |
 | | `derive-impl-design` | any | a short design note, written just before a `critical` task |
 | 11 Commercial | `grill-monetization` · `grill-go-to-market` · `grill-growth` | optional | pricing and plans; channels and launch; experiments and analytics events |
-| Build | `implement-task` · `run-tests` · `conformance-review` · `autorun` · `generate-ui-prototype` | any | working code, one vertical slice at a time |
+| Build | `implement-task` · `conformance-review` · `autorun` · `generate-ui-prototype` | any | working code, one vertical slice at a time |
 | Audit | `audit-spec` · `audit-build` | any | a report on the spec; a pre-release report on the build |
-| Publish | `generate-docs` · `generate-api-reference` | any | a documentation site built from the spec |
+| Publish | `generate-docs` | any | a documentation site built from the spec |
 | Operate | `deploy-release` · `migrate-data` · `operate-incident` · `diagnose` | any | deploys, migrations, incident and diagnosis records |
 
 `prototype` can run at any stage to answer one empirical question (is this feasible, does this flow work), after which the prototype is thrown away and the answer goes into the spec.
@@ -116,7 +116,15 @@ A description is detailed design that an executable artifact states better: tabl
 - **From an idea.** The conductor interviews you area by area. A vague answer becomes a measurable bar, and edges, errors and states are worked out before an area is called consistent.
 - **From what you already have.** Documents are questioned, not filed: a document that reads cleanly can still be silent on a whole case, and a confident sentence can be an untested assumption. Each gap, vague claim and contradiction is recorded in the artifact it belongs to. Existing code is reverse-read into a partial spec, with every unknown recorded as a gap. In both cases, content with no reader — change history, status notes, prose that restates code — is left behind.
 
-For ongoing work the normal entry is a focused change: start at the one artifact that changes, and re-work only what depends on it.
+## From scratch, and ongoing work
+
+The system is used in two different ways, and the second uses far less of it.
+
+**From scratch**, the conductor walks the in-profile areas in order, then the build order task by task.
+
+**Ongoing work** is the normal mode once a product exists. A change is sized by tier: a `routine` change goes straight to code with a failing test; a `feature` change amends the acceptance criteria and any rule it alters, gets one brief, and is built; a `critical` change adds a design note and an independent review. Only the areas a change reaches are opened, and most skills stay unused for long stretches — an interview skill runs when a change needs a fact the spec does not hold, not on a schedule.
+
+A project that already has code is **adopted** once. One built without this system gets only what its code cannot tell a reader. One built with an earlier major version runs `migrate_project.py`, which carries task status into the briefs, removes the old ledger and locks, vendors the current tools, and lists what is left to prune.
 
 ## Changing the spec
 
@@ -149,6 +157,7 @@ All are small scripts with no dependencies beyond Python (one needs PyYAML). [SP
 | Tool | Job | Runs |
 |---|---|---|
 | `project_config.py` | prints or sets the profile and delivery mode | first session; read by other tools |
+| `migrate_project.py` | brings a project built with an earlier major version onto the current layout | once, at adoption |
 | `lint_spec.py` | structure of the spec: paths, headers, IDs and references, coverage, task briefs, the profile, timeless wording | every conductor session; every commit |
 | `impact.py` | what depends on a changed ID | whenever the spec changes |
 | `spec_status.py` | counts and mechanical blockers; it does not judge content | on demand |

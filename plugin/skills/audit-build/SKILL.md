@@ -40,7 +40,7 @@ Run from the project root and record the raw counts. Every ERROR is `blocking`. 
 
 | Command (under `python3 ${CLAUDE_PLUGIN_ROOT}/tools/`) | What it decides |
 |---|---|
-| `check_task.py spec` | the status of every task, and whether each `done` claim holds: a `@covers` test for every criterion in the brief, a `@state:` test for every named UI state, no unresolved gap, dependencies done, `review \| PASS` on a `critical` task, the design note of a design-first task present |
+| `check_task.py spec` | the status of every task, and whether each `done` claim holds: a `@covers` test for every criterion in the brief, a `@state:` test for every named UI state, no unresolved gap, `review \| PASS` on a `critical` task, the design note a design-first task names present; a dependency not marked done is shown as a note |
 | `check_task.py spec --trace` | the criterion → task → test-file matrix, for Phase 1 |
 | `check_no_fakes.py --strict` | no test double or mocking-library import in the production tree |
 | `check_no_skips.py --strict` | no skipped, expected-to-fail or focused test, and no CI test step that swallows a failure |

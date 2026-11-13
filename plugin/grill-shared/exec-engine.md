@@ -53,6 +53,8 @@ Then the next behaviour. Writing all the tests and then all the code produces te
 
 Tests span the layers the slice touches, per the project's tier contract (`09-solution/test/levels.md` where the project has one, otherwise its conventions): unit for domain logic; integration for the adapters and persistence the slice adds, against a real local dependency; contract for a seam it exposes or consumes; e2e only for a user-observable path that needs the deployed system, kept few. A cross-cutting rule named in the brief (an authorization rule, a retention trigger, an entitlement limit, a quality target, an emitted signal) is proven by a test in the slice that ships it — the deny path, the over-limit path, the measured number — because a rule with no test is the one that silently never gets built.
 
+A test proves a criterion only at the level the criterion lives. A user-observable criterion needs a test through the real interface; a cross-component, persistence or messaging criterion needs an integration test against real dependencies; a pure domain rule needs a unit test. Assert outcomes — the resulting state, the output, the emitted events — rather than which calls were made, and cover the error and negative paths as well as the happy one. Asynchronous behaviour is tested on its real path: the job is enqueued, a real worker consumes it, and the observable effect is asserted; a test that only asserts "enqueued" has not tested the job. For changed domain logic, assert boundaries on both sides and rejections by their reason, which is what the mutation bar measures.
+
 ## Production code is real from the first line
 
 The shipping tree carries only production behaviour. A stub, an in-memory double, a canned response, or an "if the real thing isn't wired, return something plausible" branch makes every test pass against a system that does nothing, and the fake outlives the excuse for it. Test doubles live under the test tree and are injected through the production constructor.
@@ -69,10 +71,14 @@ A task is done when its behaviour is proven and the project's gate is green. Con
 |---|---|
 | format · lint · types · build clean; the test tiers the slice touches pass; coverage and mutation bars met | the project's one gate command (from its conventions) |
 | architecture boundaries and the project's other fitness functions hold | the same gate |
-| every acceptance criterion in the brief has a `@covers` test; every named UI state has a `@state:` test; no unresolved gap; dependencies done | `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task.py spec --task T-NNN` |
+| every acceptance criterion in the brief has a `@covers` test; every named UI state has a `@state:` test; no unresolved gap (a dependency not marked done is reported as a note) | `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task.py spec --task T-NNN` |
 | no test without a spec driver; no skipped test; no fake in the shipping tree | `check_orphan_tests.py` · `check_no_skips.py` · `check_no_fakes.py` (or the project's own ports of them) |
 | a slice that adds a deployable surface or a schema change ships a real deploy / migration | `check_deploy_real.py` · `check_migration_real.py`, and the smoke check after deploy |
 | `critical` only: the design note exists and a fresh-context review returned `PASS` | the brief's `design` and `review` rows, read by `check_task.py` |
+
+A run that reports skipped tests is not a clean run, and a tier that needs a deployed environment and was not run is reported as not run, never folded into a pass.
+
+The **system suite** — journey tests, architecture fitness functions, the contract suite and the evidence tests for quality targets — runs where the tier contract says, typically after work lands and before a release. A green run is the start: compare each measured result with its target (did p95 meet the bar, did recovery stay inside the objective) and report one row per requirement: id · measured · bar · met.
 
 Then set the brief's `status` row to `done`. Nothing else is recorded: status, coverage of criteria and the criterion-to-test trace are computed from the tree on demand (`check_task.py`, `--json`, `--trace`), so there is no ledger to keep in step with the code.
 

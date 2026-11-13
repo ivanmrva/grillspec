@@ -47,7 +47,6 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `conformance-review` | conformance-review | exec | any | derive-tasks, implement-task, derive-architecture, derive-api-contracts, derive-data-architecture, security-reqs, compliance, quality, derive-conventions, ddd | — |
 | `derive-impl-design` | derive-impl-design | derive | any | derive-architecture, derive-tasks | — |
 | `implement-task` | implement-task | exec | any | derive-tasks, derive-architecture, derive-conventions, derive-impl-design | — |
-| `run-tests` | run-tests | exec | any | derive-tasks, implement-task | — |
 | **8 · Operate** | | | | | |
 | `deploy-release` | deploy-release | exec | any | derive-infra-ops, derive-observability | — |
 | `diagnose` | diagnose | exec | any | — | — |
@@ -58,8 +57,7 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `growth` | grill-growth | elicit | optional | goals, compliance, data-reqs | EXP- |
 | `monetization` | grill-monetization | elicit | optional | entitlements, product-vision, goals | — |
 | **Any stage** | | | | | |
-| `generate-api-reference` | generate-api-reference | publish | any | derive-api-contracts | — |
-| `generate-docs` | generate-docs | publish | any | conformance-review | — |
+| `generate-docs` | generate-docs | publish | any | derive-functional, derive-api-contracts | — |
 | `generate-ui-prototype` | generate-ui-prototype | publish | any | ux-reqs, design-system, derive-functional | — |
 | `prototype` | prototype | validate | any | — | — |
 
@@ -116,7 +114,6 @@ flowchart TD
     conformance_review["conformance-review"]
     derive_impl_design["derive-impl-design"]
     implement_task["implement-task"]
-    run_tests["run-tests"]
   end
   subgraph stage_8_operate["8 · Operate"]
     deploy_release["deploy-release"]
@@ -130,7 +127,6 @@ flowchart TD
     monetization["monetization"]
   end
   subgraph stage_any["Any stage"]
-    generate_api_reference["generate-api-reference"]
     generate_docs["generate-docs"]
     generate_ui_prototype["generate-ui-prototype"]
     prototype["prototype"]
@@ -227,8 +223,6 @@ flowchart TD
   derive_architecture --> implement_task
   derive_conventions --> implement_task
   derive_impl_design --> implement_task
-  derive_tasks --> run_tests
-  implement_task --> run_tests
   derive_infra_ops --> deploy_release
   derive_observability --> deploy_release
   data_reqs --> migrate_data
@@ -242,8 +236,8 @@ flowchart TD
   entitlements --> monetization
   product_vision --> monetization
   goals --> monetization
-  derive_api_contracts --> generate_api_reference
-  conformance_review --> generate_docs
+  derive_functional --> generate_docs
+  derive_api_contracts --> generate_docs
   ux_reqs --> generate_ui_prototype
   design_system --> generate_ui_prototype
   derive_functional --> generate_ui_prototype

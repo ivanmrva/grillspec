@@ -177,9 +177,10 @@ A done-claim fails when:
 - a criterion in the brief has no `@covers AC-…` tag in a test file that declares a runnable test;
 - a UI state named in the `ux` cell has no `@state:<name>` tag in such a file;
 - a `GAP … UNRESOLVED` line remains in the brief;
-- a task it depends on is not done;
 - a `critical` task has no `review | PASS` row (the reviewer writes it, not the implementer);
-- a design-first task's design note is missing.
+- the design note a design-first task names is missing.
+
+A task it depends on that is not marked done is shown beside it as a note. That means one of the two status rows is out of date, which is for a person to settle; it does not fail the claim.
 
 Whether the tests pass, and the coverage and mutation bars, belong to the project's own gate. The tool does not read numbers anyone typed.
 
@@ -203,7 +204,7 @@ Override in an emergency with `git commit --no-verify`.
 
 It looks only at the lines the edit adds, keeps no state, and knows nothing about tasks. A line carrying `no-skips: allow <reason>` or `no-fakes: allow <reason>` passes. The production tree is `src/` unless `.grillspec/grillspec-gate.json` lists other `production_globs`. If the hook itself fails it allows the edit, and `GRILLSPEC_GATE_OFF=1` turns it off.
 
-`install_exec_gates.py` copies the hook, `check_task.py`, `check_orphan_tests.py` and their shared helper into `.grillspec/tools/` and adds one PreToolUse entry to `.claude/settings.json` and `.codex/hooks.json` (`--host claude` or `--host codex` for one side only).
+`install_exec_gates.py` copies the edit hook, `check_task.py`, `check_orphan_tests.py` and their shared helper, plus the spec pre-commit hook and the checks it runs (`spec_governance_hook.sh`, `lint_spec.py`, `check_contracts.py`, `project_config.py`), into `.grillspec/tools/` and adds one PreToolUse entry to `.claude/settings.json` and `.codex/hooks.json` (`--host claude` or `--host codex` for one side only).
 
 ## The code-facing checkers
 
