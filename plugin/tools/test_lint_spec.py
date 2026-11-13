@@ -466,6 +466,15 @@ expect("invariant-coverage-orphan", run(LINT, {
     "04-domain/ddd/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-1 BranchFixed — branch set at creation\n",
     "05-functional-spec/uc.md": idtable(("UC-1", "Book"), ("AC-1a", "rejects X")),
 }), must=["'INV-1' has no downstream"])
+_BRIEF = HDR + "\n# T-002\n\n| field | value |\n|---|---|\n| tier | feature |\n| status | todo |\n| behavior | %s |\n"
+expect("ac-listed-in-a-brief-is-owned", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Book"), ("AC-1a", "rejects X")),
+    "10-delivery/tasks/T-002.md": _BRIEF % "`UC-1` book<br>· `AC-1a` — Given X, when booked, then it is rejected",
+}), forbid=["'AC-1a' has no downstream"])
+expect("ac-no-brief-owns-is-an-error", run(LINT, {
+    "05-functional-spec/uc.md": idtable(("UC-1", "Book"), ("AC-1a", "rejects X"), ("AC-1b", "rejects Y")),
+    "10-delivery/tasks/T-002.md": _BRIEF % "`UC-1` book<br>· `AC-1a` — Given X, when booked, then it is rejected",
+}), must=["'AC-1b' has no downstream"], forbid=["'AC-1a' has no downstream"])
 expect("invariant-coverage-asserted-ok", run(LINT, {
     "04-domain/ddd/a.md": HDR + "\n## AGG-1 Job\n- invariants: INV-1 BranchFixed — branch set at creation\n",
     "05-functional-spec/uc.md": idtable(("UC-1", "Book"), ("AC-1a", "rejects X")) + "\nAC-1a asserts INV-1\n",
@@ -623,6 +632,9 @@ expect("unconfirmed-error-with-tasks", run(LINT, {
 expect("bet-status-vocab", run(LINT, {
     "01-discovery/bets.md": HDR + "\n| bet | type | criticality | uncertainty | status |\n|---|---|---|---|---|\n| b1 | desirability | Critical | high | Checked |\n| b2 | viability | Medium | low | Untested |\n",
 }), must=["invalid bet status 'Checked'", "invalid bet criticality 'Medium'"])
+expect("bet-vocab-leaves-a-risk-register-alone", run(LINT, {
+    "01-discovery/bets.md": HDR + "\n| risk | handling | status |\n|---|---|---|\n| RISK-1 | monitor | Managed |\n",
+}), forbid=["invalid bet status"])
 
 # ── provisioning: a provisioned row with empty evidence is a rubber stamp ───
 expect("provisioned-empty-evidence", run(LINT, {

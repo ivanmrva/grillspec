@@ -581,6 +581,10 @@ for _p, _r in cmd_files():
         _pre = _tok.split("-")[0].upper()
         if _pre in LOOSE_COV_TYPES and _r not in (defsites.get(_tok) or set()) and _r not in (def3sites.get(_tok) or set()):
             loose_credit.add(_tok)
+        # a task brief owns the acceptance criteria it lists: its `behavior` row names each one with its
+        # text, and that listing is the ownership statement - no reference keyword is needed beside it
+        if _pre == "AC" and "10-delivery/tasks/" in _r.replace(os.sep, "/"):
+            loose_credit.add(_tok)
 # THR / EVT coverage exceptions the back-reference test (tok in refset) structurally misses, read from the
 # element's OWN definition block (its def line through the line before the next def in the same file):
 #  - a THR is covered when its block forward-cites a CONTROL — SEC-/ADR-/OBL- (a security control, an ADR
@@ -1347,6 +1351,7 @@ for p, r in cmd_files():
         si = next((header.index(k) for k in ("status",) if k in header), None)
         ki = next((header.index(k) for k in ("criticality",) if k in header), None)
         for row in body:
+            if row and re.match(r"\W*RISK-", row[0]): continue   # the vocabulary is the bets' own; a risk register beside them keeps its words
             if si is not None and si < len(row):
                 v = re.sub(r"[*`_]", "", row[si]).strip().lower()
                 if v and v not in BET_STATUS:
