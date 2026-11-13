@@ -1,10 +1,9 @@
 ---
 name: grill-problem-validation
 description: >-
-  Pin the problem worth solving and score the riskiest bets — problem hypothesis,
-  desirability/viability/feasibility bets scored criticality × uncertainty, value-proposition fit,
-  and a PMF definition with the cheapest test per assumption. Runs first and never closes. Loads
-  the shared grill engine.
+  Pin the problem worth solving and the risky bets behind it: the problem hypothesis, then each
+  desirability, viability and feasibility bet with its criticality, status and cheapest test. Use
+  at the start of a product and whenever new evidence changes a bet.
 ---
 
 <!-- grillspec-portable-resources -->
@@ -14,24 +13,35 @@ description: >-
 
 **Load `references/grill-engine.md` first and follow it.** This skill applies that method to **Problem validation & discovery** — the problem worth solving and the riskiest bets behind it.
 
+## Depth by profile
+In scope at every profile (`lite`, `standard`, `regulated`). Its depth follows the discovery work, not the profile.
+
+| When | What the interview captures |
+|---|---|
+| always | `problem.md` and `bets.md`: the problem hypothesis, then the bets and how each would be tested. About one page in total. |
+| the team is gathering evidence (interviews, prototypes, usage) | the other four files, which track that evidence. A project with no discovery work under way has nothing to put in them. |
+
 ## Rules
-- **every critical bet carries a validation status + a falsifiable test plan** — a prediction with a pass/fail threshold, not a hope. **Criticality is the closed set `Critical | High | Low`** — a bet is "critical" for the architecture-readiness gate exactly when its criticality cell reads `Critical` (the gate and the pivot loop key on the literal token, so a synonym silently escapes both)
-- pain is **frequency × intensity, painkiller vs vitamin** — and name the **why-now / catalyst**, or it isn't urgent
-- weigh the **forces around a switch** — push of the problem + pull of the new way vs anxiety of switching + habit of today; the solution wins only when push+pull beat anxiety+habit
-- plan the **cheapest test per risky assumption**
-- kill-criteria are referenced, not authored here
+- A bet is a prediction with a pass/fail threshold. Every `Critical` bet carries a validation status and a falsifiable test, because the readiness gate cannot judge a bet that nothing could disprove.
+- Criticality is the closed set `Critical | High | Low`, written as the exact token. The readiness gate and the pivot loop match the literal `Critical`, so a synonym slips past both. Status uses the engine's validation set.
+- Size the pain as frequency × intensity (painkiller or vitamin) and name the why-now catalyst. Without a catalyst the problem is not urgent.
+- Weigh the forces around a switch: the push of the problem and the pull of the new way, against the anxiety of switching and the habit of today. The product wins only when push + pull beat anxiety + habit.
+- Plan the cheapest test for each risky assumption.
+- Kill-criteria belong to the goals (at `lite`, to the product vision). Cite them here.
 
 ## Output
 Written under `discovery/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `problem.md` | problem hypothesis + the forces driving (or blocking) a switch | who hurts · frequency × intensity · current alternatives · why-now · demand-forces (push · pull · anxiety · habit) |
-| `opportunities.md` | distinct unmet needs/pains under the target outcome | opportunity · evidence · reach · severity |
-| `bets.md` | riskiest desirability/viability/feasibility bets, scored, with status | bet · type · criticality · uncertainty · status |
-| `assumptions.md` | assumptions register — each status change traceable to a datapoint | # · assumption · type · criticality · uncertainty · status · evidence/source (snippet/quote/datapoint · source · date) · test-plan |
-| `value-prop-fit.md` | value-prop fit, 2-col | jobs/pains/gains ↔ pain-relievers/gain-creators |
-| `pmf.md` | PMF signal **cluster** + validation plan — no single signal stands alone | per signal: signal · target · cheapest falsifiable test — incl. the "% very disappointed" survey, retention-curve flattening, and a qualitative signal |
+| `problem.md` | the problem hypothesis and the forces for and against a switch | who hurts · frequency × intensity · current alternatives · why-now · demand forces (push · pull · anxiety · habit) |
+| `bets.md` | the risky desirability / viability / feasibility bets | table: bet · type · criticality · uncertainty · status · test |
+| `opportunities.md` | distinct unmet needs under the target outcome | opportunity · evidence · reach · severity |
+| `assumptions.md` | the assumptions register; each status change traces to a datapoint | # · assumption · type · criticality · uncertainty · status · evidence/source (the quote or datapoint and where it came from) · test-plan |
+| `value-prop-fit.md` | value-proposition fit, in two columns | jobs / pains / gains ↔ pain-relievers / gain-creators |
+| `pmf.md` | a cluster of product-market-fit signals with a validation plan; no single signal stands alone | per signal: signal · target · cheapest falsifiable test |
+
+A usual `pmf.md` cluster is the "% very disappointed" survey, a retention curve that flattens, and one qualitative signal.
 
 ADRs → `adr/ADR-PROB-NNN.md`
 

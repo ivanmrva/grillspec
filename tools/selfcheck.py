@@ -167,11 +167,11 @@ if installer.exists():
                     "the bundled installer would refuse to wire the gate. Add it to PORTABLE_TOOLS.")
 
 conventions = ROOT / "skills" / "derive-conventions" / "SKILL.md"
-guard = ROOT / "tools" / "guard_derived.py"
+guard = ROOT / "tools" / "lint_spec.py"
 if conventions.exists() and "`CLAUDE.md` with exactly `@AGENTS.md`" not in conventions.read_text(encoding="utf-8"):
     err("derive-conventions: must generate canonical AGENTS.md plus an exact @AGENTS.md CLAUDE import")
-if guard.exists() and 'CLAUDE_IMPORT = "@AGENTS.md\\n"' not in guard.read_text(encoding="utf-8"):
-    err("guard_derived.py: must enforce the import-only CLAUDE.md adapter")
+if guard.exists() and 'CLAUDE_IMPORT = "@AGENTS.md"' not in guard.read_text(encoding="utf-8"):
+    err("lint_spec.py: must enforce the import-only CLAUDE.md adapter")
 
 # --- 4. hooks --------------------------------------------------------------
 hj = ROOT / "hooks" / "hooks.json"
@@ -210,13 +210,13 @@ if lint.exists():
                  "the linter cannot register or check it")
 
 # --- 4b-2. secondary-tool prefix sync --------------------------------------
-# check_contracts.py, impact.py, spec_status.py, check_freshness.py, and check_task_record.py each carry their
+# check_contracts.py, impact.py, spec_status.py, and check_task.py each carry their
 # OWN copy of the linter's TYPES vocabulary (they can't import lint_spec cleanly) and resolve/propagate/roll-up
 # ids against it. If a copy drifts, that tool tokenizes against a stale prefix set - silently missing ids. Keep
 # each identical to lint_spec's TYPES.
 if lint.exists() and mt:
     want = set(mt.group(1).split("|"))
-    for toolname in ("check_contracts.py", "impact.py", "spec_status.py", "check_freshness.py", "check_task_record.py"):
+    for toolname in ("check_contracts.py", "impact.py", "spec_status.py", "check_task.py"):
         tp = ROOT / "tools" / toolname
         if not tp.exists(): continue
         mc = re.search(r'^TYPES\s*=\s*"([^"]+)"', tp.read_text(), re.M)
@@ -228,17 +228,6 @@ if lint.exists() and mt:
             err(f"{toolname} TYPES is out of sync with lint_spec.py TYPES "
                 f"(only in lint_spec: {sorted(want - got) or '-'}; only in {toolname}: {sorted(got - want) or '-'}) "
                 "- copy the linter's TYPES line so it resolves ids against the same vocabulary")
-    # check_operate_records.py carries the same vocabulary as a PREFIXES tuple (self-contained form)
-    opr = ROOT / "tools" / "check_operate_records.py"
-    if opr.exists():
-        mo = re.search(r"^PREFIXES\s*=\s*\(([^)]+)\)", opr.read_text(), re.M | re.S)
-        got = set(re.findall(r'"([A-Z]+)"', mo.group(1))) if mo else set()
-        if not mo:
-            warn("check_operate_records.py: no PREFIXES tuple found - cannot verify it tracks lint_spec.py")
-        elif got != want:
-            err(f"check_operate_records.py PREFIXES is out of sync with lint_spec.py TYPES "
-                f"(only in lint_spec: {sorted(want - got) or '-'}; only in the tool: {sorted(got - want) or '-'}) "
-                "- mirror the linter's TYPES so operate records dangling-check every id type")
 
 # --- 4b-2b. REFMARK sync: impact.py must recognize every reference keyword lint_spec.py resolves ----
 # A keyword lint counts as a reference but impact ignores is an edge missing from the propagation
@@ -284,6 +273,17 @@ if lint.exists():
         elif a != b:
             err("impact.py layer() is out of sync with lint_spec.py file_layer() (the path->layer mapping "
                 "drifted) - copy file_layer()'s body into impact.py layer() so impact ordering matches the linter")
+
+# --- 4b-4. profile vocabulary sync: project_config.py writes the profile lint_spec.py reads -----------
+pc = ROOT / "tools" / "project_config.py"
+if lint.exists() and pc.exists():
+    _tup = lambda path: (lambda m: tuple(re.findall(r'"([a-z]+)"', m.group(1))) if m else None)(
+        re.search(r"^PROFILES\s*=\s*\(([^)]*)\)", path.read_text(), re.M))
+    lp, pp = _tup(lint), _tup(pc)
+    if lp is None or pp is None:
+        warn("PROFILES tuple not found in lint_spec.py and/or project_config.py - cannot verify they agree")
+    elif lp != pp:
+        err(f"profile vocabulary differs: lint_spec.py {lp} vs project_config.py {pp} - keep one ordered set")
 
 # --- 4c. dependency graph: valid + the rendered doc is in sync -------------
 # Runs gen_depgraph.py --check: validates dependencies.json (prefixes known to the linter and owned by

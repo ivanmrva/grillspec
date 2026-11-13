@@ -1,69 +1,245 @@
-# What the spec tools enforce
+# What the tools check
 
-A reader's map of every automated check over a grillspec `spec/`. The **tools are the source of truth**
-(`lint_spec.py`, `check_contracts.py`, `spectral-grillspec.yaml`); this groups them by intent so an author
-knows what's required and why. Severities: **ERROR** blocks a commit (the governance pre-commit hook),
-**WARN** is an advisory candidate, **INFO** is a heuristic the conductor/author judges.
+A map of every automated check, grouped by what it protects. The tools are the source of truth; this page tells an author what is required and why.
 
-The dividing line everywhere: a check is **ERROR only when it is sound** (no false positives possible);
-anything that needs a guess is **WARN/INFO**, and anything about *meaning* is left to the `audit-spec`
-judgment skill, not a check.
+Three severities are used throughout:
 
-## `lint_spec.py` — runs every session and on commit (stdlib, over `spec/**.md`)
-
-| Group | Enforces | Severity |
-|---|---|---|
-| **Structure & closed world** | files only at allowed paths · every file has a `scope/excludes/format` header · no placeholder/stale tokens · no dangling local links · ADR filename `ADR-<AREA>-NNN.md` | ERROR |
-| **Stable-ID spine** | every referenced ID resolves · defined exactly once · defined only in its owning area (stage purity) · bare type-prefix only (no `<CTX>-AGG-1`) · **references are upstream-only** (no layer points down) | ERROR |
-| **Child→parent keying** | every `AC-` keys to a real `UC-`; every `ASR-` to a real `NFR-` | ERROR |
-| **Derived→driver backref** | a derived id cites its driver, co-located on its own definition row/block: `JRN-`→`UC-` (or `N/A — why`), `SLO-`→`NFR-` (strict — an SLO operationalises an NFR by definition), `ML-`→`UC-` (or `N/A — why`); an impl-design `<module>.md` names its `MOD-` + `T-` | ERROR (impl-design WARN) |
-| **Structural coverage** (gap surface) | every `CMD-`→`UC-`→`AC-`→`T-` · `EVT-` has a consumer · `OBL-`→control · **`THR-`→`SEC-`** · **`INV-`→`AC-`** (an invariant is asserted by an AC, or enforced structurally — by construction / a `DATA-` constraint) · `NFR-`→`ASR-`/`SLO-` · `API-`→consumer · **`ENTL-`→a task's security dimension** (an unreferenced entitlement gate ships untested) · **`IF-`→an integration-reqs seam/task** (a boundary whose qualities were never elicited) · **`CA-`→`UC-`** (declared scope that never landed) · **`HOT-`→an owner** (a flagged risk left unaddressed) · **`SCR-`→a journey/task/prototype** (dead information architecture) · **`AEV-`→a task's obs cell** (a defined analytics event nothing instruments) | WARN — except **`THR-` uncovered (ERROR always)** and the staged promotions: **`OBL-` uncovered once `09-solution` has content, `AC-` unowned once tasks exist (ERROR at their gate)** |
-| **State machines** (ddd) | a `from·trigger·to·guard` table has no **unreachable** state, no **dead-end** (non-terminal with no exit), no **nondeterministic** transition (same from+trigger, no guard) | WARN |
-| **Authorization** | every command has a rule (default-deny) · no blank decision cell — in either the command×actor matrix or the `SEC-` long-form | ERROR |
-| **Typed scalar facts** | a `retention`/`residency`/`class`/`SLA`/`price`/`delivery-guarantee`/`interaction-style`/`ordering`/`hard/soft`/`threshold` stated twice must **agree** · every `DATA-` carries class/retention/residency (a value or `deferred until …`) | WARN |
-| **Ratify queue** | an `unconfirmed` value (a parked ratify-point in `_human-input.md` or an inline `status: unconfirmed`) is a proposed default the human never confirmed | WARN; **ERROR once tasks exist** |
-| **Bet vocabulary** | on `bets.md`: `status` ∈ Untested/Testing/Validated/Invalidated/Accepted-risk · `criticality` ∈ Critical/High/Low (gate 2 and the pivot loop key on the literal tokens) | WARN |
-| **Provisioning evidence** | a `state: provisioned` row in `_provisioning.md` carries non-empty evidence (an eligibility claim must be auditable) | WARN |
-| **Spec-root hygiene** | only `_readiness.md` / `_human-input.md` / `_provisioning.md` are sanctioned layer-exempt underscore files · a committed audit report should be git-ignored | WARN / INFO |
-| **Tasks & build** | no `T-` ships with an `UNRESOLVED` gap (ERROR) · the `depends-on` graph is a **DAG** — no cycle (ERROR) · every `T-` cites ≥1 upstream spec ID (WARN) · **every in-scope `AC-` is owned by exactly one `T-`** (the AC is the unit of acceptance — one Verification Record + `@covers` test; WARN) · every `afk:blocked` task is queued in `_human-input.md` (WARN) · an `afk: eligible` task must be **backed**: no un-provisioned `human-prereq` (WARN — verified against the `_provisioning.md` register) and, for a non-`N/A` `ux`, a **review-cleared prototype** (`frozen`/`reviewed`/`waived`; ERROR) | ERROR / WARN |
-| **The ux-cell contract** | a non-`N/A` `ux` cell cites its `JRN-` journey by id (ERROR — the record's ux obligation row is generated from it) and names the interaction states the slice realises in list form (`states: empty · loading · …`; WARN) · a slice with a non-`N/A` `ux` may not leave `a11y` N/A or absent (ERROR) and its `a11y` cell must pin something checkable — a keyboard/focus path or WCAG SC (WARN) · a `ux: N/A — reuses DS-…` claim anchors to the `SCR-` screen it edits (WARN — the reuse escape stays auditable) · a `placement` naming a UI surface (ui/frontend/screen/page/component/.tsx…) while `ux` is N/A/absent is a suspected mis-classified UI slice (WARN) | ERROR / WARN |
-| **NFR / module** | every `NFR-` names an `enforced-by` mechanism (test/gate/lint/infra/SLO/review) · every module in the architecture map declares a `role:` | WARN |
-| **ADR hygiene** | every ADR declares a recognized `status:` · no live reference to a superseded/deprecated ADR | WARN |
-| **House style (advisory)** | no development-trace language (`new`/`previously`/`this round`) · no skill/tool-name leak into project docs · no unquantified quality adjective without a bar · ID in a non-leading table cell | INFO |
-
-## `check_contracts.py` — the API/event contracts ↔ spec ID graph (PyYAML; on commit when `api/` exists)
-
-| Enforces | Severity |
+| Severity | Meaning |
 |---|---|
-| every grillspec id a contract **references** (`x-serves`, `SEC-` scopes, `x-data`, channel ids) resolves to a real definition in `spec/**.md` | ERROR |
-| every REST operation carries `x-grillspec-id: API-`, `x-serves: [UC-/CMD-]`, a `security` scope on mutations, and a 4xx/5xx/default error response | WARN |
+| ERROR | a violation; the tool exits non-zero, and the pre-commit hook blocks the commit |
+| WARN | a likely problem to confirm or dismiss; it does not block |
+| INFO | a candidate the tool cannot decide; the conductor or the author judges it |
 
-## `spectral-grillspec.yaml` — contract structure & style (Spectral, in `code-ci.yml`)
+A check is an ERROR only where it cannot be wrong. Anything that needs a guess is a WARN or an INFO, and anything about meaning is left to the audits (the last section but one).
 
-`extends: spectral:oas` (well-formedness, responses, `operationId`, `$ref` integrity, unused components) plus
-the house rules: `x-grillspec-id`/`x-serves` present, RFC 9457 `application/problem+json` errors, per-mutation
-security. Run: `npx @stoplight/spectral-cli lint spec/09-solution/api/*.yaml --ruleset tools/spectral-grillspec.yaml`.
+## `lint_spec.py` — the spec linter
 
-## Not mechanical — the `audit-spec` judgment skill
+Run from the project root: `python3 tools/lint_spec.py [spec_dir]`. It reads `spec/**.md` and, for the profile, `.grillspec/project.json`. The conductor runs it at the start of every session, and the pre-commit hook runs it on every commit. The numbers below are the ones in the tool's source; 2, 6 and 7 are unassigned.
 
-What no sound check can decide, by design: contradictions stated in prose · an ID conceptually mis-typed within
-an allowed prefix · scope adherence · whether a mitigation actually mitigates · **domain completeness** (a whole
-branch nobody modelled) · whether the model's *shape* fits the business. These are the `audit-spec` skill's job
-(`--depth consistency` for the judgment-but-decidable layer, `--depth full` adds the domain pass).
+### Layout
 
-## Beyond the spec — the build-accountability checks
+| # | What must hold | Severity |
+|---|---|---|
+| 1 | every file sits at an allowed path: an area folder, a per-area `glossary.md` or `actors.md`, the shared `adr/` folder, or a spec-root `_*.md` file | ERROR |
+| 2b | an ADR file is named `ADR-<AREA>-NNN.md` | ERROR |
+| 3 | every file opens with its `scope · excludes · format` header, and no field is empty | ERROR (WARN for a field left as "…") |
+| 4 | no placeholder token (`{{ }}`, TODO, FIXME, TKTK, NNNN) outside code spans | ERROR |
+| 5 | every local link resolves | ERROR |
+| 35 | the only underscore files at the spec root are `_readiness.md`, `_human-input.md` and `_provisioning.md` | WARN |
+| 39 | an audit report at the project root is git-ignored | INFO |
+| 44 | when the project root has both, `CLAUDE.md` contains exactly `@AGENTS.md` | ERROR |
 
-Distinct from these spec-structure tools, a second set governs that **generated code is built as the spec demands** (documented in `HOW-IT-WORKS.md`): `check_task_record.py` (the per-task Verification Record — every obligation evidenced and **every standard gate row carried**, incl. `deploy` + `tests:layers` + the rendered-surface rows `ux:states`/`a11y`/`ux:rendered` + `obs`, independent verdict on disk, every behavior/tests-cell `AC-` backed by a literal `@covers` tag in a failing-capable test source, the `ux`/`obs` obligations minted from the task's own cells (`JRN-`/`SCR-`/`SLO-`/`EXP-`/`AEV-`), **no false `N/A`** — a gate row can't claim `N/A — headless` while the task's own `ux`/`obs` cell is non-N/A — plus for a UI slice: every ux-cell state backed by a literal `@state:<name>` tag in a failing-capable test source (the state sibling of `@covers`), no pathless `PASS` on the rendered-surface/obs rows, a `prototype-review` row positively reading `frozen`/`reviewed`/`waived`, and every PASS'd `nfr` obligation row citing a measured value against a bar — not "looks good"), `check_no_fakes.py` (no test doubles in `src/`), `check_deploy_real.py` (no faked/skipped deploy in the CI/deploy artifacts — GitHub/GitLab/Circle/Azure/Bitbucket/Drone/Cloud-Build/Jenkins configs, shell scripts, Dockerfiles, and `package.json`/`Makefile` deploy targets), `check_migration_real.py` (no faked/empty schema migration), `check_config_drift.py` (code-read env vars ⊆ the declared `environments.md` matrix), `check_mock_budget.py` (no test that mocks beyond its tier's `mock-ceiling`), `check_test_tiers.py` (every declared tier has a suite; the distribution is reported), `check_e2e_target.py` (no "e2e" that runs on a local stack), `check_no_skips.py` (no skipped/xfail'd/`.only`-narrowed test, no CI test step that swallows a red), and `check_orphan_tests.py` (the **reverse** direction of `@covers` — every failing-capable test source carries a live spec driver tag, and every `@covers` ID resolves under `spec/`; an orphan or dangling tag is drift — behavior the spec never absorbed, typically an ad-hoc chat instruction implemented straight into code — so its first run on an existing project doubles as the drift detector; it also enforces the test naming grammar as the gates' visibility contract — an off-grammar file in a test tree that declares tests escapes every classifier-based gate, so it is an ERROR to rename into the grammar). They run in the code pre-commit + `code-ci.yml` (and `check_orphan_tests.py` additionally in the spec governance hook, since it reconciles the test tree against `spec/`). A further sibling, `check_operate_records.py`, reconciles the append-only `12-operate/` ledger against the spec it enacted (the layer nothing else covers). These code-side tools are read at aggregate scope by the **`audit-build`** skill — the independent, whole-build attestation that the per-task gates were genuinely run (the code-plane mirror of `audit-spec`). Its verdict has an **opt-in release gate**, `check_release_attestation.py`: a fresh `build-audit-report.md` must read `ATTESTED` — and the Tier-B system run's persisted release verdict (`10-delivery/verification/test-run.md`) must exist and read PASS — before release (make it a required check to enforce; it ships available, not wired-on). One sibling runs **earlier still** — `gate_exec.py`, the project-local PreToolUse exec-gate, enforces the per-task build *order* at **tool-call time** (a `src/**` edit is blocked until a failing test was recorded for the active task; a `status: done` flip is blocked until `check_task_record.py` passes; an edit that introduces a skip/xfail/`.only` into a test or a mock-import/`Fake*` double into `src/` is denied at the keystroke, task-independent — so it also covers setup work before any task branch) — the one thing a commit-time check structurally can't see. The exec engine arms it at session entry (step zero, idempotent), so it is live from the first line ever written, not from when governance lands.
+### Readiness and prose
+
+| # | What must hold | Severity |
+|---|---|---|
+| 8 | an area marked done in `_readiness.md` has content, and an area with content is not marked not-started | WARN |
+| 9 | the solution layer has content only once the in-profile requirement, design-system and UX areas do | WARN |
+| 10 | no dense prose block: consecutive lines of more than 40 words, or one line of more than 80 | WARN |
+
+### IDs and references
+
+The layers, upstream to downstream: foundation (discovery, product, constraints, system context) → domain → functional spec and requirements → design system → UX → solution → delivery. ADR files, a `traceability.md` and the spec-root underscore files may cite any layer.
+
+| # | What must hold | Severity |
+|---|---|---|
+| 11 | every referenced ID is defined | ERROR |
+| 11b | no file mentions an ID that belongs to a layer below it | ERROR |
+| 11c | the same direction rule for ID shapes the linter does not register, judged by where they are defined | WARN |
+| 11d | no file path or link points into a downstream area | WARN |
+| 12 | an ID is defined in one file only | ERROR |
+| 13 | an ID is defined in the area that owns its type | ERROR |
+| 13b | an ID starts with its bare type prefix: `AGG-250`, not `SUR-AGG-250` | ERROR |
+| 13c | an ID is the leading cell of its table row, so it registers as a definition | WARN |
+| 16 | a child ID carries its parent's number and the parent exists: `AC-014a` belongs to `UC-014`, `ASR-014` to `NFR-014` | ERROR |
+| 16b | on its own definition, a `JRN-` or `ML-` names its `UC-` (or `N/A` with a reason) and an `SLO-` names its `NFR-` | ERROR |
+| 16c | a design note under `impl-design/` names the `MOD-` it details and the `T-` it serves | WARN |
+
+A reference into an area that has no content yet is not reported as undefined; the linter prints one INFO line listing those references.
+
+### Coverage (check 14)
+
+Each element must be picked up by something downstream. A missing pickup is a WARN, with three exceptions that are ERRORs: a threat with no control, an obligation with no control once the solution layer has content, and an acceptance criterion with no task once tasks exist. A coverage check stays silent while the downstream type does not exist anywhere yet.
+
+| Element | Must be picked up by |
+|---|---|
+| `CMD-` command | a use-case |
+| `EVT-` event | a consumer (a use-case, a policy reaction, the event contract), or a note that it is an audit-only or internal sink |
+| `AGG-` aggregate | a `DATA-` element or a use-case |
+| `RM-` read model | a use-case that shows it |
+| `UC-` use-case | acceptance criteria or a task |
+| `AC-` criterion | a task |
+| `INV-` invariant | a criterion that asserts it, or a note that it is enforced by construction or a constraint |
+| `THR-` threat | a control, or `accepted-risk` |
+| `OBL-` obligation | a control |
+| `NFR-` · `ASR-` | an `ASR-` or `SLO-`, or a verifying reference |
+| `API-` · `DATA-` · `SLO-` | a consumer or a reference |
+| `ENTL-` entitlement | a task or a pricing plan |
+| `IF-` boundary interface | an integration requirement or a task |
+| `CA-` capability area | a use-case |
+| `HOT-` hotspot | a task, an ADR or a design note |
+| `SCR-` screen | a journey step, a task or a prototype |
+| `EXP-` · `AEV-` | a task that wires or emits it |
+
+### Structured facts
+
+| # | What must hold | Severity |
+|---|---|---|
+| 21 | a state-machine table in the domain model has no unreachable state, no dead end and no ambiguous transition | WARN |
+| 22 | every cell of an authorization table holds a decision, and every command has a rule | ERROR |
+| 23 | a typed fact stated twice for one ID agrees (retention, residency, class, SLA, limit, quota, price, tier, delivery guarantee, interaction style, ordering, hard/soft, threshold) | WARN |
+| 23 | every `DATA-` element declares a class, a retention or a residency | WARN |
+| 25 | every `NFR-` names how it is enforced | WARN |
+| 26 | every module in the module map declares a role | WARN |
+
+### ADRs
+
+| # | What must hold | Severity |
+|---|---|---|
+| 17 | no live reference to a superseded or deprecated ADR | WARN |
+| 20 | every ADR declares a recognized status | WARN |
+| 27 | an area's ADR numbers have no gap | WARN |
+| 28 | a resolved decision in `_human-input.md` cites an ADR that exists | WARN |
+
+### Human input, bets, credentials
+
+| # | What must hold | Severity |
+|---|---|---|
+| 18 | a task marked `afk: blocked` appears in `_human-input.md` | WARN |
+| 36 | no value is still marked `unconfirmed` | WARN; ERROR once tasks exist |
+| 37 | in `bets.md`, status and criticality use their closed vocabularies | WARN |
+| 38 | a credential marked `provisioned` in `_provisioning.md` carries evidence, and every state is `provisioned` or `pending` | WARN |
+
+### Task briefs
+
+| # | What must hold | Severity |
+|---|---|---|
+| 15 | no `GAP … UNRESOLVED` line | ERROR |
+| 19 | the brief cites at least one upstream ID | WARN |
+| 19b | an `AC-` is named by one task only | WARN |
+| 24 | the `depends` graph has no cycle | ERROR |
+| 29 | an `afk: eligible` task's `human-prereq` names credentials that are `provisioned` | WARN |
+| 42 | the brief has a `tier` row reading `routine`, `feature` or `critical`, and a `critical` brief has a `review` row | WARN |
+| 43 | each criterion in `behavior` carries its text, not only its ID | WARN |
+
+For a UI slice:
+
+| # | What must hold | Severity |
+|---|---|---|
+| 30 | an `afk: eligible` task with a `ux` cell has a `prototype-review` cell reading `frozen`, `reviewed` or `waived` | ERROR |
+| 31 | the `ux` cell cites its `JRN-`, and lists the states the slice realises (`states: empty · loading · …`) | ERROR for the journey; WARN for the states |
+| 32 | a task with a `ux` cell has an `a11y` cell, and that cell names a keyboard or focus path or a WCAG criterion | ERROR if absent; WARN if empty of content |
+| 33 | a `ux: N/A — reuses DS-…` claim names the `SCR-` it edits | WARN |
+| 34 | a task whose `touches` names a UI surface has a `ux` cell | WARN |
+
+### Lean and timeless
+
+| # | What must hold | Severity |
+|---|---|---|
+| 40 | no edit-trace stamp: a status or process word beside an ISO date, such as "ratified 2026-07-26" | ERROR |
+| 40 | no other ISO date in prose, and no edit-history wording ("previously", "no longer", "renamed from", "newly added", "this round", "as discussed") | WARN |
+| 41 | no content in an area outside the project's profile | WARN |
+| 41 | below `regulated`, no full-mode solution file (a schema, an OpenAPI or AsyncAPI file, a control register, telemetry or runbook documents, and their siblings) | WARN |
+
+Check 40 skips `12-operate/` (operations records are dated by nature), `_provisioning.md`, code spans and fences. A line that states a real domain date or uses one of the phrases as domain language carries `<!-- timeless: allow <why> -->`. Check 41 runs only when `.grillspec/project.json` sets a profile, and never flags the optional areas (market, customer discovery, monetization, go-to-market, growth).
+
+### Advisory
+
+| # | What it flags | Severity |
+|---|---|---|
+| 14b | development-trace wording · a skill or tool name inside project documentation · an ID with a context prefix in front of its type | INFO |
+| 14c | a quality adjective ("fast", "scalable") on a requirement line that carries no number | INFO |
+
+## `check_contracts.py` — contracts against the ID graph
+
+Applies where `spec/09-solution/api/` holds an OpenAPI or AsyncAPI file. Needs PyYAML; it exits cleanly without it or without contracts.
+
+| What must hold | Severity |
+|---|---|
+| every ID a contract references (`x-grillspec-id`, `x-serves`, `SEC-` scopes, `x-data`, channel ids) is defined in `spec/**.md` | ERROR |
+| every REST operation carries `x-grillspec-id` and `x-serves`, a security scope on a mutation, and an error response | WARN |
+
+`spectral-grillspec.yaml` is the companion ruleset for contract structure and style, run with Spectral: `npx @stoplight/spectral-cli lint spec/09-solution/api/openapi.yaml --ruleset tools/spectral-grillspec.yaml`. It extends `spectral:oas` and adds the house rules: the two traceability extensions, RFC 9457 `application/problem+json` errors, and a security scope per mutation.
+
+## `check_task.py` — is a task that claims done really done?
+
+Nothing about a task's progress is stored except the `status` row of its brief. This tool computes the rest from the tree.
+
+| Call | Prints |
+|---|---|
+| `check_task.py [spec_dir]` | one row per task: tier, phase, status, criteria covered, UI states covered, review, open items. It then checks every task whose status is `done` |
+| `--task T-014` | the same check for one task, as if it claimed done |
+| `--json` | the status rows as JSON |
+| `--trace` | criterion → task → the test files that cover it |
+
+A done-claim fails when:
+
+- a criterion in the brief has no `@covers AC-…` tag in a test file that declares a runnable test;
+- a UI state named in the `ux` cell has no `@state:<name>` tag in such a file;
+- a `GAP … UNRESOLVED` line remains in the brief;
+- a `critical` task has no `review | PASS` row (the reviewer writes it, not the implementer);
+- the design note a design-first task names is missing.
+
+A task it depends on that is not marked done is shown beside it as a note. That means one of the two status rows is out of date, which is for a person to settle; it does not fail the claim.
+
+Whether the tests pass, and the coverage and mutation bars, belong to the project's own gate. The tool does not read numbers anyone typed.
+
+## The pre-commit hook
+
+`spec_governance_hook.sh` is installed into the project as its git pre-commit hook. It runs only in that repository, and does nothing where there is no `spec/` or the tools are not vendored under `.grillspec/tools/`. It runs four steps and stops at the first failure:
+
+1. `lint_spec.py` — blocks on an ERROR.
+2. `check_contracts.py` — blocks when a contract references an undefined ID.
+3. `check_task.py` — blocks when a task is marked done and the tree does not back it. A task in progress never blocks.
+4. `check_orphan_tests.py` — blocks when a test has no spec driver.
+
+Override in an emergency with `git commit --no-verify`.
+
+## The edit hook
+
+`gate_exec.py --hook` runs before each file edit in Claude Code and Codex. It has one job: deny an edit that introduces
+
+- a skip, expected-failure or `.only` marker in a test file, or
+- a mocking-library import or a `Fake*`/`Stub*`/`Mock*`/`Dummy*` definition in the production tree.
+
+It looks only at the lines the edit adds, keeps no state, and knows nothing about tasks. A line carrying `no-skips: allow <reason>` or `no-fakes: allow <reason>` passes. The production tree is `src/` unless `.grillspec/grillspec-gate.json` lists other `production_globs`. If the hook itself fails it allows the edit, and `GRILLSPEC_GATE_OFF=1` turns it off.
+
+`install_exec_gates.py` copies the edit hook, `check_task.py`, `check_orphan_tests.py` and their shared helper, plus the spec pre-commit hook and the checks it runs (`spec_governance_hook.sh`, `lint_spec.py`, `check_contracts.py`, `project_config.py`), into `.grillspec/tools/` and adds one PreToolUse entry to `.claude/settings.json` and `.codex/hooks.json` (`--host claude` or `--host codex` for one side only).
+
+## The code-facing checkers
+
+Each takes the project root as its first argument and exits cleanly when it has nothing to scan. `--strict`, where a tool has WARNs, turns them into ERRORs; a release audit uses it.
+
+| Tool | ERROR | WARN |
+|---|---|---|
+| `check_no_fakes.py` | a test double defined in production source, or a mocking library imported there | a placeholder identifier, an unimplemented body, a fallback for an unconfigured dependency |
+| `check_no_skips.py` | a skipped, expected-to-fail or focused test; a CI or build step that swallows a test failure | a declared-but-unwritten test, `continue-on-error` on a CI step, `--passWithNoTests` |
+| `check_orphan_tests.py` | a test file with no `@covers` or `@state:` tag; a `@covers` ID that is not in the spec; a file in a test tree that declares tests but is not named like a test | — |
+| `check_mock_budget.py` | module-level mocking in a tier whose ceiling is `none`; a real dependency mocked in a `boundary-only` tier | — |
+| `check_test_tiers.py` | with `--require-all-tiers`, a declared tier with no suite; with `--require`, tests but no tier contract | a declared tier with no suite yet; tests in a tier the contract does not declare |
+| `check_e2e_target.py` | a test in a deployed-environment tier that points at localhost, docker-compose or testcontainers | — |
+| `check_config_drift.py` | an environment variable the code reads that `environments.md` does not declare | a declared key no code reads |
+| `check_deploy_real.py` | a placeholder, a disabled deploy step or an echo-only script in a deploy artifact | a deploy artifact that runs no recognized deploy command |
+| `check_migration_real.py` | a placeholder or an explicitly empty migration | a migration with no statement |
+
+The three tier checkers read the tier-contract table in `spec/09-solution/test/levels.md`, and `check_config_drift.py` reads `spec/09-solution/infra-ops/environments.md`; a project without those files (the `lite` profile) gets no findings from them. `check_test_tiers.py` also prints the number of test files per tier.
+
+Every finding can be waived where it is legitimate: an inline comment `<name>: allow <reason>` on the line, or an entry in `.grillspec/<name>-allow.txt`, where `<name>` is `no-fakes`, `no-skips`, `no-orphans`, `mock-budget`, `e2e-target`, `config-drift`, `deploy-real` or `migration-real`. Two tools can be taught project specifics: `.grillspec/deploy-real-commands.txt` names extra deploy commands, and `.grillspec/migration-real-dirs.txt` extra migration folders.
+
+The test-facing tools look under `tests`, `test`, `src`, `app`, `apps`, `lib`, `libs`, `packages` and `e2e`. A project that roots its code elsewhere sets `GRILLSPEC_TEST_ROOTS` (comma-separated directory names) once, or passes `--tests` per call. `check_no_fakes.py` and `check_config_drift.py` scan `src` unless given `--src`.
+
+## What no check decides
+
+Three skills cover what needs judgment:
+
+| Skill | Judges |
+|---|---|
+| `audit-spec` | the spec: contradictions in prose, an ID of the wrong type, scope, whether a control really mitigates its threat, content with no reader, a whole branch of the domain nobody modelled |
+| `conformance-review` | one `critical` task's code against its brief, by a reviewer that did not write it |
+| `audit-build` | the whole build before a release: whether tagged tests really assert their criteria, whether later work weakened earlier guarantees, waivers, lowered bars |
 
 ## Keeping the checks honest
 
-Every check carries a regression suite — each check has a fixture that must fire and a clean fixture that must
-not: `tools/test_lint_spec.py` (spec tools), and `test_check_task_record.py` · `test_check_no_fakes.py` ·
-`test_check_deploy_real.py` · `test_check_migration_real.py` · `test_check_config_drift.py` ·
-`test_check_mock_budget.py` · `test_check_test_tiers.py` · `test_check_e2e_target.py` · `test_check_no_skips.py` ·
-`test_check_orphan_tests.py` · `test_check_operate_records.py` · `test_check_release_attestation.py` for the accountability tools, plus `test_e2e_gates.py` which proves the
-core accountability gates compose on one realistic project (a clean task passes; each cheat trips exactly
-the gate that owns it).
-`selfcheck.py` keeps the `TYPES` prefix vocabulary in sync across `lint_spec.py`, `check_contracts.py`,
-`impact.py`, `spec_status.py`, `check_freshness.py`, and `check_task_record.py`, and against what the skills
-declare. All run in CI (`.github/workflows/plugin-check.yml`).
+Every check has a regression suite beside it in `tools/`: a fixture that must fire and a clean one that must not. `test_lint_spec.py` covers the linter and `check_contracts.py`; `test_check_task.py`, `test_gate_exec.py`, `test_project_state.py` and one `test_check_*.py` per code-facing checker cover the rest; `test_e2e_gates.py` shows the checkers composing on one realistic project, where a clean task passes and each cheat trips the check that owns it.
+
+`selfcheck.py` guards the plugin source itself. Among other things it keeps the ID-prefix vocabulary identical across `lint_spec.py`, `check_contracts.py`, `impact.py`, `spec_status.py` and `check_task.py`, the reference keywords and layer table identical between the linter and `impact.py`, and the profile names identical between the linter and `project_config.py`. `.github/workflows/plugin-check.yml` runs it with the regression suites on every push and pull request.

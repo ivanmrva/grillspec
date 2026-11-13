@@ -1,9 +1,9 @@
 ---
 name: derive-ml-architecture
 description: >-
-  Derive the ML/AI system design from the ML requirements — model serving, the evaluation harness,
-  the training/feedback or prompt/retrieval pipeline, drift and quality monitoring, guardrails,
-  and model/prompt versioning. Loads the shared derive engine.
+  Decide the ML/AI system design from the ML requirements — the model choice and serving path with
+  its fallback, and the evaluation gate before promotion; at the regulated profile also the pipeline,
+  monitoring, guardrails and model registry. Use when the product has an ML capability.
 ---
 
 <!-- grillspec-portable-resources -->
@@ -11,38 +11,54 @@ description: >-
 
 # derive-ml-architecture
 
-**Load `references/derive-engine.md` first and follow it.** This skill applies that method to **ML system architecture** — serving, evaluation, data/feedback pipelines, monitoring, and guardrails for an ML capability.
+**Load `references/derive-engine.md` first and follow it.** This skill applies that method to the **ML system architecture**: how a model is chosen, served, evaluated and kept safe for each ML capability.
 
-## Method
-1. choose the model approach per capability (a hosted model/API · fine-tune · prompt + retrieval · classical ML) on merit + the constraints
-2. design serving (sync/async/batch · latency/cost · scaling · the fallback path)
-3. design the eval harness (the offline eval-sets + the online/canary eval) as the promotion gate
-4. design the data/feedback pipeline (training/retraining, or the prompt/context/retrieval assembly) + monitoring & guardrails
+## Depth by profile
+The area applies only to a product with an ML capability. How much is written then follows the project's profile:
+
+| Profile | Mode | Written |
+|---|---|---|
+| `lite` | N/A | nothing here — the model choice, its fallback and the gate before promotion are a row in `arch/solution-strategy.md` |
+| `standard` | decision mode | `eval-harness.md`, `serving.md` |
+| `regulated` | full mode | those two plus `pipeline.md`, `monitoring.md`, `guardrails.md`, `model-registry.md` |
+
+Decisions live in the spec; the description lives in the artifact that enforces it — here the model gateway and the eval harness in code — and once code exists they are the source of truth for serving and pipeline detail. Decision mode therefore records only which model serves each capability, what happens when it fails, and the bar a model or prompt must clear before promotion; full mode also writes the surrounding design, because at `regulated` it is a deliverable auditors and other teams read.
+
+## Decision record
+`serving.md`, per `ML-` capability:
+- the model approach, chosen on merit and the constraints: a hosted model/API · a fine-tune · prompt + retrieval · classical ML;
+- the model and where it is hosted · sync, async or batch · the latency and cost budget;
+- the fallback path: what the user gets when the model times out, fails or is rejected by the gate;
+- for a generative or agentic capability, its input and output guardrails (injection, abuse, safety), in one line.
+
+`eval-harness.md`, keyed to the `ML-` capability and its eval ids:
+- the offline eval sets and the metric each measures;
+- the online or canary evaluation, where the capability has live traffic to evaluate on;
+- the gate before promotion: the bar a model or prompt version must pass, and what happens on a regression.
 
 ## Rules
-- **the data-egress boundary is the user's call, not a merit decision** — whether customer/PII data may leave to a **third-party / hosted model API** is a privacy/residency constraint the org holds (it can rule the hosted option out entirely); ratify it, never assume it when picking the model approach
-- **evals gate promotion like tests gate code** — no model or prompt ships without passing its eval bar; at build time this binds through the task manifest's **`ml` dimension** (the touched `ML-` capabilities), whose eval-harness evidence — measured against the stated offline+online bar — the done-gate and conformance review require like any `AC-`
-- **every model behind a contract + a fallback** — never a hard dependency on one model with no degraded path
-- **models and prompts are versioned, provenance-tracked artifacts** — rollback is always possible
-- for generative/agentic features, input **and** output guardrails (injection · abuse · safety) are mandatory
+- **The data-egress boundary is the organisation's call.** Whether customer or personal data may leave to a third-party or hosted model API is a privacy and residency constraint that can rule the hosted option out entirely. Take it from the requirements, or surface it as a ratify-point before choosing the model approach.
+- **Evals gate promotion the way tests gate code.** A model or prompt version ships only after passing its eval bar. At build time a task brief lists under `rules` each `ML-` capability its slice touches, and the eval harness, measured against the stated offline and online bar, is part of that slice's gate.
+- **Every model sits behind a contract and a fallback**, so no feature depends on one model with no degraded path.
+- **Models and prompts are versioned artifacts**, so a promotion can always be rolled back.
 
 ## Output
-Written under `solution/ml/`:
+Written under `solution/ml/`. The rows marked `full` are written only at `regulated`; in decision mode their content is not raised.
 
-| File | Captures | Format |
-|---|---|---|
-| `serving.md` | inference architecture per capability: model choice/host · sync/async/batch · latency/cost · scaling · fallback | typed fields |
-| `eval-harness.md` | how evals run: offline eval-sets · online/canary eval · the gate before promote (keyed to `ML-`/eval IDs) | typed fields |
-| `pipeline.md` | the training/retraining + feedback-data pipeline, or (for an LLM) the prompt/context/retrieval assembly + feature store | Mermaid + typed fields |
-| `monitoring.md` | model-quality & drift signals + their SLOs (the telemetry plumbing is the observability area's) | signal · SLO |
-| `guardrails.md` | input/output guardrails · prompt-injection/abuse defence · safety filters · escalation | control · mechanism |
-| `model-registry.md` | model/prompt versioning · provenance · rollback policy | typed fields |
-(+ ADRs → `adr/ADR-MLARCH-NNN.md`)
-*(DERIVED & regenerate-only — never hand-edited)*
-Consumes: the ML requirements + evals, the solution architecture, and the data architecture.
+| File | Mode | Captures | Format |
+|---|---|---|---|
+| `serving.md` | decision | the decision record above | typed fields per `ML-` capability |
+| `eval-harness.md` | decision | the decision record above | typed fields, keyed to `ML-`/eval ids |
+| `pipeline.md` | full | the training, retraining and feedback-data pipeline — or, for an LLM, the prompt, context and retrieval assembly — and the feature store | Mermaid + typed fields |
+| `monitoring.md` | full | model-quality and drift signals with their SLOs (the telemetry plumbing belongs to the observability area) | table: signal · SLO |
+| `guardrails.md` | full | input and output guardrails · prompt-injection and abuse defence · safety filters · escalation | table: control · mechanism |
+| `model-registry.md` | full | models and prompts as versioned, provenance-tracked artifacts · the rollback policy | typed fields |
+
+ADRs → `adr/ADR-MLARCH-NNN.md`
+Consumes: the ML requirements and evals · the solution architecture · the data architecture.
 
 ## Excludes
-training/inference/pipeline code (→ implementation) · the model-behaviour *targets* (→ the ML requirements) · telemetry plumbing (→ observability)
+training/inference/pipeline code (→ implementation) · the model-behaviour targets (→ the ML requirements) · telemetry plumbing (→ observability)
 
 ## Resources
 - `references/derive-engine.md`

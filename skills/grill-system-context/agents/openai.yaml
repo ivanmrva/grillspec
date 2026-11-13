@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill System Context"
-  short_description: "Nail the system boundary before the domain is modelled \u2014 the\u2026"
-  default_prompt: "Use $grill-system-context to nail the system boundary before the domain is modelled \u2014 the system as one black box, external actors and neighbor systems, the interfaces crossing\u2026"
+  short_description: "Draw the system boundary: the system as one black box, its\u2026"
+  default_prompt: "Use $grill-system-context to draw the system boundary: the system as one black box, its external actors and neighbor systems, the interfaces crossing the edge and the in/out\u2026"
 policy:
   allow_implicit_invocation: false

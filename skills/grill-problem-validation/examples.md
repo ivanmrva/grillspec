@@ -1,16 +1,23 @@
 # grill-problem-validation — worked example
 
-Pinning the problem behind a tool that reconciles Stripe payouts against accounting ledgers for Shopify sellers.
+Illustrative: it shows the shape of the output, not a list to fill. The product is a tool that reconciles Stripe payouts against accounting ledgers for Shopify sellers.
 
-> **Agent:** Who feels this most, and how often — is it the bookkeeper closing the month, or the founder spot-checking? *(I'd bet it's the bookkeeper, monthly, and it's a painkiller — a wrong close means a restated tax filing, not just annoyance.)*
-> **User:** The bookkeeper, every month-end. Today they export both CSVs and match by hand in Excel — takes a full day and still misses fees.
-> **Agent:** So the catalyst is the close deadline. What pulls them to a new way strongly enough to beat the habit of "Excel already works"?
-> **User:** Audit season — one mismatched payout last year cost a client a $4k penalty.
+> **Agent:** Who feels this most, and how often — the bookkeeper closing the month, or the founder spot-checking? *(I'd bet the bookkeeper, monthly, and that it is a painkiller: a wrong close means a restated tax filing.)*
+> **User:** The bookkeeper, every month-end. They export both CSVs and match by hand in Excel. It takes a full day and still misses fees.
+> **Agent:** So the catalyst is the close deadline. What pull is strong enough to beat the habit of "Excel already works"?
+> **User:** Audit season. One mismatched payout cost a client a $4k penalty.
 
-Recorded:
-- `problem.md` — who: SMB bookkeeper · frequency × intensity: monthly × high (painkiller) · current alternative: manual Excel CSV match (~1 day, misses processor fees) · why-now: audit-season penalty exposure · forces: push=$4k penalty + day lost / pull=auto-match / anxiety=trusting automation on tax data / habit="Excel works"
-- `opportunities.md` — OPP-1 unreconciled Stripe fees (evidence: client $4k penalty · reach: ~all sellers · severity: high); OPP-2 multi-currency payout drift (reach: cross-border subset · severity: med)
-- `bets.md` — BET-D1 bookkeepers will trust auto-categorized matches (desirability · criticality 5 · uncertainty 4 · status: unvalidated); BET-F1 Stripe + Xero APIs expose fee-level line items (feasibility · crit 4 · unc 2 · status: supported)
-- `assumptions.md` — A1 · "bookkeepers distrust auto-match on tax-relevant data" · desirability · crit 5 · unc 4 · status: open · evidence: 1 user quote (2026-06-10) · test-plan: 5 concierge reconciliations, measure % overrides
-- `value-prop-fit.md` — job "close the books, audit-clean" / pain "fees slip through" ↔ reliever "fee-level auto-match"; gain "close in <1h" ↔ creator "one-click reconcile"
-- `pmf.md` — cluster: (1) ≥40% "very disappointed" survey · (2) month-2 retention curve flattens ≥30% · (3) qual: bookkeeper stops keeping the Excel backup — each with cheapest test noted
+## Output — `problem.md`
+- who hurts: SMB bookkeeper
+- frequency × intensity: monthly × high (painkiller)
+- current alternative: manual CSV match in Excel (about a day, misses processor fees)
+- why-now: audit-season penalty exposure
+- forces: push = $4k penalty + a day lost · pull = auto-match · anxiety = trusting automation on tax data · habit = "Excel works"
+
+## Output — `bets.md`
+| bet | type | criticality | uncertainty | status | test |
+|---|---|---|---|---|---|
+| Bookkeepers will trust auto-categorised matches | desirability | Critical | High | Untested | 5 concierge reconciliations; pass if under 20% of matches are overridden |
+| Stripe and Xero APIs expose fee-level line items | feasibility | High | Low | Validated | read one live payout through both APIs |
+
+The team has no discovery work under way, so the interview stops at these two files. Once interviews start, `assumptions.md` records each quote or datapoint against the bet it moves, and `pmf.md` names the signal cluster.

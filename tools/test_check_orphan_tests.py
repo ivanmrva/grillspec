@@ -136,7 +136,7 @@ expect("src-not-swept", run({**SPEC, "src/util/probe.py":
        forbid=["ERROR", "unrecognized"])
 
 # -- shared GRILLSPEC_TEST_ROOTS lever: a monorepo rooted under code/ is invisible to the tier_contract walk
-# -- (root/<d> is top-level only) until the env names 'code' - the same lever check_task_record honors ------
+# -- (root/<d> is top-level only) until the env names 'code' - the same lever check_task honors ------
 CODE_ORPHAN = {**SPEC, "code/apps/pay/src/pay.test.js": "it('charges', () => { expect(pay(1)).toBe(true) })\n"}
 # without the env, root/code is never entered -> the orphan under it is invisible (false clean is the bug)
 expect("code-rooted-invisible-without-env", run(CODE_ORPHAN),

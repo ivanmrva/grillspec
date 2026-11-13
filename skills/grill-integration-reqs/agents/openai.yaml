@@ -1,6 +1,6 @@
 interface:
   display_name: "Grill Integration Reqs"
-  short_description: "Per external boundary, specify each exchange \u2014 direction\u2026"
-  default_prompt: "Use $grill-integration-reqs to per external boundary, specify each exchange \u2014 direction, interaction style, volumes, latency, SLA, delivery guarantee with\u2026"
+  short_description: "Specify what each external seam must guarantee: direction\u2026"
+  default_prompt: "Use $grill-integration-reqs to specify what each external seam must guarantee: direction, interaction style, volumes, SLA, delivery guarantee with idempotency, ordering and\u2026"
 policy:
   allow_implicit_invocation: false

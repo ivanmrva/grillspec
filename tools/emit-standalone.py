@@ -8,7 +8,7 @@ Code and Codex plugin manifests.
 Usage:
   python3 tools/emit-standalone.py grill-ddd                 -> dist/standalone/grill-ddd/
   python3 tools/emit-standalone.py --public grill-ddd        -> dist/public/grill-ddd/
-  python3 tools/emit-standalone.py --public --name post3 implement-task conformance-review run-tests
+  python3 tools/emit-standalone.py --public --name post3 implement-task conformance-review
 """
 import sys, json, shutil, argparse, re
 from pathlib import Path
@@ -22,9 +22,9 @@ SHARED_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/")
 TOOL_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/tools/")
 DOC_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/docs/")
 PORTABLE_TOOLS = (
-    "check_freshness.py", "check_orphan_tests.py", "check_task_record.py", "gate_exec.py",
-    "guard_derived.py", "impact.py", "install_exec_gates.py", "lint_spec.py",
-    "plugin_feedback.py", "tier_contract.py",
+    "check_contracts.py", "check_orphan_tests.py", "check_task.py", "gate_exec.py",
+    "impact.py", "install_exec_gates.py", "lint_spec.py",
+    "plugin_feedback.py", "project_config.py", "tier_contract.py",
 )
 MIT_LICENSE = (
     "MIT License\n\nCopyright (c) 2026 Ivan Mrva\n\n"

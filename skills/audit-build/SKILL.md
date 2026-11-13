@@ -1,7 +1,7 @@
 ---
 name: audit-build
 description: >-
-  The whole-build audit — the independent, release-time attestation that the BUILD followed the spec's declared process: the evidence ledger really ran, cross-task emergent properties hold, the operate ledger reconciles. Distrusts per-task self-reports by design; report-only, no fix mode — fixes route to the task machinery, then a fresh re-audit. Loads the shared exec engine.
+  Check the whole build against the spec before a release, from the tree: done-claims hold, every acceptance criterion still has a real test, nothing faked or skipped ships. Short at the lite and standard profiles, exhaustive at regulated. Report-only. Loads the shared exec engine.
 ---
 
 <!-- grillspec-portable-resources -->
@@ -9,257 +9,126 @@ description: >-
 
 # audit-build
 
-**Load `references/exec-engine.md` first and follow it.** This skill is the
-**whole-build audit**: the independent, retrospective attestation that the built system was produced
-**according to the spec's declared process** — the **judgment layer above the per-task gates**. It is to the
-built system what the whole-spec audit is to the spec: a cross-cutting verification, run whole and
-independent of any single task.
+**Load `references/exec-engine.md` first and follow it.** This skill is the whole-build audit: before a release, it checks that what was built is what the spec asked for and that it was built honestly. Its evidence is the working tree — the task briefs, the code, the tests, the configuration — read by the tools and by you. A task marked `done` is a claim to check, not a fact to accept.
 
-**It is an external audit, not inline QA.** The per-task conformance review is self-certifying — its own
-`VERDICT: PASS` becomes the task's `conformance` gate row. This is the opposite posture: **periodic,
-whole-system, and adversarial — it distrusts the accumulated self-reports** and re-checks that they
-collectively hold and were honestly produced. The skill that certifies a build must not also be the one that
-audits it; that separation is the reason this exists.
+It looks at what no single task can show. A per-task check sees one slice at the moment it lands; this audit sees the whole tree as it is now, including what later tasks did to earlier ones. It does not re-argue one task's design. It is report-only: an audit that edits a test or a brief to satisfy itself has stopped being an audit.
 
-## What this skill uniquely does
-The per-task conformance review already covers **code ↔ spec** for each task. This does **not** repeat that
-per-task judgment — it does the three things that do not exist at any single task and that a self-certifying
-review structurally cannot make:
-- **1 · The evidence ledger itself.** Did every gate genuinely RUN and pass, or does a record merely *say*
-  so? Is every recorded `VERDICT: PASS` physically present and backed? Were any Verification Records
-  rubber-stamped? A per-task review *produces* these records, so it cannot audit its own output — this can.
-- **2 · Cross-task / emergent properties.** Defects that live *between* tasks and are invisible to a per-task
-  review even at full scope: an `AC-` whose covering test a *later* task weakened or deleted; the actual
-  test-suite **distribution shape** vs the `pyramid`/`integration-weighted` shape the strategy declared;
-  aggregate coverage/mutation across the whole suite (not per-slice); a fitness rule that was green per task
-  but is now bypassed system-wide.
-- **3 · Operate-ledger reconciliation.** Do the append-only `12-operate/` records correspond to the spec
-  they enacted (a deploy record → the release's `T-`s and the ratified promotion path; a migration record →
-  its `DATA-` change; an incident/diagnosis → the `NFR-`/`SEC-` it touched)? Nothing else checks this.
+## How much to run
+Read the settings first: `python3 scripts/project_config.py`. With no settings file the tools assume `regulated` and `pr`.
 
-Everything of the form "does this module match its `role:`", "is this `SEC-` enforced", "is this NFR
-evidenced" is the per-task conformance review's concern; here it appears only as an independent second look
-(Phase 3), never as this skill's primary work.
-
-## The two boundaries this skill lives between
-- **Below it — the per-task gates.** The failing-test gate, the Verification Record checker, the fitness
-  functions, the recorded per-task conformance verdict. **Trust each task's verdict as produced — then audit
-  that they COLLECTIVELY hold and were honestly produced.** Do not re-litigate a single task's design; find
-  where the *set* of them drifted, self-certified hollowly, or left an emergent gap. Your job starts where
-  the per-task gate's per-task soundness ends.
-- **Beside it — the whole-spec audit.** That judges the SPEC (is it consistent, complete, buildable); this
-  judges the BUILD against that spec. **A clean whole-spec audit is a precondition** — you cannot attest a
-  build against a spec that is itself broken; if the spec carries open `blocking` findings, say so and stop
-  at `NOT-ATTESTABLE (spec not clean)`. **The precondition needs EVIDENCE, not a memory:** it is met only by
-  a `spec-audit-report.md` whose `commit:` stamp still covers the current spec tree and whose blocking count
-  is zero. The report is transient (git-ignored; the remediation loop deletes it after a remediated pass), so
-  **absent or stale is the normal case, not an error** — resolve it by running the whole-spec audit yourself
-  first: `consistency` depth suffices to back an `attest` pass; the release-bar `--deep` pass requires a
-  fresh **full**-depth spec audit (readiness can only be declared at full). Record in the attestation header
-  which spec-audit depth + commit backed the precondition.
-
-## Modes (depth)
-| `--depth` | Runs | Max verdict it may issue |
+| Profile | Depth for a release | What that is |
 |---|---|---|
-| `attest` (default) | Phases 0–2 + 4 (the ledger/emergent/operate audit + a SAMPLED independent second-pass) — interim confidence between releases | `ATTESTED` / `NOT-ATTESTED` |
-| `deep` | adds Phase 3 at FULL scope (an independent code-vs-spec re-judgment of every task) | `ATTESTED` / `NOT-ATTESTED` |
+| `lite` · `standard` | `attest` (the default) | a short check one person can run in one sitting: the mechanical baseline, then sampled reading, by this session alone |
+| `regulated` | `deep` | the exhaustive attestation: every done task read against its criteria, three independent read-only auditors, the operations records reconciled |
 
-`--scope release` audits the tasks in the release/wave under attestation + everything they touch; `--scope all`
-audits the whole built system.
+| `--depth` | Runs |
+|---|---|
+| `attest` | Phases 0–2 and 4, with the reading in Phases 1–2 done on a risk-weighted sample |
+| `deep` | the same over every task, plus Phase 3 (an independent reading of all code against the criteria) |
 
-**The release bar is a `--deep` run.** `attest` (sampled) is for cheap interim confidence; it is NOT the
-ship gate — a sampled second-pass can miss the very task that overfit its visible tests (the risk is highest
-in solo, non-orchestrated builds where no `AC-` was held out from the implementer). Before a release, run
-`--deep`; the report records which depth it was so a release gate can require the full pass. The header
-carries a machine-readable **`depth: deep`** or **`depth: attest (sampled N of M)`** marker for exactly that,
-plus a **`commit: <HEAD sha>`** stamp of the tree you audited so a stale attestation (HEAD moved since) can be
-rejected — record the current HEAD when you write the report.
+`--scope release` covers the tasks finished since the last release and everything they touch; `--scope all` covers the whole built system. An `attest` run at `regulated` is useful between releases, but it is not that profile's release bar; say so in the report.
+
+**The spec must be fit to audit against.** At every profile, `python3 scripts/lint_spec.py` reports no ERROR. At `regulated`, the release also needs a full-depth `spec-audit-report.md` whose `commit:` stamp is the current HEAD and whose blocking count is zero; that report is transient, so when it is absent or stale, run the spec audit first. If the spec is not clean, stop with `NOT-ATTESTABLE (spec not clean)` and say what blocks it.
 
 ## Ground rules
-- **Source-of-truth fence (from the engine).** Audit the CURRENT working tree only — the built code, the
-  test suite, the Verification Records, the `12-operate/` ledger. A missing artifact is a FINDING, never
-  something to reconstruct.
-- **Audit, don't mutate — and no `--fix`/`--loop` exists here, by design (see *The re-audit cycle*).**
-  Report-only. If asked to fix, route each fix to its owner (a hollow record → back
-  to that task's conformance review; a spec defect surfaced → the whole-spec audit; a real code gap → a
-  focused-change `T-`). Never edit a Verification Record to make it pass, never touch `src/`.
-- **Distrust by default.** A green record is a claim to verify, not a fact to accept. Where a claim can't be
-  grounded from the working tree, that IS the finding — `important: unverifiable-claim`.
-- **Severity on every finding:** `blocking` (the build was NOT done to process — a hollow gate, a lost `AC-`,
-  a fake that shipped) · `important` (a real drift that will bite) · `nit` · `suggestion`. The attestation
-  gates on `blocking` only.
-- **Verify before flagging.** Quote `file:line`, the `T-` id, or the record path. A finding you can't ground
-  is a guess — drop it.
+- Audit the working tree as it is (the engine's source-of-truth rule). A missing artifact is a finding, not something to reconstruct.
+- Edit nothing: no code, no test, no brief, nothing under `spec/`. Each finding names who fixes it (see *After the audit*).
+- Every finding carries a severity: `blocking` (the build was not done as claimed: a done-claim with nothing behind it, a criterion with no real test, a fake that ships) · `important` (a drift that will cause a defect) · `nit` · `suggestion`. The verdict gates on `blocking` alone.
+- Ground each finding before it enters the report: quote `file:line`, the task id or the criterion id. Where a claim cannot be checked from the tree, that is the finding: `important: unverifiable-claim`.
+- Say plainly what was sampled and what was not read. A sampled pass reported as a full one is the audit's own version of an unbacked done-claim.
 
-## The judgment phases fan out — parallel read-only auditors, divergent lenses
-Phases 1–3 are model judgment with variance: two independent reads of the same record disagree, one judge
-misses what another catches. The object here is **finite and enumerable** (the done `T-` records, the test
-tree, the ledger), so the recall remedy is **more independent judges within ONE pass** — never more passes
-(that is the whole-spec audit's economics, where the blind-spot space is unbounded; here enumeration
-dominates repeated sampling). Spawn **N=3 read-only auditors** (the `Explore` agent type — no Edit/Write;
-they return findings tables only, never touch the tree), each with a distinct lens over the same scope:
-- **evidence-backing** — does every cited artifact exist, and does it actually back the claim on its row
-  (the `VERDICT: PASS` on disk, the test at the evidence path, the number vs its bar)?
-- **test-bites** — would the covering test FAIL if the behavior broke? Assertion strength, interaction-only
-  smells, mutation signal on the changed logic — the rubber-stamp detector.
-- **cross-task drift** — did a LATER task weaken an EARLIER task's guarantee (a loosened assertion, a
-  rescoped test, a bypassed fitness rule) that each per-task review, seeing only its own slice, missed?
-Union the tables, dedup, then **ground every finding yourself** before it enters the report
-(verify-before-flagging above). In `deep` each lens covers the full scope; in `attest` each lens covers the
-risk-weighted sample. The fan-out buys back the judgment variance a single reader leaves on the table — at
-one pass's cost.
+## Phase 0 — mechanical baseline, over the whole tree
+Run from the project root and record the raw counts. Every ERROR is `blocking`. Every WARN is an `important` candidate you confirm or dismiss with a reason. These tools decide what they check; run them, take the output as given, and spend your effort on the reading below.
 
-## Phase 0 — mechanical aggregate baseline (run across ALL tasks, don't duplicate)
-Run the deterministic tools at aggregate scope and record raw counts:
-`python3 scripts/check_task_record.py` per `T-` in scope (every gate row present +
-PASS/`N/A`, evidence paths real, an independent `VERDICT: PASS` on disk) · `…/check_mock_budget.py` and
-`…/check_test_tiers.py --require --require-all-tiers` (the tier contract from `test/levels.md` vs the actual
-test tree — over-mocking, wrong-tier placement, a declared tier with no suite; **`--require` makes a test
-tree with NO tier contract a blocking finding** — the strategy was never derived, so silence would be false
-assurance — and **`--require-all-tiers`** makes a declared-but-unbuilt tier blocking too, which is correct
-at release: the build is complete, so every tier must exist. The per-commit gate omits `--require-all-tiers`
-because mid-build a tier legitimately hasn't landed yet). These gates classify tests by directory
-(`tests/<tier>/`) OR filename (`foo.int.test.ts`; a bare `foo.test.ts` = unit) and read a real human-authored
-`levels.md` (bold/parenthetical tier names, a scope comment above the table), so a **co-located** source-root
-layout is handled. For a monorepo rooted under a wrapper directory none of the defaults name (`code/apps/*/src/…`,
-`services/*/…`), set **`GRILLSPEC_TEST_ROOTS`** (comma-separated) once — it folds those roots into the default
-set for every classifier-backed gate AND `check_task_record`'s colocated-evidence scan, so the tools aren't
-silently blind to the whole tree (a per-invocation `--tests` remains the ad-hoc override). If the project wired its OWN
-equivalent tier/mock/e2e fitness against the same contract (e.g. a native pnpm check), prefer consuming that
-gate's result over re-running the reference tools · `…/check_e2e_target.py` (e2e tests hit the named
-deployed env, not a local stack) · `…/check_no_skips.py --strict` (no skipped/xfail'd/`.only`-focused test,
-no CI test step that swallows a red — at release every declared deferral has expired, so WARNs are promoted)
-· `…/check_no_fakes.py --strict` / `…/check_deploy_real.py --strict` /
-`…/check_migration_real.py --strict` over the whole tree (same release logic as no-skips: the per-commit
-WARN heuristics — a fallback guard, an unrecognized deploy command, a trivial migration body — are
-promoted at release, where every "review later" has expired) · `…/check_orphan_tests.py` (every behavioral test traces
-to a live spec driver — an orphan test or dangling `@covers` is drift: behavior the spec never absorbed,
-typically an ad-hoc mid-build instruction that skipped the spec) · `…/check_config_drift.py` (the env vars
-the code reads ⊆ the declared `environments.md` matrix — config drift is cross-task by nature: keys
-accumulate across tasks, and the per-commit gate only ever saw one diff at a time) ·
-`…/check_operate_records.py` (Phase 4). Every ERROR →
-`blocking`; every WARN → an `important` candidate to confirm. **Don't re-do what these decide mechanically —
-run them, trust the output, spend your effort on the meaning below.**
+| Command (under `python3 scripts/`) | What it decides |
+|---|---|
+| `check_task.py spec` | the status of every task, and whether each `done` claim holds: a `@covers` test for every criterion in the brief, a `@state:` test for every named UI state, no unresolved gap, `review \| PASS` on a `critical` task, the design note a design-first task names present; a dependency not marked done is shown as a note |
+| `check_task.py spec --trace` | the criterion → task → test-file matrix, for Phase 1 |
+| `check_no_fakes.py --strict` | no test double or mocking-library import in the production tree |
+| `check_no_skips.py --strict` | no skipped, expected-to-fail or focused test, and no CI test step that swallows a failure |
+| `check_orphan_tests.py` | every test file carries a spec driver tag, and every `@covers` id exists in the spec |
+| `check_deploy_real.py --strict` · `check_migration_real.py --strict` | the deploy pipeline really deploys; each migration really migrates |
+| `check_config_drift.py` | every environment variable the code reads is declared in `infra-ops/environments.md` |
+| `check_mock_budget.py` · `check_e2e_target.py` | no test mocks beyond its tier's ceiling; no e2e test points at a local stack |
+| `check_test_tiers.py --require --require-all-tiers` | every tier the contract declares has a suite; prints the per-tier file counts |
 
-## Phase 1 — ledger integrity (was the evidence real?)
-The predicate here is "did the process actually happen", which no per-task self-report can answer about
-itself. Walk each:
-- **Backed, not asserted.** For a sample (in `deep`, all) of done `T-`: does the `conformance` gate row's
-  cited `VERDICT: PASS` physically exist under `spec/10-delivery/verification/`, and does the record's
-  evidence actually back it — the `@covers AC-`-tagged test exists and passes, the NFR row cites a
-  *measurement* not a restated target, the `deploy` row's evidence is a real deployed-env run? A row that
-  says PASS with evidence that isn't there is `blocking` — a rubber-stamp.
-- **No silent scope reduction across the set.** A gate row quietly dropped, an `AC-` present in the task
-  package but in no record, a `deploy`/`mutation` row uniformly `N/A` across many tasks with no stated
-  reason — a pattern a per-task checker can't see because it only sees one record.
-- **Gate freshness.** Run `…/check_freshness.py` — a task whose upstream spec drifted after its verdict was
-  recorded has a *stale* PASS; route to re-run its conformance review.
-- **The Tier-B release verdict exists and is backed.** A release in scope has a persisted
-  `verification/test-run.md` whose per-NFR/SLO rows each cite a *measured* value against the bar
-  `test/nfr-evidence.md` states — **and, where the build ships an `ML-` capability, per-`ML-` rows citing a
-  measured eval-harness result against its stated bar** (evals gate ML the way tests gate code; a per-task
-  eval pass does not prove the aggregate model behavior at release) — a missing Tier-B verdict, or one whose
-  rows restate targets instead of measurements, is `blocking` (the release gate that never ran).
-- **The governance surface is intact at HEAD.** The gates can be evaded by *deletion*, which no content
-  tripwire sees (`check_no_skips.py` catches a swallowed red, not a removed CI test step): confirm the CI
-  workflows still carry the gate steps the conventions defined (build · full tests · conformance · the
-  tripwires), the committed hook configs (`.claude/settings.json` / `.codex/hooks.json`) still wire the
-  exec-gate, and `.grillspec/tools/` is still vendored and committed. A gate step that vanished between
-  merges is the infrastructure form of the rubber-stamp — `blocking`.
+`--strict` promotes each tool's review-later warnings to errors, which is right at a release: nothing deferred should still be waiting. `--require-all-tiers` makes a declared tier with no suite an error, for the same reason.
 
-## Phase 2 — cross-task emergent properties (defects that live BETWEEN tasks)
-- **Coverage survives, not just existed.** An `AC-` a task recorded as covered whose test a LATER task
-  weakened, deleted, or `skip`ped. Re-run the aggregate suite and confirm every `AC-` still has a *passing*
-  `@covers` test NOW — a per-task green at merge time does not prove it is green after the next merge.
-- **Present ≠ executed.** A test file the classifier sees but the runner never runs — a config-level
-  exclusion (jest `testPathIgnorePatterns`, pytest `--ignore`/`addopts`, a suite glob that misses a
-  directory) — counts for `@covers` while asserting nothing (the documented `check_no_skips.py` limitation;
-  this is where it closes at aggregate). Where the runner emits an executed-file report (JUnit XML, a
-  coverage file list), reconcile it against the classified test tree: a present-but-never-executed test
-  source is a `blocking` laundered green. Without a report, read the runner config's exclusions yourself and
-  ground each one — an exclusion nobody can justify is the finding.
-- **Suite shape vs declared distribution.** Compute the actual tier counts and compare to the
-  `pyramid`/`integration-weighted` shape `test/levels.md` declared. An e2e-top-heavy suite, or a "pyramid"
-  that is 90% e2e, is a `blocking` process divergence even if every test is green.
-- **Aggregate bars.** Whole-suite coverage/mutation against the ratified bars (a per-slice pass can still
-  leave a system-level hole); the tier-contract ceilings holding across the WHOLE test tree, not just one
-  slice.
-- **Fitness bypass.** A fitness rule green per task but disabled/allow-listed system-wide, or an
-  architecture rule the accumulated diffs eroded.
-- **The waiver files are the system-wide bypass channel — audit them as an object.** Every
-  `.grillspec/*-allow.txt` (`no-skips` · `no-fakes` · `no-orphans` · `mock-budget` · `e2e-target` ·
-  `deploy-real` · `migration-real`) silences its tripwire **even under `--strict`**, and the per-task
-  conformance review only sees the entries present at its own merge — an entry a LATER task appended to get
-  past a gate is exactly the cross-task drift this phase hunts. Walk every entry: each needs a live,
-  still-true reason; an entry whose reason expired, that can't be grounded, or whose addition coincides with
-  a task that would otherwise have gone red is a `blocking` bypass. A waiver file that *grew* across the
-  wave is the trend signature to explain, entry by entry.
-- **Dimension blindness.** A whole requirement class quietly dropped: a manifest dimension (`ux`/`a11y`/
-  `obs`/`security` incl. `ENTL-`/`OBL-`/`ml`/`data` retention) whose gate rows read `N/A` **pervasively across
-  tasks that plainly touch that surface** (UI tasks all `N/A — headless`, an instrumented product with every
-  `obs` row `N/A`) — the signature of an obligation being waved through rather than genuinely inapplicable.
-  Sample the N/As against the code the tasks shipped and flag each false one; one false `N/A` is a task
-  defect, a pattern of them is a `blocking` process divergence.
+The last two rows read the tier contract in `spec/09-solution/test/levels.md`, and `check_config_drift.py` reads the environment matrix. Both files exist at `standard` and above. At `lite` those four tools have nothing to read and exit cleanly, so leave out `--require` (it fails a project that has tests but no tier contract) and rely on the project's own gate for the test bars.
 
-## Phase 3 — independent second-pass judgment  *(--depth deep only — full re-judgment)*
-The semantic checks that are model-judgment even for a per-task review — mock placement vs each tier's
-purpose, right-tier logic, real-path-where-required, interaction-only assertions, semantic conventions
-adherence (`coding-standards`: error handling, ubiquitous-language naming, prescribed patterns). This
-re-runs the code-vs-spec conformance review **independently and adversarially over the whole build** —
-defense in depth against a weak or skipped per-task judgment. In `attest` mode this is SAMPLED (the risky
-slice — new seams, the tasks with the thinnest records, anything a Phase-0 tool warned on); `deep` runs it
-over every task. Sampling is a stated limit, never a silent one — record what was sampled and what was
-skipped.
+If a tool is missing from this install (a standalone copy of the skill carries only some of them), list it as not run; do not approximate its result by hand.
 
-## Phase 4 — operate-ledger reconciliation
-For each `12-operate/` record in scope, confirm it corresponds to the spec it enacted (it is an append-only
-log of reality, so this is *reconciliation*, not re-derivation — never rewrite a record to match the spec):
-- a `deploy-<env>-<version>.md` names real `T-`s in the release and an env on the ratified promotion path
-  (`infra-ops/topology.md`); a `migration-*.md` cites the `DATA-` change it enacted; an
-  `incident-<id>.md`/`diagnosis-<id>.md` references the `NFR-`/`SEC-`/`SLO-` it touched **and carries a
-  learnings row whose gap/assumption actually landed in the spec** (the propagation promise, audited — an
-  incident whose postmortem says "route to discovery" with nothing routed is an unclosed loop); a first prod
-  promotion has its `production-readiness.md` with a go/no-go verdict and *verified* (rehearsed) evidence
-  per item; the deploy records' change-failed/recovery-time fields roll up against the
-  `infra-ops/delivery-metrics.md` targets.
-- **a record that references a spec ID that doesn't resolve**, or **a release whose deploy record is
-  missing entirely**, is `important` (a gap in the operational trail); a record that *contradicts* the spec
-  it claims to enact (deployed to an env not on the promotion path) is `blocking`.
+Then run the project's own gate, whole, with the command its conventions name (the root `AGENTS.md` states it). The gate carries what these tools do not: format, lint, types, build, the test suites actually passing, the coverage and mutation bars, and the architecture fitness functions. Where the project has ported one of the checks above into its gate, use the gate's result for it.
 
-## The re-audit cycle (fixes never happen here)
-This skill must never gain a `--fix`/`--loop`: **the attestor cannot fix what it attests** — editing a
-record or a test to satisfy the audit is the exact fraud Phase 1 hunts — build fixes run through the
-engineering workflow (a `needs-rework`/focused-change `T-` → implement → run-tests → conformance-review →
-CI → merge). The cycle is therefore:
-**`NOT-ATTESTED` + routed findings → the owning machinery lands the rework waves → a FRESH audit.** The
-`commit:` stamp plus the release gate's `--require-fresh` already invalidate an attestation the moment HEAD
-moves, so every fix forces the re-audit mechanically. On a re-audit after a remediation wave, you may scope
-the **Phase 1** re-checks to the tasks touched since the last report (the ledger is enumerable — re-check
-what changed); **Phases 2 and 4 always run full** (emergent properties and the operate trail don't scope
-down). The `ATTESTED` that gates a release is always a **fresh, full `--deep`** pass — never a scoped
-re-round promoted to a verdict.
+Two settings decide what the tools can see. `check_no_fakes.py` and `check_config_drift.py` scan `src/` unless given `--src <dirs>`. A monorepo that keeps its code under a wrapper directory sets `GRILLSPEC_TEST_ROOTS` so the test-facing tools find its tests. When a tool reports nothing to scan in a project that plainly has code and tests, fix the roots before trusting a clean result.
+
+**Jobs that do not run on every push.** In `trunk` delivery, CI only deploys the default branch and smokes it; the full gate in CI, the integration suite, the security and dependency scan, the accessibility check, the visual baseline and the mutation run are dispatch-only. This audit is where they run once before a production release. Dispatch each job the project's conventions define and read its result. A job you cannot dispatch from this session is listed as not run, with the command the operator needs. In `pr` delivery these jobs ran on each pull request, so confirm they are green on the commit being released.
+
+## Phase 1 — do the done-claims hold?
+`check_task.py` proves that a tagged test exists for every criterion. It cannot tell whether that test would fail if the behaviour broke. Read for that. At `attest`, sample by risk: every `critical` task, the tasks with the thinnest tests, anything a Phase 0 tool warned about. At `deep`, read every done task.
+
+- **The test bites.** For each criterion, open the tests the trace lists and check that they assert the criterion's outcome through the public interface. A test that carries the tag but asserts nothing, asserts only that a collaborator was called, or checks a weaker condition than the criterion states is `blocking`: the criterion is unproven.
+- **The obligations in `rules` were built.** `check_task.py` tracks criteria and UI states, not the cross-cutting obligations a brief lists. For each one — an authorization rule, an entitlement limit, a retention trigger, a quality target, an emitted signal — find the test in the slice that proves it: the deny path, the over-limit path, the measured number. None found is `important`, and `blocking` when the obligation guards money, personal data or access.
+- **The tier was honest.** A done task whose change includes a schema or data migration, an authentication, authorization, erasure or billing path, a model seam or another one-way door, but whose brief says `feature` or `routine`, skipped the design note and the independent review. `important`; the fix is to raise the tier and run the review. You can see that a `critical` brief carries `review | PASS`; you cannot see who wrote it, so where the review matters most, read the code as the reviewer would.
+- **UI slices were classified as UI.** A brief with `ux: N/A` whose `touches` names screens or components escaped the state, accessibility and prototype checks. Compare a sample against the code the task shipped.
+
+## Phase 2 — what only the whole tree shows
+- **Coverage still holds.** A criterion covered when its task landed can lose its test to a later refactor. The gate run and the trace together show it: every criterion of a done task has a test that exists and passes now.
+- **Present is not executed.** A test file the tools see but the runner never runs counts for `@covers` while asserting nothing. Read the runner configuration for exclusions (ignored paths, a glob that misses a directory). Where the runner emits a list of executed files, compare it with the test tree. A test that is present and never executed is `blocking`.
+- **The bars are the ratified ones.** The coverage and mutation thresholds in the test-runner configuration equal the bars the spec records (the tier contract, or the solution strategy at `lite`). A threshold lowered in configuration is `blocking`.
+- **Suite shape.** Where the tier contract declares a shape, compare it with the per-tier counts from `check_test_tiers.py`. A suite that is mostly e2e under a declared pyramid is an `important` divergence even when every test passes.
+- **Waivers.** Every `.grillspec/*-allow.txt` entry and every inline `allow` comment silences a check even under `--strict`. Read each one: it needs a reason that is still true. An entry whose reason has expired, or that appeared with a task which would otherwise have failed, is a `blocking` bypass.
+- **Fitness functions and gates are intact.** A rule disabled or allow-listed for the whole project; a test step removed from the gate or the CI workflow; a hook configuration that stopped pointing at `.grillspec/tools/gate_exec.py`. Removal is the one change the content checks cannot see, so a removed or disabled check is `blocking` until it is restored and green.
+- **The deployed system matches.** The smoke check against the deployed environment is green on the commit being released, and the e2e suite ran against the environment the spec names, in this audit or in an operator run you can cite.
+
+## Phase 3 — independent reading of all code *(`--depth deep` only)*
+Read every done task's code against its criteria and the project's conventions, as a reviewer who did not write it: behaviour matches each criterion, module boundaries hold, tests sit in the right tier and mock only what that tier allows, errors and naming follow the conventions. Report where your reading disagrees with the task's done-claim.
+
+At `deep`, spread the reading in Phases 1–3 over three read-only auditors (the `Explore` agent type; they return findings tables and edit nothing), each with a different lens over the same scope, because two independent reads of one test disagree often enough to matter:
+
+| Lens | Asks |
+|---|---|
+| test strength | would this test fail if the behaviour broke? |
+| later damage | did a later task weaken an earlier task's guarantee: a loosened assertion, a narrowed test, a bypassed rule? |
+| obligations | is every rule a brief lists, and every criterion, visible in the code and proven by a test? |
+
+Union their tables, remove duplicates, and confirm each finding yourself before it enters the report. One pass with several readers is enough: the set of tasks is finite, so more readers help and more rounds do not. At `attest`, do the reading yourself.
+
+## Phase 4 — operations records
+`spec/12-operate/` holds dated records of what happened to the running system. For the release in scope (at `regulated`, for every record), read each against the spec it refers to:
+- a deploy record names tasks that exist and an environment on the recorded promotion path;
+- a migration record names the `DATA-` change it carried out;
+- an incident or diagnosis record names the requirement it touched, and the lesson it records has reached the spec area that owns it;
+- a first production release has its production-readiness record, with evidence that was exercised and a go or no-go.
+
+A record that points at an ID that does not exist, or a release with no deploy record, is `important`. A record that contradicts the spec (a deploy to an environment off the promotion path) is `blocking`. These records log what happened, so the fix is a new or corrected entry going forward, and the report says which.
+
+## After the audit
+Route each finding to its owner, then audit again:
+
+| Finding | Goes to |
+|---|---|
+| a criterion without a real test, a weakened test, a missing obligation test | the task: set its status back to `in-progress`, or a `routine` fix with a failing test first |
+| an under-tiered task | raise the tier in the brief and run the fresh-context conformance review |
+| the spec is wrong or silent | the spec area that owns the fact (the spec audit, or the conductor) |
+| a lowered bar, a removed gate, an unjustified waiver | restore it, then fix what it was hiding |
+
+A verdict covers the tree it was run on, which is why the report records the commit. After fixes land, run the audit again; on that run you may limit Phase 1 to the tasks that changed, while Phases 0 and 2 always cover the whole tree. A release verdict comes from a complete run at the profile's release depth.
 
 ## Output
-Write **`build-audit-report.md` at the PROJECT ROOT** (a sibling of `spec/`, like `spec-audit-report.md` —
-meta-commentary, not timeless project documentation, so it never goes inside the closed-world `spec/`).
-Print a summary to the session. The report contains:
+Write `build-audit-report.md` at the project root, beside `spec/`. It is a transient session report: git-ignored, and not written under `spec/`. Print a summary to the session.
 
 | Section | Contents |
 |---|---|
-| Attestation header | **BUILD ATTESTATION: ATTESTED / NOT-ATTESTED** (or `NOT-ATTESTABLE (spec not clean)` if the whole-spec audit has open blockers) + the release/wave scope + the blocking count + the **`depth: deep` / `depth: attest (sampled N of M)`** marker + a **`commit: <HEAD sha>`** stamp of the exact tree you audited (so a release gate can confirm the attestation still covers HEAD and reject a stale one) + a **`spec-audit: <depth> @ <commit>`** line naming the spec-audit pass that evidenced the spec-clean precondition |
-| Ledger findings | rubber-stamped records, unbacked `VERDICT`s, dropped gate rows, stale PASSes — each `T- · record path · claim · what's missing` |
-| Emergent findings | lost/weakened `AC-` coverage, suite-shape divergence, aggregate-bar misses, fitness bypasses — each grounded in the aggregate run |
-| Operate reconciliation | operate records that dangle or contradict the spec they enacted |
-| Independent second-pass | the sampled (or full) re-judgment deltas vs the recorded per-task verdicts — where an independent look disagrees |
-| Top fixes | must-fix-before-release items, each routed to its owner (re-run the task's conformance review · surface to the whole-spec audit · a new focused-change `T-`) |
+| Header | `BUILD ATTESTATION: ATTESTED` or `NOT-ATTESTED` (or `NOT-ATTESTABLE (spec not clean)`) · the blocking count · scope · `profile:` and `delivery:` · `depth: deep` or `depth: attest (read N of M tasks)` · `commit: <HEAD sha>` · what showed the spec clean |
+| Mechanical baseline | each Phase 0 tool and the gate: its counts, or "not run" with the reason |
+| Done-claims | unproven criteria, weak tests, missing obligation tests, under-tiered tasks — each with task · criterion · file |
+| Whole-tree findings | lost coverage, unexecuted tests, lowered bars, waivers, removed gates |
+| Dispatched jobs | each job, its result, or "not run" with the command |
+| Operations records | records that dangle or contradict the spec |
+| Top fixes | what must be fixed before the release, each with its owner |
 
-The `BUILD ATTESTATION:` verdict line in this report is the artifact an opt-in release gate
-(`check_release_attestation.py`) reads — so an `ATTESTED` here can be made a required check before a
-release ships, if the team chooses to enforce release gating.
-
-No code, no `spec/` edits, no record edits. **Never claim "attested" on a sampled slice as if it were
-full** — state the sample. A defect in THIS SYSTEM (a wrong check, an unsatisfiable rule) is routed via
-`scripts/plugin_feedback.py`, never into the audit report.
+A defect in this system itself (a check that is wrong, a rule that cannot be satisfied) goes to `scripts/plugin_feedback.py`, not into the audit report.
 
 ## Resources
 - `references/exec-engine.md`

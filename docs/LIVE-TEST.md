@@ -1,19 +1,14 @@
-# Live test - verifying the system runs as designed
+# Live test — checking that the system runs as designed
 
-Everything in this repo is verified statically (skill logic, the deterministic
-linters, the spec backbone). The one thing static checks cannot prove is whether
-a live agent actually *follows* the skills end to end - routes through the conductor,
-grills instead of rubber-stamping, respects the gates, and keys the autorun loop on
-the verdict. Run this 20-minute protocol in Claude Code and Codex to confirm both the
-behavior and each host's installed-package resolution.
+The repository is checked statically: the skill files, the tools and their regression suites. What a static check cannot show is whether a live agent follows the skills end to end. This 20-minute protocol shows that, in Claude Code and in Codex, and also confirms that each host resolves the installed package correctly.
 
-## Setup (throwaway repo)
+## Setup (a throwaway repository)
 
 ```bash
 mkdir /tmp/grillspec-livetest && cd /tmp/grillspec-livetest && git init -q
-# put a real, messy input doc in the repo root - e.g. a product brief, an
-# existing CONTEXT.md, or a few requirement notes. Real docs beat a clean prompt.
-cp ~/path/to/CONTEXT.md .
+# Put a real, messy input document in the repository root: a product brief or
+# a few requirement notes. A real document tests more than a clean prompt.
+cp ~/path/to/brief.md .
 ```
 
 Install the plugin in the host under test.
@@ -21,15 +16,10 @@ Install the plugin in the host under test.
 Claude Code (project scope, then reload):
 
 ```
-/plugin marketplace add ivanmrva/grillspec     # or your fork / local path
+/plugin marketplace add ivanmrva/grillspec     # or your fork, or a local path
 /plugin install grillspec@ivanmrva --scope project
 /reload-plugins
-```
-
-Confirm it loaded and see its real context cost:
-
-```
-/plugin details grillspec     # lists skills/agents/hooks + always-on token cost
+/plugin details grillspec                      # what it loaded, and its context cost
 ```
 
 Codex:
@@ -38,62 +28,46 @@ Codex:
 codex plugin marketplace add ivanmrva/grillspec
 ```
 
-Open `/plugins` in Codex CLI (or Settings > Plugins in the IDE), install Grill Spec from that
-marketplace, then start a new trusted session in the throwaway repo.
+Open `/plugins` in the Codex CLI (or Settings > Plugins in the IDE), install Grill Spec from that marketplace, then start a new trusted session in the throwaway repository.
 
-## Plugin-resolution checks (do these first - they prove the packaging)
+## Packaging checks (do these first)
 
-These are the things that only break once the system is a *cache-installed*
-plugin rather than a source checkout:
+These break only when the system runs as an installed plugin and not from a source checkout.
 
-1. **Engine loads.** Invoke a worker skill directly: `/grillspec:grill-ddd` in Claude Code or
-   `$grillspec:grill-ddd` in Codex.
-   It must read its shared engine. If it behaves like a bare profile with no
-   engine discipline (no three-bucket intake, no output-hygiene), an installed
-   shared-engine reference did not resolve. Inspect `/plugin details` and
-   `claude --debug` in Claude Code, or the installed skill/package details in Codex.
-2. **Tools run.** Ask the agent to lint the spec. It should execute
-   the installed `lint_spec.py` against the project's `spec/` and return
-   `N error(s), M warning(s)`. Claude resolves the plugin-root tool; Codex resolves
-   the script bundled with its installed skill. A "file not found" means the tool
-   path or working directory is wrong.
-3. **Spec governance is project-local.** The plugin installs no global hooks. The
-   walking-skeleton (`derive-tasks`, `T-001`) installs `spec_governance_hook.sh`
-   as the project's spec **git pre-commit hook**: `git commit` a broken `spec/`
-   file and the commit is blocked by `lint_spec.py`/`guard_derived.py` (override
-   with `--no-verify`). It runs only in that repo, never on other projects.
-4. **Both host adapters share one gate.** After entering the execution loop,
-   `.claude/settings.json` and `.codex/hooks.json` must both target
-   `.grillspec/tools/gate_exec.py`; neither host directory may contain a tools copy.
+1. **The engine loads.** Invoke a worker skill directly: `/grillspec:grill-ddd` in Claude Code, `$grillspec:grill-ddd` in Codex. It should read its shared engine before it starts. If it behaves like a bare skill with no interview method, a shared-engine reference did not resolve; inspect `/plugin details` and `claude --debug` in Claude Code, or the installed package in Codex.
+2. **The tools run.** Ask the agent to lint the spec. It should run the installed `lint_spec.py` against the project's `spec/` and report `N error(s), M warning(s)`. "File not found" means the tool path or the working directory is wrong.
+3. **The settings are written once.** After the first conductor session, `.grillspec/project.json` exists and holds a `profile` and a `delivery` value.
+4. **Hooks are project-local.** The plugin installs no global hooks. Once the walking-skeleton task has run, `git commit` of a broken `spec/` file is blocked by the pre-commit hook, and no other repository is affected.
+5. **Both hosts share one edit hook.** After the first build session, `.claude/settings.json` and `.codex/hooks.json` both point at `.grillspec/tools/gate_exec.py`, and neither host folder holds a copy of the tools.
 
-## The five deviation signals (the actual behavioural test)
+## Behaviour checks
 
-Start the system the way a user would - `/grillspec:grill-spec-conductor` in Claude Code,
-`$grillspec:grill-spec-conductor` in Codex, or just describe the feature and let it
-engage - and watch for where the live agent *diverges* from the design. Each signal
-maps to the skill that needs tightening.
+Start the way a user would — invoke the conductor, or describe the feature and let it engage — and watch where the live agent departs from the design. Each row names the file to tighten when it does.
 
-| # | Watch for | Pass | Fail -> fix |
-|---|-----------|------|-------------|
-| 1 | **Routing.** Does it orchestrate through the conductor and the staged pipeline, or free-style an answer? | Conductor drives; areas are visited in dependency order | Tighten the conductor's routing/entry instructions |
-| 2 | **Grilling, not filing.** Given the input doc, does it sort into settled / needs-clarification / contradiction and *push back*, or accept confident prose as fact? | Open questions and contradictions are surfaced | Strengthen the engine's Ingestion section + the area profile |
-| 3 | **ID normalization.** Does a foreign id (a "compliance NFR", a `REQ-` constraint) get re-prefixed to its owning area / a decision, or pass through? | `NFR-CMP-*` -> `OBL-*`, `REQ-*` -> `ADR-*` | Reinforce the ID-normalization rule in the engine |
-| 4 | **Gating.** Does derivation wait for the architecture-readiness gate, or derive against an inconsistent spec? | It refuses to derive until requirements are consistent | Tighten the gate check in derive-engine + the conductor |
-| 5 | **Autorun verdict.** In AFK/autorun, does the loop key on the `VERDICT:` line from run-tests, or declare done on its own? | Loop advances only on `VERDICT: PASS` | Fix the verdict contract in run-tests / autorun |
+| # | Watch for | Pass | If it fails, look at |
+|---|---|---|---|
+| 1 | Does it work through the conductor? | the conductor drives; areas come in dependency order | the conductor's session-start section |
+| 2 | Does it settle the two settings? | it asks profile and delivery once, recommends the smallest profile with a reason, and writes them | the conductor's first-session section |
+| 3 | Does it question the input document? | open questions and contradictions are raised; confident prose is not taken as fact | the grill engine's ingestion section and the area skill |
+| 4 | Does it normalise foreign IDs? | a "compliance NFR" becomes an `OBL-`, a `REQ-` constraint becomes a decision | the grill engine's ingestion section |
+| 5 | Does it stay lean? | no optional area is offered unasked; at `standard` the solution areas are short decision records with no schema or OpenAPI file | the derive engine and the area skill |
+| 6 | Does it wait for readiness? | it recommends finishing inconsistent requirements before deriving the solution, and says what unblocks it | the conductor's readiness section |
+| 7 | Does it build test-first? | each behaviour has a failing test before its code, tagged `@covers` | the exec engine and `implement-task` |
+| 8 | Does the edit hook hold? | asking it to skip a failing test is denied at the edit; the test stays red or the task is marked blocked | `install_exec_gates.py` wiring; the exec engine |
+| 9 | Is done read from the tree? | a task is marked done only after the project's gate is green and `check_task.py --task` passes | the exec engine's Done section |
 
-## Output-hygiene spot check
+## Output check
 
-Open the generated `spec/` tree. It must read as project documentation: no skill
-names (`grill-*`, the conductor), no tool names, no "derived by ..." narration.
-A leak means the global output-discipline rule in the engines is being ignored -
-reinforce it in the offending area profile.
+Open the generated `spec/` tree. It should read as the project's own documentation:
+
+- no skill or tool names, and no account of how a file was produced;
+- no dates or change notes ("previously", "this round");
+- tables with short cells, and prose where reasons matter.
+
+`lint_spec.py` flags the first two mechanically. A leak points at the house rules or at the area skill that wrote the file.
 
 ## What a clean run looks like
 
-Conductor routes; the input doc is grilled (real open questions raised, foreign
-ids normalized, no fabricated contradictions); derivation waits for the gate;
-`lint_spec.py` returns 0 errors on the produced slice; the autorun loop advances
-only on `VERDICT: PASS`; and `spec/` contains no trace of the machinery. Where it
-deviates, the table above says which skill to edit - then re-run
-`python3 plugin/tools/selfcheck.py plugin`, bump both host manifest versions, rebuild,
-and reinstall in both hosts.
+The conductor routes and settles the two settings. The input document is questioned: real open questions, foreign IDs normalised, no invented contradictions. The spec stays at the size its profile calls for. `lint_spec.py` reports no errors on what was produced. Tasks are built test-first, and each is marked done only when the tree backs it. `spec/` shows no trace of the machinery.
+
+Where the run departs from this, the table above says which file to edit. Then run `python3 plugin/tools/selfcheck.py plugin`, raise the version in both host manifests, rebuild, and reinstall in both hosts.

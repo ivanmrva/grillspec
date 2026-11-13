@@ -1,9 +1,7 @@
 ---
 name: derive-impl-design
 description: >-
-  Low-level design of the modules a hard slice touches — algorithm, error handling, concurrency —
-  produced just-in-time before that slice is coded (design, not code; the architecture already
-  fixed roles and seam interfaces). Loads the shared derive engine.
+  Write the short design note for a critical or genuinely complex slice, just before it is coded — the mechanism, concurrency, failure handling and the risk it contains, behind the seams the architecture already fixed. Design, not code. Loads the shared derive engine.
 ---
 
 <!-- grillspec-portable-resources -->
@@ -11,34 +9,47 @@ description: >-
 
 # derive-impl-design
 
-**Load `references/derive-engine.md` first and follow it.** This skill applies that method to **per-slice module internals** — the low-level design of the modules a slice touches, produced just-in-time before coding a hard slice. It does **not** re-decide structure: the module's `role:`, dependency direction, and **seam interface are already fixed in the architecture**; this designs behind that interface.
+**Load `references/derive-engine.md` first and follow it.** This skill applies that method to the internals of one slice: a short design note, written just in time, that settles how the hard part works before any code depends on the answer.
 
-## Method  (for the modules THIS slice touches — not every module)
-1. take the module's `role:`, dependency direction, and **seam interface** as given (from the architecture)
-2. design its **core algorithm / sequence-level mechanism** + **concurrency model** (async · locking · shared-state · idempotency/reentrancy · cancellation · timeout/deadline · partial-failure atomicity)
-3. design its **error handling** — taxonomy + which are retryable; mark each error `designed-out | masked | propagated` with rationale (designed-out = removed via a default / idempotent no-op / masked at the boundary so it can't arise)
-4. a Mermaid sequence for any tricky failure/compensation path the slice introduces
+## When a slice gets a note
+A task brief asks for one with a `design` row reading `design-first — <path>`. Every `critical` task has it (a new aggregate or context, a schema or data migration, an authentication, authorization, erasure or billing path, a model seam, any one-way door), and so does a `feature` whose difficulty is real: a hard algorithm, genuine concurrency, a saga across contexts. An ordinary slice is designed while it is test-driven and gets no note; a design document for a CRUD slice only restates what the tests already say.
 
-## Rules
-- **per-slice & risk-gated** — produced only for a **complex** slice (a hard algorithm · real concurrency · a cross-context saga); a simple/CRUD slice is designed as it is TDD'd, with no design step
-- **internals only** — the seam interface, role, and dependency direction belong to the architecture; never re-open them here (a needed interface change is a **gap raised to the architecture**, not a local override)
-- **design DEEP modules** — a lot of behaviour behind the *small* interface the architecture fixed; the interface stays the test surface
-- **don't introduce a seam until a second concrete implementation needs it** — exactly why this is JIT: the second consumer reveals the real seam
-- DESIGN fidelity — no code, no heavy pseudocode
+The note is written when the slice is about to be built, not earlier. By then the neighbouring slices exist, and their code shows where the real seams are.
+
+## What the note takes as given
+The module map, each module's `role:`, the dependency direction and the seam interfaces belong to the architecture and are already decided. The note designs behind those interfaces. If the slice cannot be built without changing an interface, that is a gap to raise against the architecture; a local override would leave the two documents disagreeing.
+
+## What the note contains
+Write only the parts the slice actually has. A migration has no concurrency section if it runs alone; a pricing algorithm has no rollout section.
+
+| Part | Content |
+|---|---|
+| lead line | `implements MOD-NNN · serves T-NNN` — the modules designed and the task served, by ID (the linter checks both are named) |
+| mechanism | the core algorithm or sequence in numbered steps or a short sketch: enough to see how it works, not how to type it |
+| the risk and its containment | what makes the slice critical, and how the design keeps it reversible or safe: the staging of a one-way door, where an authorization check is enforced, what a failed model call falls back to |
+| concurrency | where it is real: locking or optimistic versioning, shared state, idempotency and re-entrancy, cancellation, timeouts and deadlines, what stays atomic when part of the work fails |
+| errors | table: error · retryable? · `designed-out`, `masked` or `propagated` · why. `designed-out` means the design removes the case (a default, an idempotent no-op); `masked` means it is absorbed at the boundary; `propagated` means the caller sees it |
+| failure path | a Mermaid sequence, when the slice introduces a compensation or failure path that prose does not make clear |
+
+A choice in the note that is costly to reverse and that a reader would not expect becomes an ADR (`adr/ADR-IMPL-NNN.md`) with the alternatives rejected; the note then refers to it.
+
+## What the note leaves out
+- The brief's content. The outcome, acceptance criteria and rules are stated once, in the brief; the note refers to a criterion by ID where the design turns on it.
+- Code and heavy pseudocode. The tests and the implementation carry that detail and cannot drift from themselves.
+- Modules the slice does not touch.
+- A new seam for a single implementation. Design a deep module — much behaviour behind the small interface the architecture fixed, which stays the test surface — and add an abstraction when a second concrete implementation needs it.
+
+Keep it short: a note that takes longer to read than the slice takes to review has stopped helping.
 
 ## Output
-Written under `delivery/impl-design/` — **filled incrementally**, one file per module **as a slice touches it** (not all modules up front). **Filename = the module's kebab-case name from the architecture's module map** (`booking-scheduler.md` for MOD-007 BookingScheduler) — one module, one file, so two designs can never cover the same `MOD-` under different names:
+One note per slice, under `spec/10-delivery/impl-design/`, at the path the brief's `design` row names (by convention `T-NNN-<slug>.md`). It is an ordinary authored document: when building shows the design was wrong, edit it in place so it states the design as built. A later slice that changes the same mechanism edits the existing note and names it in its own `design` row, so one mechanism never has two notes that can disagree.
 
 | File | Captures | Format |
 |---|---|---|
-| `<module>.md` | **leads with `implements MOD-NNN · serves T-NNN`** (the module it details + the slice it serves, by id), then the module's internal design: algorithm (steps / short pseudocode-sketch) · concurrency model (incl. cancellation · timeout/deadline · partial-failure atomicity) · errors (taxonomy + retryable + each `designed-out\|masked\|propagated` w/ rationale) — behind the architecture's fixed seam interface | implements(`MOD-`) · serves(`T-`) · algorithm · concurrency · errors |
+| `T-NNN-<slug>.md` | the design note described above | the lead line, then short sections; tables for errors |
+| `adr/ADR-IMPL-NNN.md` | a costly-to-reverse design choice with its alternatives | ADR |
 
-(+ ADRs → `adr/ADR-IMPL-NNN.md`)
-*(DERIVED & regenerate-only)*
-Consumes: the module's seam interface + role + dependency direction (from the architecture), and the slice it serves.
-
-## Excludes
-the module map · `role:` · dependency direction · seam interfaces · key sequences (→ the architecture — fixed before code) · actual code & heavy pseudocode · designing modules no slice touches yet
+Reads: the brief, the architecture's module map and seam interfaces for the modules it touches, and the code those modules already have.
 
 ## Resources
 - `references/derive-engine.md`

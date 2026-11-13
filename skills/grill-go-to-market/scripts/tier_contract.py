@@ -15,7 +15,7 @@ _SYNONYM = {"journey": "e2e", "smoke": "e2e", "system": "e2e", "acceptance": "e2
 def canon(tok):
     return _SYNONYM.get(tok.lower(), tok.lower())
 
-# A test DECLARATION the runner can execute and fail - the shared core check_task_record.py and
+# A test DECLARATION the runner can execute and fail - the shared core check_task.py and
 # check_orphan_tests.py both key on (ONE definition, so a framework added for one gate can't silently
 # be invisible to the other). A helper/fixture file never declares one, so it is never flagged.
 FAILING_CAPABLE = re.compile(
@@ -49,7 +49,7 @@ PRUNE = re.compile(r"/(?:node_modules|dist|build|out|coverage|vendor|\.git|\.gri
 # defaults name, which would make iter_test_files (root/<d> only) find NOTHING and every tier/mock/skip/orphan
 # gate silently pass. GRILLSPEC_TEST_ROOTS (comma-separated) folds those wrapper roots into the default set so a
 # project sets it ONCE for all six tools; an explicit --tests still overrides. (The per-tool --tests flag remains
-# the ad-hoc escape; this is the persistent, project-level one shared with check_task_record's COLOCATED_ROOTS.)
+# the ad-hoc escape; this is the persistent, project-level one shared with check_task's COLOCATED_ROOTS.)
 DEFAULT_ROOTS = "tests,test,src,app,apps,lib,libs,packages,e2e"
 _extra_roots = ",".join(r.strip() for r in os.environ.get("GRILLSPEC_TEST_ROOTS", "").split(",") if r.strip())
 if _extra_roots:

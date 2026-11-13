@@ -3,7 +3,7 @@
 # Usage:  python3 tools/impact.py UC-014 CMD-Pay
 #         python3 tools/impact.py --area 04-domain/ddd     (all IDs defined under a folder)
 #         python3 tools/impact.py --since <gitref>      (self-detect: IDs on lines changed since <gitref>)
-# Reads the spec/ reference graph + 10-delivery/verification/traceability.md (to reach code).
+# Reads the spec/ reference graph; reaches code through the `@covers <ID>` tags in the project's tests.
 # Prints the MINIMAL set of downstream spec files / tasks / code that the change touches,
 # ordered upstream -> downstream. This is the dependency tree made operational.
 import os, re, sys, subprocess, pathlib
@@ -72,12 +72,23 @@ while frontier:
         for j in defines.get(f, ()):
             if j not in impacted_ids: frontier.append(j)
 code = set()
-tp = SPEC / "10-delivery" / "verification" / "traceability.md"
-if tp.exists():
-    for l in read(tp).splitlines():
-        if not l.strip().startswith("|"): continue
-        if set(IDTOK.findall(l)) & impacted_ids:
-            for m in re.findall(r"[\w./-]+\.(?:py|ts|tsx|js|jsx|go|java|rb|rs|cs|kt|sql)", l): code.add(m)
+# Code is reached through the tests that claim an impacted id: a literal `@covers <ID>` tag in any source
+# file outside spec/ and the usual vendor/build trees. (A changed AC- names the tests to re-run; the code
+# under them follows from the test.)
+_PRUNE = {".git", ".grillspec", ".claude", ".codex", "node_modules", "vendor", "dist", "build", "out",
+          "coverage", "target", "__pycache__", ".next", ".venv", "venv", ".tox"}
+_EXT = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".java", ".rb", ".rs", ".cs", ".kt",
+        ".php", ".scala", ".swift", ".feature"}
+_root = SPEC.resolve().parent
+for _base, _dirs, _files in os.walk(_root):
+    _dirs[:] = [d for d in _dirs if d not in _PRUNE and pathlib.Path(_base, d).resolve() != SPEC.resolve()]
+    for _n in _files:
+        _p = pathlib.Path(_base) / _n
+        if _p.suffix.lower() not in _EXT: continue
+        for l in read(_p).splitlines():
+            m = re.search(r"@covers\b(.*)", l, re.I)
+            if m and set(IDTOK.findall(m.group(1))) & impacted_ids:
+                code.add(_p.relative_to(_root).as_posix()); break
 def layer(r):   # mirrors lint_spec.py file_layer() — keep in sync
     if r.startswith("04-domain/ddd"): return 1
     if r.startswith("05-functional-spec") or r.startswith("06-requirements/"): return 2
@@ -93,5 +104,5 @@ print("CHANGED (seeds):", ", ".join(sorted(set(seeds))))
 print("\nIMPACTED SPEC FILES (re-derive / re-review, upstream -> downstream):")
 for r in sorted(impacted_files, key=lambda x: (layer(x), x)): print("  L%d  %s" % (layer(r), r))
 print("\nIMPACTED TASKS (re-finalize / re-implement):", ", ".join(tasks) or "none")
-print("IMPACTED CODE (re-implement + re-test):", ", ".join(sorted(code)) or "none (no traceability yet)")
-print("\n%d spec file(s), %d task(s), %d code file(s) impacted." % (len(impacted_files), len(tasks), len(code)))
+print("IMPACTED TESTS (re-run; re-implement what they cover):", ", ".join(sorted(code)) or "none (no test claims an impacted id yet)")
+print("\n%d spec file(s), %d task(s), %d test file(s) impacted." % (len(impacted_files), len(tasks), len(code)))

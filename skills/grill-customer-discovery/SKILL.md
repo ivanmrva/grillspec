@@ -1,9 +1,9 @@
 ---
 name: grill-customer-discovery
 description: >-
-  Pin who the product is for — target market and segments, personas with the B2B decision-making
-  unit, and the jobs-to-be-done behind each; flags which personas are system users, seeding the
-  shared actor roster. Loads the shared grill engine.
+  Pin who the product is for: the target segments, behavioural personas with the B2B buying roles,
+  and the job-to-be-done behind each. An optional strategy area; use only when the user asks for
+  segment or persona work.
 ---
 
 <!-- grillspec-portable-resources -->
@@ -13,24 +13,33 @@ description: >-
 
 **Load `references/grill-engine.md` first and follow it.** This skill applies that method to **Customer & market discovery** — the segments, personas, and jobs-to-be-done.
 
+Run this only when the user asks for it; nothing in the build path depends on it. Without it, the product vision's who-it-is-for paragraph is the record of the target user.
+
+## Depth by profile
+Optional at every profile. Capture what the user will use:
+
+- By default, the primary segment with its job-to-be-done, and the personas behind it.
+- Secondary segments and the scored ideal-customer profile, when the user is choosing between segments.
+- The decision-making unit, when the product is sold B2B to a buyer who is not the user.
+
 ## Rules
-- the **primary segment and its JTBD** lead — secondary segments only once that's clear
-- **decompose each JTBD**: a job statement ("when <situation>, I want <motivation>, so I can <outcome>") + its functional / emotional / social dimensions + the desired outcomes — not a one-line task
-- personas are **behavioral, not demographic** — carry observed behaviors, each tagged with **evidence/source** and flagged **hypothesis vs interview-grounded**
-- for B2B, capture the **decision-making unit** (user · buyer · economic-buyer · champion/influencer), and flag each persona as a **system user** vs a purely **buying role**
+- The primary segment and its job-to-be-done come first. Secondary segments wait until that is clear.
+- A job-to-be-done is more than a one-line task. Write the job statement ("when <situation>, I want <motivation>, so I can <outcome>"), its functional, emotional and social sides, and the outcomes the person wants.
+- Personas describe behaviour, not demographics. Each observed behaviour carries its evidence or source and is marked hypothesis or interview-grounded, so a reader can tell a finding from a guess.
+- For B2B, capture the decision-making unit (user · buyer · economic buyer · champion or influencer) and mark each persona as a system user or a purely buying role. Only system users become actors in the product.
 
 ## Output
 Written under `product/customers/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `segments.md` | one block per target segment | name · JTBD decomposed (job statement: when…/I want…/so I can… · functional/emotional/social · desired outcomes) · key traits |
-| `icp.md` | the targeting criteria that define the ideal customer | firmographics/behaviors · why-primary = attractiveness × reachability × fit |
-| `personas.md` | personas as typed fields — behavioral, sourced | behaviors + evidence/source · goals · context · pains · hypothesis vs interview-grounded |
-| `actors.md` | personas flagged as system users — the product-lens actor source | — |
+| `segments.md` | one block per target segment | name · job statement (when… / I want… / so I can…) · functional / emotional / social · desired outcomes · key traits |
+| `icp.md` | the targeting criteria of the ideal customer | firmographics / behaviours · why-primary = attractiveness × reachability × fit |
+| `personas.md` | personas as typed fields | behaviours + evidence/source · goals · context · pains · hypothesis vs interview-grounded |
+| `actors.md` | the personas that are system users | persona · system user or buying role |
 
 ADRs → `adr/ADR-CUST-NNN.md`
-Consumes: the **product vision** — the product/segment whose personas, segments, and JTBD this discovers.
+Consumes: the product vision — the product and segment whose personas and jobs this area discovers.
 
 ## Excludes
 UX journeys · system actors' command-level permissions · go-to-market

@@ -1,18 +1,24 @@
 # Grill Spec System — documentation
 
-Documentation for the dual-host **`grillspec`** plugin for Claude Code and Codex. New here? Start with the plugin [README](../README.md), then come back for depth.
+Documentation for the `grillspec` plugin for Claude Code and Codex. If you are new, read the plugin [README](../README.md) first, then come back here.
 
 ## Contents
 
-- **[`skills/`](skills/README.md)** — a user guide for every skill (purpose, input, output, and how to verify it), plus the full catalog. The fastest way to see what each skill does and how to invoke it.
-- **[`HOW-IT-WORKS.md`](HOW-IT-WORKS.md)** — the pipeline end to end: the stages, the three shared engines, the `spec/` tree, the deterministic tools, and the build loop.
-- **[`DEPENDENCY-GRAPH.md`](DEPENDENCY-GRAPH.md)** — what every area consumes and produces (a stage table + a Mermaid DAG). Generated from `grill-shared/dependencies.json`, which the conductor reads to know what to hand each skill.
-- **[`WORKING.md`](WORKING.md)** — working efficiently: how change-propagation works, the autonomous build loop, per-stage throughput, and model routing.
-- **[`LIVE-TEST.md`](LIVE-TEST.md)** — a 20-minute protocol to confirm a live agent actually follows the system, and that the plugin resolves correctly after install.
+| Page | Read it for |
+|---|---|
+| [HOW-IT-WORKS.md](HOW-IT-WORKS.md) | the whole system: profiles and delivery modes, the stages, task briefs and tiers, how done is decided, the tools |
+| [WORKING.md](WORKING.md) | working fast: how a change travels, what is installed where, unattended building, tips by stage |
+| [SPEC-CHECKS.md](SPEC-CHECKS.md) | every automated check, tool by tool, with its severity |
+| [skills/](skills/README.md) | a guide for each skill: purpose, input, output, how to tell it did its job |
+| [DEPENDENCY-GRAPH.md](DEPENDENCY-GRAPH.md) | what each area reads and produces; generated from `grill-shared/dependencies.json` |
+| [LIVE-TEST.md](LIVE-TEST.md) | a 20-minute protocol to confirm a live agent follows the system after install |
 
 ## The short version
 
-You drive a product from an idea to an implementation-ready, internally consistent specification — and on to spec-conformant code — through relentless, plain-language, scoped interviews and derivations. Two things make it more than a document generator:
+The system takes a product from an idea to a specification a coding agent can build from, and then to code that matches it. It does so through scoped interviews in plain language, derivations from what the interviews recorded, and a test-first build loop.
 
-- **Two orthogonal dashboards.** *Spec health* = is the spec consistent and complete enough. *Bet health* = does anyone want it, does the business work (`assumptions.md` + kill-criteria + PMF signals). A green spec next to a red bet is the point: the system de-risks the **build** and makes the **bet legible** — only the market can make the bet safe.
-- **Discovery runs first and never closes.** The riskiest assumptions are named and given test plans up front; an *invalidated* critical assumption ripples upstream (the pivot loop) and can re-open scope, vision, even the domain model.
+Three things set it apart from a document generator:
+
+- **It stays small.** A project carries one of three profiles (`lite`, `standard`, `regulated`), and the conductor recommends the smallest that fits. An area, a file, a rule or a gate is written only when something reads it.
+- **Spec health and bet health are reported separately.** Spec health asks whether the spec is consistent and complete enough. Bet health asks whether anyone wants the product and whether the business works: the bets recorded in the spec, each with a status, plus the kill-criteria. A consistent spec beside an untested bet is a result worth seeing. The system makes the build safer and the bet visible; only the market can settle the bet.
+- **Done is read from the code.** A task is done when its acceptance criteria have tests that prove them and the project's gate is green. A tool checks that against the tree; nobody fills in a completion record.

@@ -2,7 +2,7 @@
 # check_orphan_tests.py - the REVERSE direction of traceability: every behavioral test traces to a live
 # spec driver.
 #
-# Why it exists (the missing half of @covers): check_task_record.py proves the forward direction - every
+# Why it exists (the missing half of @covers): check_task.py proves the forward direction - every
 # task-declared AC- has a @covers-tagged, failing-capable test. Nothing proved the reverse: a test (and the
 # behavior it drives) with NO spec driver passes every gate. That is exactly the shape of DRIFT - an ad-hoc
 # instruction given mid-task in chat ("also make it do X") that was implemented directly, so the code grew
@@ -50,14 +50,14 @@ if not SPEC.is_dir():
     sys.exit(0)
 
 # -- driver tags. An ID token is uppercase-prefixed (AC-001, API-002a, T-014) so prose like `user-123`
-# -- on the same line never reads as a driver. Keep the tag semantics in sync with check_task_record.py
+# -- on the same line never reads as a driver. Keep the tag semantics in sync with check_task.py
 # -- (@covers) and its @state sibling.
 COVERS = re.compile(r"@covers\b", re.I)
 STATE_TAG = re.compile(r"@state:[A-Za-z0-9][A-Za-z0-9_-]*")
 ID_TOKEN = re.compile(r"(?<![A-Za-z0-9-])[A-Z]{1,8}-[A-Za-z0-9][A-Za-z0-9._-]*")
 
 # -- failing-capable: the file contains a runnable test DECLARATION (the mechanical proxy shared with
-# -- check_task_record.py - keep the pattern cores in sync). A helper/fixture file never declares one,
+# -- check_task.py - keep the pattern cores in sync). A helper/fixture file never declares one,
 # -- so it is never flagged.
 from tier_contract import FAILING_CAPABLE
 

@@ -1,6 +1,6 @@
 interface:
   display_name: "Migrate Data"
-  short_description: "Generate and run the schema/data migration a DATA-/AGG-\u2026"
-  default_prompt: "Use $migrate-data to generate and run the schema/data migration a DATA-/AGG- change requires \u2014 forward + rollback, idempotent, online-safe, verified. Mandatory whenever the\u2026"
+  short_description: "Write and run a schema or data migration that touches\u2026"
+  default_prompt: "Use $migrate-data to write and run a schema or data migration that touches existing data \u2014 forward and rollback, idempotent, online-safe, verified before production. Use for a\u2026"
 policy:
   allow_implicit_invocation: false

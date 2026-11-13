@@ -1,7 +1,7 @@
 ---
 name: derive-tasks
 description: >-
-  Break a spec into minimal, vertically-sliced, build-ready tasks for a coding agent — each a complete reference manifest, phase-tagged and dependency-ordered, walking-skeleton first. Use when you need the spec turned into build-ready slices. Loads the shared derive engine.
+  Break a spec into small, vertically sliced task briefs a coding agent can build from — each self-contained, risk-tiered, phase-tagged and dependency-ordered, walking skeleton first. Use when the spec needs turning into build-ready work.
 ---
 
 <!-- grillspec-portable-resources -->
@@ -9,54 +9,71 @@ description: >-
 
 # derive-tasks
 
-**Load `references/derive-engine.md` first and follow it.** This skill applies that method to **task breakdown** — turning a recorded spec into minimal, vertically-sliced, build-ready tasks. A task is rarely one-shot: derive → ask → iterate until each is implementation-final (zero ambiguity), producing slice-specific detail (incl. UX mockups/microcopy) the global spec doesn't cover.
+**Load `references/derive-engine.md` first and follow it.** This skill applies that method to **task breakdown** — turning a recorded spec into the smallest set of vertical slices that builds it.
+
+## What a good brief is
+A brief is what an agent reads instead of the spec. It should be buildable from the brief and the code alone: the acceptance criteria carry their text, the rules that bind the slice are stated in a line each, and what the slice deliberately leaves out is named. IDs stay on every item so tools and later changes can find it, but nobody should need to follow one to understand the task. A brief that sends its reader to twenty other files has moved the work, not done it.
+
+Briefs exist for work that adds behaviour. A bug fix, a copy change, a refactor or a dependency bump is `routine` and needs no brief (the exec engine says what it owes).
 
 ## Method
-1. **Start with the walking skeleton.** The first task wires the architecture end-to-end, scaffolds the repo, stands up governance (below), wires the design-token pipeline when there's a UI, **really deploys to the first environment of the ratified promotion path** (per `infra-ops/topology.md` — dev, or a dynamic preview env, whatever that path begins with) **with a smoke test + an automated rollback** (the release path is part of the end-to-end wiring — a real deploy, never a stubbed/`echo`/`exit 0` one), emits the human-prerequisites bootstrap checklist, and seeds the Tier-B system/journey acceptance tests + architecture fitness functions as pending — so they exist before any feature code. The full promotion workflow it wires (which env follows which, and the gate at each hop) is **taken from `infra-ops/cicd.md` + `topology.md`, not invented here**.
-2. **Slice vertically.** Cut the first MVP use-case into a tracer bullet: a narrow but COMPLETE path through every layer (schema → domain → api → ui → tests), demoable on its own. Never a horizontal slice of one layer; right-size to one agent session.
-3. **Fill every dimension by reference.** For each slice, each applicable dimension (behavior · domain · data · api · ux · a11y · security · nfr · obs · ml — only when the spec has an ML area · integration · placement · design · prototype-review · tests · deploy · human-prereq · dependencies · DoD) is exactly one of: a spec-ID reference, `N/A — why`, or `GAP <what's missing> — UNRESOLVED`. **Fields are ID-keyed and structured, not prose blobs**, in a **single two-column `field | value` table** — the `T-NNN.md` output row is the canonical enumeration of every cell's exact structure. Sub-structured cells (`behavior`, `tests`) render their lines **inside their own cell** with `<br>` breaks — never a "see table below" split — and any cross-reference (another `UC-`, a `JRN-`) is the **bare id**.
-3a. **These referenced IDs ARE the task's obligation contract.** The set you fix here — every `AC-`/`API-`/`EVT-`/`SEC-`/`NFR-`/… the dimensions reference — is **frozen before implementation** and is exactly what the per-task **Verification Record** is generated from at build time (`check_task_record.py --init`): the implementer is held to *this* bar and can't shrink it. So reference precisely and completely — a missing reference here is an obligation that silently won't be enforced.
-4. **Force every gap to a resolution.** An UNRESOLVED gap forces one conscious choice: complete it now (elicit just-in-time → it lands in the source spec), mark `N/A — why`, or accept a default (write an ADR, reference it). For a UX/decision gap, produce a concrete default for the user to ratify, don't author blind.
-5. **Tag, order, finalize.** Tag each task's phase (MVP/near/deferred) and dependencies; set its `afk:` marker. Order = topological sort, MVP-first → `build-order.md`. Apply the **acceptance gate**: each slice is independently **valuable / demoable** (delivers a user-visible outcome on its own, not a horizontal layer); record that outcome in the manifest. Implementation-final only when no dimension is an UNRESOLVED gap and the gate holds.
-6. **Iterate** — derive the manifest, detect unresolved dimensions (especially slice-specific UX), ask or produce, until an agent could implement with zero ambiguity.
+1. **Walking skeleton first.** The first task wires the architecture end to end with one trivial path, scaffolds the repo, sets up the gate and the hooks the conventions define, and really deploys to the first environment of the promotion path with a smoke check and a rollback. It is `critical`. Its environments and pipeline come from the infra decisions and the delivery mode, not from here.
+2. **Slice vertically.** Cut each use-case into the narrowest complete path through every layer it needs (schema → domain → api → ui → tests) that someone could demo. Size a slice to one agent session. A slice of one layer is not a task.
+3. **Write the brief** (the table below). Quote each acceptance criterion's text; state each binding rule as `ID — what it requires`; list what the slice touches; name the non-goals.
+4. **Set the tier** from what the slice touches, not from its size: `critical` for a new aggregate or context, a schema or data migration, authentication, authorization, erasure, billing or another money or legal path, a model seam, or any one-way door; otherwise `feature`. Give the reason in a few words.
+5. **Resolve gaps.** An undecided point is `GAP <what is missing> — <owning area> — UNRESOLVED` and forces one choice: complete it in the owning area, mark it `N/A — why`, or accept a default as an ADR. For a visual or product decision, propose a concrete default for the user to ratify.
+6. **Order.** Tag each task's phase (MVP · near · deferred) and dependencies; the build order is the topological sort, MVP first.
+
+## One change to an existing product
+When the product exists and a single change is being specified, write just that brief. There is no walking skeleton to add and no build order to re-derive: set the tier and what the brief depends on, quote the acceptance criteria as they now read, and add one line for it to `build-order.md`. A `routine` change gets no brief at all.
+
+## The brief
+One file per task, `T-NNN.md`, a single `field | value` table. Multi-line cells use `<br>`.
+
+| field | value |
+|---|---|
+| `tier` | `feature` or `critical` — the reason in a few words |
+| `phase` | `MVP` · `near` · `deferred`, then `afk: eligible` or `afk: blocked — <trigger>` |
+| `status` | `todo` · `in-progress` · `done` · `blocked — <why>` |
+| `outcome` | the user-visible result, one sentence |
+| `behavior` | one line per `UC-`; under it one line per `AC-` with the criterion's text: `AC-014a — Given … When … Then …` |
+| `touches` | the modules, seams, tables and screens the slice changes (`MOD-`, `API-`, `EVT-`, `IF-`, paths) |
+| `rules` | the cross-cutting obligations that bind this slice, each `ID — one line` (`SEC-`, `ENTL-`, `NFR-`, `DATA-`, `OBL-`, `ML-`, `SLO-`, `AEV-`); `none` when there are none |
+| `non-goals` | what the slice deliberately does not do |
+| `tests` | the tiers this slice needs and the edges that matter |
+| `depends` | the `T-` ids it waits for, or `—` |
+
+Add only when they apply:
+
+| field | when | value |
+|---|---|---|
+| `ux` · `a11y` · `prototype-review` | the slice changes a screen | `ux`: the journey and screen by id, `states: a · b · c`, and the prototype path. `a11y`: the keyboard and focus path and the success criteria that apply. `prototype-review`: `frozen — <path>` once a human has reviewed it, or `waived — <why>` |
+| `human-prereq` | the slice needs a credential or external setup | the config key and where it is set, never the value |
+| `design` | the slice is `critical` or genuinely complex | `design-first — <path under 10-delivery/impl-design/>` |
+| `review` | the slice is `critical` | `pending`; the fresh-context reviewer sets `PASS` |
 
 ## Rules
-- **Minimal & vertical** — the smallest independently-testable end-to-end slice; never horizontal layers, never big-bang; right-size to one agent session
-- **Walking-skeleton first** — it stands up two path-scoped governance workflows: (a) **code governance** — pre-commit hooks + the app CI/CD pipeline as GitHub Actions (fill in the stack's real format/lint/type/test/fitness commands; enable CodeQL + Dependabot) **incl. a real deploy to the first environment of the ratified promotion path (per `infra-ops/topology.md`) with a smoke test + automated rollback, plus the per-hop promotion gates from `cicd.md`** — never a faked/skipped deploy; (b) **spec/doc governance** (provided ready-to-run, **project-local** — never a global hook) — vendor its tools under `.grillspec/tools/`, install the provided `spec_governance_hook.sh` as the project's spec **pre-commit hook** (it runs `lint_spec.py` + `guard_derived.py` over `spec/`, scoped to this repo), plus the same enforcers on PRs, the docs-site deploy, branch protection, MR template; (c) **exec-order governance** (provided ready-to-run, **project-local** — never a global hook) — run `python3 scripts/install_exec_gates.py` (idempotent; it vendors the gate tools under `.grillspec/tools/` and merges host adapters into `.claude/settings.json` + `.codex/hooks.json` — the exec engine's step zero describes the gate itself). **Commit both hook configs + `.grillspec/tools/`** (they belong to the repo) so that **git worktrees inherit the gate** — AFK waves run each task in its own worktree, which only sees committed files. Never duplicate GrillSpec tools, locks, config, or waivers inside a host directory. In Codex, review and trust the project hook through `/hooks`
-- **Acceptance gate at finalization** — each slice independently **valuable / demoable** with a recorded user-visible outcome; a slice that isn't demoable on its own is a horizontal cut to re-slice, not a task
-- **Each task is a complete reference manifest** — every applicable dimension is a spec-ID ref, `N/A — why`, or `GAP — UNRESOLVED`; **implementation-final = no UNRESOLVED gap remains**
-- **a11y binds when ux does (lint-enforced)** — a slice with a non-`N/A` `ux` may not leave `a11y` N/A or absent; the `a11y` cell names the keyboard path · focus order · contrast · the relevant current-WCAG success criteria · the i18n targets that bind this slice (externalized strings · locale-aware formatting · RTL-safety) when i18n is in scope; `N/A — headless` for a non-UI slice
-- **deploy is never `deferred — infra not ready`** — an unreachable environment is a `human-prereq` to escalate (provision it), never a reason to omit the deploy surface
-- **a non-`N/A` `human-prereq` is front-loaded** — each item referenced by **name + where to set it, never the value**, naming its `environments.md` config key (the join token `_provisioning.md` and `lint_spec.py` verify against); surfaced in `spec/_human-input.md` **before** the task is dispatched and recorded as a `_provisioning.md` row (`state: pending`), so an unattended run parks it up front instead of stalling mid-slice
-- **`afk:` marker** — `eligible` (an agent implements this solo, opens a green PR, and **auto-merges only where the conventions' review policy permits solo-merge**; when convention mandates ≥2-person review / branch protection on the path, the agent parks the merge as a HITL gate rather than self-approving — `eligible` never overrides the review policy) when there's no UNRESOLVED gap and no HITL trigger; else `blocked — <trigger>`. **HITL triggers (closed list):** a visual/UX decision · a product/strategy call · a legal/compliance sign-off · an external credential/access · an irreducible preference fork · **a merge the review policy reserves for a human**. **Prefer AFK** — a trigger outside this list is really an unresolved gap to resolve now. **Invariant (lint-enforced): an `afk: eligible` task must not carry a non-`N/A` `human-prereq`** — an external credential/access it can't proceed without is exactly the HITL trigger, so mark it `blocked — <the prereq>`; a free-prose provenance claim (‘arrives via T-001’) does **not** make it eligible, only a credential marked `provisioned` in the spec-root `_provisioning.md` register does. `lint_spec.py` flags the `afk:eligible` + un-provisioned-`human-prereq` contradiction (an unattended run would park on it mid-slice). **Second invariant: a slice with a non-`N/A` `ux` dimension is `afk: eligible` only when its prototype is frozen (human-reviewed at finalization) or it carries an explicit `prototype-review: waived — <why>`** — otherwise `blocked — visual/UX review pending`, because an unreviewed screen is exactly the visual/UX-decision HITL trigger (the JIT-generated prototype satisfies the *build reference* but not the *review*, so it must not silently ride into an AFK wave)
-- **Seed the credential register (`_provisioning.md`)** — emit/refresh the spec-root, layer-free register from the tasks' `human-prereq` credentials + the `prerequisites.md` register: one row per external credential/config key → { key (matches `environments.md`) · owning-provisioning task or `human` · consuming tasks (`T-`) · `state` · evidence }, `state: pending` by default. It's the machine-readable credential→task map. **Preserve existing `state`/`evidence` on refresh — never clobber live provisioning state** (it is authored and must survive re-derivation). A credential every consuming task waits on gets a **provisioning-owner task** (often the walking-skeleton, or a dedicated setup slice) so ownership isn't a free-prose ‘arrives via T-001’ claim
-- **Coverage** — every in-scope use-case covered by ≥1 task, and every in-scope **AC owned by exactly one task** (a sibling task that builds on the work `depends-on` the owner — it never re-covers the AC; the AC is the unit of acceptance, with one Verification Record + `@covers` test); the walking-skeleton task exists and is first; build-order acyclic and MVP-first
-- **module internals are JIT, not up front** — the architecture fixed the seams; a slice flags `design: design-first` only when genuinely complex (hard algorithm · real concurrency · cross-context saga), then its modules are designed & reviewed before coding; a simple/CRUD slice designs-as-it-TDDs
-- **`DoD` is a reference, not a restatement** — the invariant done-bar is the per-task **Verification Record** (the standard gate rows regenerated by `check_task_record.py --init`: tests-first · tests:layers · coverage · mutation · fitness:no-fakes · fitness:architecture · spec-lint · deploy · ux:states · a11y · ux:rendered · prototype-review · obs · conformance · traceability). The task's `DoD` field **points at that gate** and spells out only the **task-specific deltas** (the coverage/mutation numbers, the deploy surface, any `N/A — why`). **Never hand-restate the invariant rows** — a copy-pasted DoD line drifts and silently undersells the enforced bar; the gate, not the manifest, owns the standing rows
+- **One owner per acceptance criterion.** Every in-scope criterion is owned by exactly one task; a later task that builds on it depends on the owner rather than repeating the criterion. That is what makes a done-claim checkable: `check_task.py` holds the owning task to a `@covers` test for each of its criteria.
+- **`afk: eligible`** means an agent can finish the task without a human: no unresolved gap and none of these triggers — a visual or UX decision, a product or strategy call, a legal sign-off, an external credential, or a merge the project's review policy reserves for a person. Otherwise `afk: blocked — <trigger>`, with the ask queued in `spec/_human-input.md`. Two cases the linter checks: a task with a `human-prereq` is eligible only when that credential is `provisioned` in `_provisioning.md`; a task that changes a screen is eligible only when its prototype is `frozen` or explicitly `waived`, because an unreviewed screen is a visual decision nobody made.
+- **A screen binds accessibility.** A brief with a `ux` cell also carries `a11y`. A slice that only reuses existing design-system components on an existing screen says `ux | N/A — reuses DS-… on SCR-…` and needs no prototype.
+- **The credential register.** Keep the spec-root `_provisioning.md` in step with the briefs' `human-prereq` cells: one row per credential or config key with its owner, the tasks that consume it, and its state. Preserve existing state and evidence when refreshing it.
+- **Design is just in time.** The architecture fixed the seams; a `critical` slice gets a short design note before it is built (`derive-impl-design`), everything else is designed while it is test-driven.
+- **Deferred work stays coarse.** Give `near` and `deferred` phases one line each in the build order until they are about to be built; briefs written far ahead go stale before anyone reads them.
 
 ## Output
-**Stable IDs** (bare type prefix): `T-` task / vertical slice (`T-001` = the walking skeleton, always first); one file `T-NNN.md` per task.
-Written under `delivery/tasks/`:
+**Stable IDs** (bare type prefix): `T-` task (`T-001` = the walking skeleton). Written under `delivery/tasks/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `build-order.md` | dependency order of the slices, MVP-first | ordered list or Mermaid DAG |
-| `T-001.md` | the walking-skeleton task (architecture end-to-end + repo scaffold + real deploy to the first env of the ratified promotion path w/ smoke test + automated rollback) | prose |
-| `T-002.md` | one task = one vertical slice; every dimension an ID ref, N/A, or resolved gap; a user-visible-outcome row | single `field \| value` table |
-| `T-NNN.md` | …one file per slice (slice-specific UX inlined here; the `ux` dimension points at the slice's `JRN-` journey + prototype screen) | a single `field \| value` table, one row per dimension: behavior (one `<br>`-line per `UC-`, its `AC-`s on following lines) · domain · data · api · ux (`JRN-` + `SCR-` + states) · a11y · security (`SEC-`/`THR-`/`OBL-`/`ENTL-`) · nfr · obs (`SLO-` telemetry + `AEV-` analytics events) · ml (`ML-` evals — only when the spec has an ML area) · integration (`IF-` seam refs — the elicited delivery/failure qualities ride the id) · placement · design · prototype-review · tests (**one `<br>`-line per AC inside the cell**: `AC-id — tiers — intent`, the intent = the behaviour that pins it, e.g. "widens exactly one rung; rejects narrow" — never a re-echo of the AC id) · deploy (the deployable surface this slice adds + the env(s) it reaches along the ratified promotion path, per `infra-ops/cicd.md` + `topology.md` — or `N/A — no new deployable surface`) · human-prereq · deps · DoD (**a reference to the standard gate + task deltas, never a restatement**), each an ID ref or N/A · plus title/phase/afk/outcome rows |
+| `build-order.md` | the slices in dependency order, MVP first, each with its one-line outcome and what it depends on; later phases as one line each | ordered table or Mermaid DAG |
+| `T-NNN.md` | one brief per task about to be built | the `field \| value` table above |
 
+Also keeps the spec-root `_provisioning.md` register in step (see Rules).
 ADRs → `adr/ADR-TASK-NNN.md`
-*(DERIVED & regenerate-only)*
-
-Also seeds one **spec-root** register (NOT under `delivery/tasks/`, and NOT regenerate-only):
-| File | Captures | Format |
-|---|---|---|
-| `_provisioning.md` (spec root) | the live credential register: one row per external credential/config key (matching `environments.md`) → owner (a provisioning `T-` or `human`) · consuming tasks (`T-`) · `state` (`provisioned`\|`pending`) · evidence. The credential→task map + live provisioning state | authored table; **map columns seeded/refreshed from tasks, `state`/`evidence` preserved across re-derivation** |
-
-Consumes: the use-cases / acceptance criteria, domain model, architecture (incl. the module map & seam contracts), the **API contracts** a slice builds against (the cross-boundary published language — walking-skeleton / API-first), conventions, product phasing, and the UX requirements (incl. the information architecture). The detailed data schema is **not** a task input — it's emergent during implementation, not specified up front. The per-slice clickable prototype screen is generated **at execution time**, not up front — the task's `ux` dimension references it then.
+Consumes: the use-cases and acceptance criteria, the domain model, the architecture's module map and seams, the conventions, product phasing, and for UI slices the journeys and screen inventory. Detailed schema is not an input — it emerges during implementation.
 
 ## Excludes
-writing the code (execution) · release dates/sprints (the product *phasing* MVP/near/deferred orders the work, not calendar dates) · the global UX (only slice-specific UX is produced here)
+writing the code · release dates or sprints (phasing orders the work, not the calendar) · the global UX (only slice-specific UX is settled here)
 
 ## Resources
 - `references/derive-engine.md`

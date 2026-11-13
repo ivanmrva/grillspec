@@ -1,19 +1,22 @@
 # derive-observability — worked example
 
-From `NFR-007` *"booking confirmation returns in ≤ 800 ms for 99% of requests."* That recorded input drives the observability design below, and the SLO records the NFR it operationalises by id.
+Illustrative: it shows the shape, not required content.
 
-**SLO** (`slos.md`):
+Upstream: `NFR-007` "booking confirmation returns in ≤ 800 ms for 99% of requests" and `NFR-009` "the nightly export finishes by 06:00".
 
-| id | maps-to | objective | SLI | error budget |
-|---|---|---|---|---|
-| SLO-001 | `NFR-007` (booking latency) | 99% of `POST /bookings` complete in ≤ 800 ms over 30 days | good = (latency ≤ 800 ms ∧ status < 500) ÷ valid requests | 1% = ~7h18m / 30d |
+## Decision mode (`standard`) — `slos.md`
 
-**Telemetry** (`telemetry.md`) — one wide structured event per request, emitted over OTLP through the collector with semantic-convention names:
+| id | maps-to | objective | SLI | error budget | on breach |
+|---|---|---|---|---|---|
+| SLO-001 | NFR-007 (booking latency) | 99% of `POST /bookings` complete in ≤ 800 ms over 30 days | good = latency ≤ 800 ms and status < 500, over valid requests | 1% ≈ 7h18m per 30 days | page |
+| SLO-002 | NFR-009 (export deadline) | 29 of 30 nightly exports finish by 06:00 | export `completed_at` ≤ 06:00 | 1 late run per 30 days | ticket |
+
+## Full mode (`regulated`) adds
+
+`telemetry.md` — the event SLO-001 is computed from:
 ```
 event=http.server.request route=/bookings http.response.status_code=201
   duration_ms=612 tenant.id=… booking.id=… trace_id=…
 ```
-SLI is computed from this primitive (logs/metrics/traces are views over it); golden signals + resource method (utilization · saturation · errors) + service method (rate · errors · duration) instrumented.
 
-**Alert** (`alerting.md`) — multi-window multi-burn-rate on SLO-001:
-> **page** if burn-rate > 14.4× over 1h **AND** > 14.4× over 5m (fast: ~2% budget in 1h); **ticket** if > 3× over 6h **AND** > 3× over 30m (slow). Each links SLO-001 → the latency runbook → the booking dashboard. Error-budget policy: freeze releases on exhaustion.
+`alerting.md` — the SLO-001 alert: page when the budget burns faster than 14.4× over both 1h and 5m; ticket above 3× over both 6h and 30m. Each links SLO-001, the latency runbook and the booking dashboard.

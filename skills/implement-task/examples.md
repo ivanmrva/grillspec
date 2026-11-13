@@ -1,31 +1,32 @@
 # implement-task — worked example
 
-Building **T-014 — Reschedule a booked job** as one minimal, tested vertical slice. Tests first, inside the Scheduling boundary, code in the source tree (never `spec/`).
+Illustrative. Building T-014, "Reschedule a booked job": a `feature` task (new behaviour inside the existing Scheduling context), so it owes its brief, test-first work and the gate. The project's `delivery` is `trunk`.
 
-Branch `task/T-014-reschedule-job` off main. From the acceptance criteria, the failing tests go in first, layered across every layer the slice touches:
+The brief's `behavior` row carries four criteria with their text, for example `AC-014c — Given a job starting in under 2 hours, When the dispatcher reschedules it, Then it is rejected as lead-time-violated`. Its `rules` row names one obligation: `SEC-031 — only a dispatcher of the owning branch may move a job`.
 
-```
-tests/unit/job.reschedule.spec.ts          AC-014c lead-time, AC-014b owning-branch (domain rule)
-tests/integration/job-repo.slot.spec.ts    AC-014d slot-taken — real Postgres (testcontainer)
-tests/contract/job-rescheduled.evt.spec.ts  EVT-JobRescheduled — provider vs published schema
-tests/contract/notify-consumer.spec.ts      consumer-side expectation on the field-notify API we CONSUME
-tests/e2e/reschedule.e2e.spec.ts            AC-014a happy path — POST /jobs/{id}/slot through the real interface
-```
-
-Then the minimal slice, entrypoint → application → domain → persistence, to green. The slot-overlap query had an unknown shape → spiked a throwaway prototype, confirmed the index, **deleted the spike**, re-drove it with the integration test.
-
-One edge surfaced that no task anticipated — a customer already SMS-confirmed when the slot moves. Didn't guess: recorded a `GAP`, resolved it as `N/A` for this slice (notification is a downstream task), noted in the task record before continuing.
-
-## Done-gate (the bar before hand-off)
+The tests went in one at a time, each seen failing before its code existed:
 
 ```
-T-014 done-gate
-  [x] layered suite green locally   unit · integration(real PG) · contract · e2e   (12 passed, 0 skipped)
-  [x] domain tests pin behavior     lead-time boundary asserted exactly (2h ok · 1h59 reject) — strong enough for the run's mutation gate, not just coverage
-  [x] consumer contract authored    field-notify API we consume — expectation pinned & verifiable
-  [x] provider contract verified     EVT-JobRescheduled matches published schema
-  [x] pre-commit hooks pass          format · lint · type · SAST · audit · fast unit · boundary fitness
-  [x] conventional commit + one PR opened
-  [ ] CI green → merge               (awaiting pipeline)
-→ hand off for the test run, then the conformance review. NOT marked done on red.
+tests/unit/job.reschedule.spec.ts           @covers AC-014c (2h accepted, 1h59 rejected) · AC-014b owning branch
+tests/integration/job-repo.slot.spec.ts     @covers AC-014d slot taken — real Postgres in a container
+tests/contract/job-rescheduled.evt.spec.ts  EVT-JobRescheduled, provider against the published schema
+tests/contract/notify-consumer.spec.ts      the field-notify API this slice consumes
+tests/e2e/reschedule.e2e.spec.ts            @covers AC-014a — POST /jobs/{id}/slot through the real interface
 ```
+
+The slot-overlap query had an unknown shape, so it was spiked as a throwaway, the index confirmed, the spike deleted, and the query then driven by the integration test.
+
+One edge the brief did not cover: rescheduling a job to the slot it already holds. Two engineers would settle it the same way (an idempotent no-op that emits no event), so it was decided, written into the functional spec as `AC-014e`, added to the brief's `behavior` row, and covered by a unit test in the same change.
+
+## Report
+
+T-014 is done and pushed; the deploy's smoke check passed.
+
+| Check | Result |
+|---|---|
+| project gate (format · lint · types · unit · fitness) | green |
+| integration tier | green, 0 skipped |
+| `check_task.py spec --task T-014` | green — 5 of 5 criteria covered |
+| e2e against the deployed environment | written, not run — no CI job runs it under `trunk` |
+
+One spec change to know about: `AC-014e` (same-slot reschedule is a no-op) is new in the functional spec. Nothing is blocked.

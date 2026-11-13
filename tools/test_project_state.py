@@ -7,8 +7,8 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-GUARD = HERE / "guard_derived.py"
-FRESHNESS = HERE / "check_freshness.py"
+CONFIG = HERE / "project_config.py"
+LINT = HERE / "lint_spec.py"
 PASS = FAIL = 0
 
 
@@ -38,63 +38,56 @@ def write(root, rel, text):
 def main():
     with tempfile.TemporaryDirectory(prefix="grillspec_state_") as td:
         root = Path(td)
+        result = run(CONFIG, root)
+        check("no settings file -> the widest reading (regulated + pr)",
+              result.returncode == 0 and "profile: regulated" in result.stdout and "delivery: pr" in result.stdout,
+              result.stdout + result.stderr)
+        check("reading never creates project state", not (root / ".grillspec").exists())
+
+        result = run(CONFIG, root, "--set", "profile=standard", "--set", "delivery=trunk")
+        settings = root / ".grillspec" / "project.json"
+        check("settings are written under .grillspec", result.returncode == 0 and settings.is_file(),
+              result.stdout + result.stderr)
+        check("settings carry both keys",
+              json.loads(settings.read_text(encoding="utf-8")) == {"delivery": "trunk", "profile": "standard"})
+        check("settings never create host-specific state",
+              not (root / ".claude").exists() and not (root / ".codex").exists())
+
+        result = run(CONFIG, root, "--json")
+        check("--json reports the effective settings",
+              json.loads(result.stdout) == {"delivery": "trunk", "explicit": True, "profile": "standard"},
+              result.stdout + result.stderr)
+
+        result = run(CONFIG, root, "--set", "profile=enterprise")
+        check("an unknown profile is rejected", result.returncode == 2 and "must be one of" in result.stdout,
+              result.stdout + result.stderr)
+        check("a rejected value leaves the file unchanged",
+              json.loads(settings.read_text(encoding="utf-8"))["profile"] == "standard")
+
+        write(root, ".grillspec/project.json", "{not json")
+        result = run(CONFIG, root)
+        check("an unreadable settings file falls back to the defaults",
+              result.returncode == 0 and "profile: regulated" in result.stdout, result.stdout + result.stderr)
+
+    with tempfile.TemporaryDirectory(prefix="grillspec_guide_") as td:
+        root = Path(td)
+        write(root, "spec/04-domain/ddd/a.md",
+              "<!-- scope: x | excludes: y | format: z -->\n| ID | Name |\n|---|---|\n| AGG-1 | Order |\n")
         write(root, "AGENTS.md", "# Project guide\n\nRun the tests.\n")
         write(root, "CLAUDE.md", "@AGENTS.md\n")
-        write(root, "spec/05-functional-spec/use-cases.md", "AC-001 does the thing.\n")
-        result = run(GUARD, root, "--record")
-        lock = root / ".grillspec" / "derived.lock"
-        check("derived lock is written under .grillspec", result.returncode == 0 and lock.is_file(),
+        result = run(LINT, root, "spec")
+        check("import-only CLAUDE.md passes", "CLAUDE.md must contain only" not in result.stdout,
               result.stdout + result.stderr)
-        check("derived lock contains both project guides",
-              set(json.loads(lock.read_text(encoding="utf-8"))) >= {"AGENTS.md", "CLAUDE.md"})
-        check("guard never creates legacy .claude state", not (root / ".claude").exists())
 
         write(root, "CLAUDE.md", "# copied guide\n\nRun the tests.\n")
-        result = run(GUARD, root, "--record")
-        check("duplicate CLAUDE guide is rejected",
-              result.returncode == 1 and "must contain only @AGENTS.md" in result.stdout,
+        result = run(LINT, root, "spec")
+        check("a duplicated CLAUDE guide is rejected",
+              result.returncode == 1 and "CLAUDE.md must contain only @AGENTS.md" in result.stdout,
               result.stdout + result.stderr)
 
-    with tempfile.TemporaryDirectory(prefix="grillspec_legacy_") as td:
-        root = Path(td)
-        write(root, "AGENTS.md", "# Project guide\n")
-        write(root, "CLAUDE.md", "@AGENTS.md\n")
-        write(root, ".claude/derived.lock", "{}\n")
-        result = run(GUARD, root)
-        check("legacy .claude derived lock is not a fallback",
-              result.returncode == 1 and "UNREGISTERED" in result.stdout,
-              result.stdout + result.stderr)
-
-    with tempfile.TemporaryDirectory(prefix="grillspec_guides_missing_") as td:
-        root = Path(td)
-        write(root, "spec/10-delivery/conventions/workflow.md", "# Workflow\n")
-        result = run(GUARD, root, "--record")
-        check("a derived conventions area requires both guide entry points",
-              result.returncode == 1 and "AGENTS.md" in result.stdout and "CLAUDE.md" in result.stdout,
-              result.stdout + result.stderr)
-
-    with tempfile.TemporaryDirectory(prefix="grillspec_freshness_") as td:
-        root = Path(td)
-        write(root, "spec/04-domain/ddd/model.md", "UC-001 original behavior\n")
-        write(root, "spec/05-functional-spec/use-cases.md", "AC-001 realizes UC-001\n")
-        result = run(FRESHNESS, root, "--record")
-        lock = root / ".grillspec" / "freshness.lock"
-        check("freshness lock is written under .grillspec",
-              result.returncode == 0 and lock.is_file(), result.stdout + result.stderr)
-        check("freshness never creates legacy .claude state", not (root / ".claude").exists())
-        write(root, "spec/04-domain/ddd/model.md", "UC-001 changed behavior\n")
-        result = run(FRESHNESS, root, "--strict")
-        check("neutral freshness lock still detects upstream drift",
-              result.returncode == 1 and "STALE CANDIDATES" in result.stdout,
-              result.stdout + result.stderr)
-
-    with tempfile.TemporaryDirectory(prefix="grillspec_freshness_legacy_") as td:
-        root = Path(td)
-        write(root, "spec/04-domain/ddd/model.md", "UC-001 behavior\n")
-        write(root, ".claude/freshness.lock", "{}\n")
-        result = run(FRESHNESS, root)
-        check("legacy .claude freshness lock is not a fallback",
-              result.returncode == 0 and "no .grillspec/freshness.lock" in result.stdout,
+        (root / "CLAUDE.md").unlink()
+        result = run(LINT, root, "spec")
+        check("AGENTS.md alone is fine", "CLAUDE.md must contain only" not in result.stdout,
               result.stdout + result.stderr)
 
     print("\n%d passed, %d failed" % (PASS, FAIL))

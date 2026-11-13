@@ -1,17 +1,26 @@
 # derive-test-strategy — worked example
 
-From the spec: an **integration-heavy** booking service (3 microservices + SQS), `ASR-004` "no inbound dependency from domain → infrastructure", `API-002` `POST /bookings`, and `NFR-007` "≤ 800 ms p99 confirmation." That recorded input drives the Tier-B strategy below.
+Illustrative: it shows the shape, not required content.
 
-**Test-distribution choice** (`levels.md`):
-> architecture is integration-heavy → **integration-weighted** shape (the middle tier carries the weight: real broker/worker paths), not a unit pyramid; thin e2e top; avoid an e2e-top-heavy distribution. Contract tests are **CDC** with provider verification.
+Upstream: an integration-heavy booking service (three services and a queue); `API-002` `POST /bookings`; `NFR-007` "confirmation p99 ≤ 800 ms"; a `staging` environment.
 
-**Contract test** (`levels.md`, from `API-002`):
-> CDC pact: consumer (web) ⨯ provider (Booking API) on `POST /bookings` → 201 + `Location` header + `booking.id` shape; provider-verification job replays the pact in CI. The async confirmation gets a real-path integration test (real SQS + worker, assert the eventual `confirmed` outcome, cover retry/idempotency/dead-letter — never assert mere enqueue).
+## Decision mode (`standard`) — `levels.md`
 
-**NFR-evidence row** (`nfr-evidence.md`):
+Shape: integration-weighted — the behaviour lives in the queue and worker paths — with a thin e2e top. The e2e target is `staging`.
 
-| requirement | evidence test | target it measures against |
+| tier | scope | real-deps | may-mock | mock-ceiling | target-env | coverage-bar | mutation-bar |
+|---|---|---|---|---|---|---|---|
+| unit | pure domain logic | — | — | none | local | 90% branch | 70% on changed domain |
+| integration | a service with its store and queue | database, queue | payment provider | boundary-only | local | counted with unit | — |
+| contract | `API-002`, consumer-driven | all | — | none | local | — | — |
+| e2e | booking journey, smoke | all | — | none | staging | — | — |
+
+Both bars are ratify-points (status: unconfirmed). The async confirmation is tested on the real queue and worker, asserting the eventual `confirmed` state.
+
+## Full mode (`regulated`) adds
+
+A row in `nfr-evidence.md`:
+
+| requirement | evidence test | target |
 |---|---|---|
-| NFR-007 | load test ⨯ `POST /bookings` at 200 rps for 10 min | p99 ≤ 800 ms (ties to SLO-001); fail the gate above it |
-
-Authored early from the target, executed once a deployable system exists; shift-right adds canary verification tied to the burn-rate. `ASR-004` gets a dependency-direction fitness function (failing until the structure exists).
+| NFR-007 | load test, `POST /bookings` at 200 rps for 10 min | p99 ≤ 800 ms |

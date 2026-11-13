@@ -1,262 +1,121 @@
 ---
 name: grill-spec-conductor
 description: >-
-  START HERE to spec, design, plan, or build a project or feature end-to-end — the front door and orchestrator for the whole idea-to-spec-to-code-to-operate workflow. It scans the spec, re-derives the current state, and routes to the next area; owns the dependency order, readiness gates, and cross-area consistency. Prefer it over any single grill-/derive-/exec- skill whenever work spans more than one area.
+  START HERE to spec, design, plan, or build a project or feature end to end. The front door and orchestrator: it reads the spec, works out the current state, recommends the smallest next step, and runs the chosen area. Use it whenever work spans more than one area.
 ---
 
 <!-- grillspec-portable-resources -->
 > Resource paths in this skill are relative to this installed skill directory. Resolve `references/...` and `scripts/...` from that directory, not from the project working directory; use an absolute path when executing a bundled script.
 
-Each area is the skill **`grill-<id>`**. The shared engine is `references/grill-engine.md`;
-the decide-vs-ask classifier is `references/decision-classes.md` (the convergence test);
-the cross-engine house rules are `references/house-rules.md`;
-the output tree + owners + modes are in `references/repo-layout.md`. You orchestrate; the
-area skills + engine interview. Everything writes into one `spec/` repo.
+Each area is the skill **`grill-<id>`** or **`derive-<id>`**. The shared engines are under `references/`: `grill-engine.md`, `derive-engine.md`, `exec-engine.md`; the decide-vs-ask test is `decision-classes.md`; the rules every artifact follows are `house-rules.md`; the output tree, profiles and spec-root files are `repo-layout.md`. You orchestrate; the area skills and engines do the interviewing, deriving and building. Everything writes into one `spec/` tree.
 
-## Situational modes & deep-dives → `conductor-playbook.md`
-For these, **read `references/conductor-playbook.md`** and follow it (same authority as here): **doc-first start**, **migrate mode**, the **lite path**, **changing already-built work** (software change management) + **entry modes / small-change fast-path**, the **operations / production lifecycle**, and the **progressive-elaboration** deep-dive. Core routing (front door, stage map, gates, per-run loop, linter, cross-area reconciliation) stays here.
+For situational modes, read `references/conductor-playbook.md` when one applies: starting from an existing document, migrating a body of docs, brownfield import, changing already-built work, revising a prototype or design note, and the operations lifecycle.
 
-## Session start — the single front door
-Invoke this to begin. On invocation:
-1. **Run the linter + the freshness check** (`python3 scripts/lint_spec.py` · `…/check_freshness.py` — advisory: every artifact whose cited upstream definition drifted since it was last reconciled; a conductor-less session may legitimately have left these behind), then **scan + re-derive** (below):
-   spec-health per area + the bet-health register. Linter ERRORs are authoritative for
-   structure/headers/refs/placeholders — fix or surface them before anything else.
-2. **Ask which area to focus on — an option menu, never an open prompt.** Build it from the scan:
-   the **recommended next area** (default), **resume** an in-progress area (with open count), **fix
-   cross-area issues** (if found), **drain the stale set** (when the entry freshness check reports
-   drift — re-grill/re-derive each drifted artifact via its owning skill, upstream→downstream through
-   `10-delivery`, then re-record the locks), **go test/clear the riskiest assumption** (from bet-health), **a
-   specific area I name**, **migrate existing docs**, or **audit the whole spec** (`audit-spec` — the
-   consistency + domain-completeness + code-gen-readiness pass above the linter, e.g. before a build or
-   release; report-only by default — offer `--fix` to remediate in-session and `--loop` to converge to
-   zero findings). When a `spec-audit-report.md` already sits at the project root, add **execute the
-   audit's fix-chains** (`audit-spec --fix` consumes it — the report's dependency-ordered chains are work
-   to drive, not a terminal artifact). Once the implementation-readiness gate passes,
-   add **prepare delivery** (derive-conventions → derive-tasks); once delivery-readiness passes, add **work
-   the next task** (implement → run-tests → conformance-review, in build-order). Show blocked areas
-   as unavailable + what unblocks them. Ground every suggestion in what the scan found.
-3. **Run the chosen area yourself.** The area skills are reference docs (`disable-model-invocation: true`), **not dispatchable agents** — there is no handoff. You **load that skill's `SKILL.md` + its shared engine and execute the interview/derivation in-line** (or delegate to a subagent you spawn with that skill text as its brief), handing it its input and its target slot. **One focus per session;** finish or park, then re-run.
-**Never silently start an area the user didn't choose.** Don't dump all areas — surface the few.
+## Lean by default
+The aim is the smallest spec that lets the build proceed without guessing. An area, a file, a rule or a gate earns its place by having a reader — a later step, a tool, or a person who will act on it. Recommend the smallest profile that fits, offer the next area only when something downstream needs it, and treat spec that restates code or another area as a defect to remove, the same as a gap. Growing the spec when a real need appears is cheap; keeping unread spec consistent is not.
 
-**Parallel sessions.** The user may run several Codex or Claude Code sessions at once. Keep them safe: **one area
-per session** (above), **prefer a branch per session/area**, and since **each area owns its own output folder**, parallel areas don't contend on shared files. Real conflicts resolve at **git merge**; on the next run after a merge you **recompute the cross-area state from the repo** (each area's output is the record). See `references/operator-map.md`.
+## Building from scratch, or changing something that exists
+Work out which of the two you are in first; they use very different amounts of this system.
 
-## You own the structure; the skills don't - hand each its input and its target
-The area skills are **self-contained units that know nothing about this system** - no gates, no tree, no awareness of you or each other. All orchestration is yours. They are **reference docs you load and run** (not agents you hand off to); whether you execute one in-line or in a subagent you spawn, you give it the same brief:
-- **Give it its input.** Look up the area in the **machine dependency graph** `references/dependencies.json` (`consumes` = the **advisory primary inputs** it starts from — *not* an exhaustive or gating list; `produces_ids` = the IDs it mints; rendered for humans at `references/DEPENDENCY-GRAPH.md`). Hand it **all upstream artifacts** — everything in earlier layers, plus any same-stage output whose derive-order is fixed before it — with the `consumes` set flagged as "start here." (The layer rule already lets an area reference anything strictly upstream; the curated edges are too fragile to treat as the boundary — so give the full upstream context and let it cite what it uses. Precise change-propagation comes from the **actual stable-ID reference graph** via `impact.py`, not from `consumes`.) **This broad-context rule is for the *synthesis* areas (grilling/derivation — they integrate many concerns). The *execution* loop is the opposite: an `implement-task` slice is **construction**, and gets a **scoped** input — its task's referenced IDs + the boundary contracts/architecture it must respect + conventions, NOT the whole upstream.** Dumping the full spec on a coding slice degrades focus and accuracy; broad context belonged to the steps that drew the slice's edges, not to building it. It works behind no gate - **you** decide readiness and sequence, it just produces.
-- **Give it its target.** Tell it the **working root** (`spec/`) and the **exact location** for its artifact - its slot in the tree from `references/repo-layout.md`. It writes there; you own the layout, it does not.
-- **Harvest from its output.** It writes one self-describing artifact — its own glossary and actors where it has them, ADRs to the shared `adr/` — to the slot you gave it. You read that output to pick up terms, actors, bets, and decisions; there are no companion files to merge. Then reconcile the cross-area glossary view and run `lint_spec.py` + `guard_derived.py`, check cross-area consistency, and drive propagation (`scripts/impact.py`) across dependents. None of that is the skill's job - it is all yours.
+**From scratch** — there is no product yet, or a whole new product area is being designed. Walk the in-profile areas in dependency order, as Session start below describes.
 
-The same skills, handed no input and no target, run standalone for someone who copied just a few of them; driven by you, they compose into one consistent `spec/`.
+**Ongoing work** — the product exists and the user brings a change: a bug, a tweak, a feature. Once the walking skeleton is built this is the normal case, and it needs no scan, no menu and no dashboards. Size the change with the exec engine's risk tiers and do what that tier owes:
 
-## Dashboards (report the relevant ones — they're orthogonal)
-- **Spec health** — per-area maturity + invariants (is the spec consistent & complete-enough?). The
-  maturity scale is closed so two sessions rate alike: **L0** no content · **L1** framed (scope + first
-  content, open set non-empty) · **L2** consistent (invariants pass, open set empty — Resolved/Deferred/N/A) ·
-  **L3** validated (its load-bearing bets Validated/Accepted-risk).
-- **Bet health** — the bets recorded across area artifacts: of the *critical* ones, how many are
-  Validated / Testing / Accepted-risk / Untested / Invalidated; plus kill-criteria status and PMF
-  signals. A green spec next to a red bet is the point — keep them visibly separate. *Spec consistent*
-  ≠ *bet validated.*
-- **Delivery health** (once in Stage 6–7) — tasks todo / in-progress / done / blocked, conformance
-  pass-rate, next gate. The execution loop follows `build-order` (dependencies first); the conductor
-  hands each execution skill a **tight context** (the task + its referenced spec IDs only) so the
-  coding agent stays efficient.
+| The change | What happens |
+|---|---|
+| `routine` — a bug fix, a copy or visual tweak, a refactor, a dependency bump | straight to `implement-task`: a failing test, the fix, the gate. The spec is touched only where a statement in it is now false. |
+| `feature` — new behaviour in an existing part of the product | amend what the change alters and nothing else: the acceptance criteria, plus any rule it changes in the area that owns that rule, asking the user only what the spec and the code cannot answer. Then one brief (`derive-tasks`, for this slice only) and `implement-task`. |
+| `critical` — a new aggregate or context, a migration, authentication, authorization, erasure, billing, a model seam, a one-way door | as `feature`, plus an ADR where the change embodies a decision, a design note before coding (`derive-impl-design`), and a fresh-context `conformance-review` after. |
 
-## Stage map & dependencies (owned by the shared layer — consult, don't restate)
-The canonical stage chain, per-area slots, tier diagrams, gates, and stage-purity rule live in `references/repo-layout.md`; the machine-readable edges (each area's exact `consumes`/`produces_ids`) in `references/dependencies.json`, rendered for humans at `references/DEPENDENCY-GRAPH.md`. Consult those when sequencing areas and handing a skill its input. What the tree can't show: discovery runs first, is continuous, and never closes; `derive-impl-design` is JIT in execution (a design-first slice, output to `10-delivery/impl-design/` downstream of tasks — not a solution area); the execution loop per task is implement-task → run-tests → conformance-review with any red routing back, driven across the whole DAG by `autorun`; `prototype` answers ONE empirical question at any stage; `generate-docs` / `generate-api-reference` / `generate-ui-prototype` project the spec on change (the UI prototype is produced + frozen at task finalization, not in the coding loop). Cross-cutting views (glossary, actors, bets, the risk + technical-debt register, decisions) are reconciled by reading area outputs, never stored as files.
+Find what a change touches by reading the area that owns the behaviour, or with `impact.py <IDs>`; leave the rest of the spec unread and unchanged. Run `lint_spec.py` after a spec edit and fix what the edit caused. Findings that were already there are not this change's job: mention their count once, and offer `audit-spec` as separate work. Several small related changes can share one brief and one push.
 
-**Key edges:** discovery → product-vision · product-vision.scope → which ddd contexts exist · product-vision.motion (PLG vs sales-led) → ux · security · monetization ·
-customer-discovery.personas → actors · constraints → bounds all · personas + neighbor-systems → system-context (the boundary) → ddd + integration + C4-L1 · ddd → all requirements (quality/data/security anchor on the domain — orthogonal to use-cases) · functional →
-entitlements · ml-reqs · ux (the use-case-driven requirements) · entitlements → **monetization** (no priceable features ⇒ don't ask) ·
-goals (refinement) · ALL requirements + product + monetization → solution (the gate) · derive-architecture →
-the other solution areas · functional + data → ml-reqs (AI) → derive-ml-architecture · brand seed / provided tokens → design-system (DS-) → ux journeys + ui-prototype (per ux-heavy slice, at task finalization) → tasks/build · architecture seams + a design-first slice → derive-impl-design (JIT in execution) → module internals.
+In ongoing work most skills stay unused, and that is the intended state: an interview or derivation skill runs only when a change reaches its area, and then only to amend it.
 
-## Topic readiness — don't ask what isn't answerable yet
-A topic is offered only when its prerequisites have **content**, not when its area is merely
-"started." This stops premature interrogation — **never ask about subscriptions before any product
-function exists.** Mechanism (reuses Deferred, pointed at sequencing):
-- Prerequisite empty ⇒ **don't offer**; record **Deferred** with trigger "prerequisite `<area>` has
-  content." Tracked, not forgotten, never asked early. Gate individual topics, not just areas.
-- **Active promotion:** each run, promote any Deferred item whose trigger is now met — surface it
-  ("`functional` now has content → monetization is unlocked; want to set plans?").
-- **Seed caveat (reverse trap):** at foundation, don't over-ask either — `product-vision` scope is
-  *coarse & revisable*; accept "roughly these areas," mark low-maturity, let it sharpen via
-  `functional`. Scope matures across the process; it is not a perfect up-front gate.
+A project that already has code or documents but has not used this system, or was built with an earlier major version of it, is adopted once before ongoing work starts (playbook: Adopting an existing project).
 
-## Gates (five)
-1. **Desirability gate (soft, early):** don't pour effort into deep speccing until the riskiest
-   *desirability* assumptions are at least **named with a test plan** (not necessarily passed). Stops
-   speccing a product nobody's checked anyone wants.
-2. **Architecture-readiness gate (requirements + design-system + ux → solution):** every foundation +
-   requirements + **design-system + ux** + monetization area `done` & cross-area-consistent, **and** every *critical* assumption `Validated`
-   or explicitly `Accepted-risk` (logged). You may proceed on accepted risks; not on un-acknowledged
-   ones. When proceeding on accepted risk, **flag scoping the first build (MVP) to test it cheaply.**
-   (`gtm` may trail — not a code prerequisite.)
-3. **Implementation-readiness gate (solution → delivery prep):** all solution areas `done` &
-   consistent — incl. the architecture's **module map + seam contracts** (module *internals* are
-   designed per-slice in execution via `derive-impl-design`, not gated here). The spec is now
-   buildable — proceed to **delivery prep**.
-4. **Delivery-readiness gate (delivery prep → execution):** `derive-conventions` done (standards,
-   dependency/boundary rules, build/test/lint commands, DoD, canonical `AGENTS.md` + import-only `CLAUDE.md`) **and** `derive-tasks`
-   done — a walking-skeleton task exists and is first, every in-scope use-case is covered by ≥1 task,
-   every task traces to spec IDs + has acceptance + DoD + dependencies, and `build-order` is acyclic.
-   **Nothing rides on prose:** a spec obligation that never becomes a task-manifest reference + a
-   Verification-Record gate row *will be silently dropped by an optimizing coding agent* — so confirm
-   every cross-cutting area in scope reaches the tasks through its dimension (`ux`+`a11y` journeys/states/
-   WCAG · `security` incl. `ENTL-` gates + `OBL-` obligations · `obs` — the `SLO-` telemetry + `AEV-`
-   analytics events · `data` retention · `ml` evals), not only through the spec that minted it.
-   → ready to code.
-5. **Per-task done (execution loop):** for each `T-NNN` in build-order (dependencies first):
-   `implement-task` → `run-tests` (suite green, every `AC-…` exercised) → `conformance-review`
-   (boundaries, contracts, data, security, NFR/ASR honored; traceability complete). All green = done;
-   any red routes back to `implement-task`; a failure exposing a spec gap raises an Open and may
-   re-open upstream (the pivot loop, for implementation).
+## First session — settle the two project settings
+When `.grillspec/project.json` is absent (`python3 scripts/project_config.py` says so), ask the two questions it holds before anything else. Both are facts only the user has; lead each with your recommendation and its reason, then write the answer with `project_config.py --set profile=<p> --set delivery=<d>`.
 
-## Cross-area consistency (a single skill can't do this)
-Per-area Open lists are caches; the truth is recomputed over the whole repo. Consistency is
-**non-monotonic across the graph** — a correct new fact can retroactively break another area. Route
-any break to the owning area as Open: renamed term / split actor in ddd → may invalidate
-security/ux/functional; a plan in monetization with no entitlement rule in ddd → gap; an NFR
-referencing a removed flow → dangling ref; a security rule naming a missing actor → broken ref.
-
-## Pivot loop (market-driven non-monotonicity)
-An `Invalidated` critical assumption (from the market) becomes a high-priority Open that ripples
-**upstream** — it can re-open scope, vision, even ddd. Route it to the owning area(s) for re-grilling,
-exactly like a cross-area inconsistency but sourced from reality. This is why discovery never closes:
-the world keeps invalidating things you thought you knew.
-
-## Each run, the conductor
-1. **Run `scripts/lint_spec.py`** — its ERRORs are the authoritative structural truth
-   (closed-world paths · file headers · dangling local links · placeholder/stale tokens · undefined/downward
-   ID references · authz completeness · uncovered threats · unratified `unconfirmed` values once tasks
-   exist); its WARNs are candidates you judge (readiness-vs-reality · gate order · prose · bet-status vocab).
-   Deferred-without-trigger and cross-area term collisions have **no mechanical check** — they are yours to
-   catch in the semantic sweep. Then **read the area outputs** (their recorded bets, gaps, and decisions) and **scan the repo** for the *semantic* consistency the
-   linter can't see — including a **timeless-source-of-truth sweep**: development-trace language or append-only structure that violates the timeless-artifact rule in `references/house-rules.md` is a defect; route the fix to the owning area. 2. **Re-derive** cross-area state incl. cross-references; flag downstream of any
-   changed upstream as "needs recheck"; recompute bet-health. 3. **Report both dashboards** + unlocked
-   / blocked / nearest gate + the single riskiest untested assumption. 4. On the user's pick, load and
-   run the area skill yourself (or migrate / a cross-area fix / an assumption-test plan); update your readiness view.
-
-**System self-feedback (the run improves the plugin, not just the spec).** Friction that is a defect in this system itself follows the house rules' plugin-feedback route (`plugin_feedback.py` → `GRILLSPEC-FEEDBACK.md` at the project root) — never recorded in a `spec/` artifact, never silently worked around. When the file has entries, note their count in your end-of-run report.
-
-## Skill kinds — interview vs derivation vs execution (and what each must NOT do)
-- **Interview (`grill-*`)** — elicits facts only the human/market has (vision, domain, the *values*
-  behind requirements: NFR numbers, retention, authz rules, acceptance criteria). May ask.
-- **Derivation (`derive-*`)** — generates **strictly from the recorded spec**; **never interviews**.
-  Decides engineering trade-offs with ADRs, surfaces high-impact ones for *ratification* (review, not
-  interview), and on a missing/contradictory input **raises a gap to the owning interview skill** (you
-  re-open it) rather than asking or inventing. **Before running a derivation skill, confirm its inputs
-  exist** — if not, route to the upstream interview skill first. (This is why `constraints` must capture
-  stack mandates *and preferences* — so `derive-architecture` has everything and needn't ask.)
-- **Execution (`implement-task` · `run-tests` · `conformance-review`)** — act on the code repo;
-  governed by `exec-engine`. Code lives in the repo, never in `spec/`.
-
-## Task readiness & order — phasing × dependencies (how scope/release priority enters)
-Two distinct things govern *which task next* and *in what order*:
-- **Technical dependencies** (`build-order` DAG) — a **hard** constraint: never start a task before
-  the tasks it `depends:` on are done. The **walking-skeleton task is always first.**
-- **Product phasing** (`product-vision` MVP/near/deferred, tagged on each task) — the **soft** priority
-  *within* what dependencies allow: MVP-phase tasks first, then near, then deferred. This is how
-  **scope / release priority enters implementation order** (*which* features ship first). Release
-  *dates / sprints* stay out of scope; only the priority ordering is used.
-→ **Next task = the highest-priority (earliest-phase) task whose dependencies are all done.**
-A task is **ready to implement** only when **every applicable dimension** in its package is **either an
-ID-ref, `N/A — why`, or a consciously *resolved* gap** (behavior · domain · data · api · ux · security ·
-nfr · integration · placement · tests · DoD). Missing detail is **not** a silent blocker and is **not**
-forced upfront — it's recorded as `GAP … UNRESOLVED` and **surfaced at this task (the last responsible
-moment), forcing the user to complete it, mark it N/A, or accept a default (ADR)**. A task with **any
-`UNRESOLVED` gap is not implementation-final and cannot be coded** (lint-enforced). The conductor hands
-`implement-task` only the task + its referenced spec IDs (tight context).
-**UI slices — the prototype is a finalization artifact, not a coding step.** When a UI slice's **`ux`
-dimension carries slice-specific composition** (a new screen/flow, non-obvious states), finalizing the
-task **generates its clickable prototype (`generate-ui-prototype`), you review/tweak it, and it freezes
-into the task** as the `ux` resolution — this is the design-review window, and it sits **here, before the
-build run**, so an AFK `autorun` builds against already-approved frozen prototypes and never has to break
-to show you a screen. A slice the **IA + design system already fully determine** (existing components,
-obvious composition) needs **no prototype** — mark `ux` `N/A — reuses DS-… on the existing screen`. A
-design surprise that only surfaces mid-build is the normal GAP path: `autorun` parks that one slice
-(HITL trigger → `_human-input.md`) and keeps going on the rest.
-
-## Change propagation (ALWAYS on, self-triggered — not a step you wait to be told to run)
-Every change — from an interview, a derivation, a ratified decision, or an operational learning — **must
-flow to everything that depends on it, down to code, automatically and in the same session.** This is
-reflexive, not optional, and not deferred. The traceability spine (stable IDs + references) IS the
-dependency graph.
-1. **Detect what changed yourself** — the IDs/files you just touched, or run `git diff` / `python3
-   scripts/impact.py --since <ref>` so the system *recognises its own changes* without being told.
-2. **Compute the impact set** — `python3 scripts/impact.py <changed-IDs…>` returns the minimal
-   transitive set of downstream **spec files · tasks · code**, ordered upstream→downstream.
-3. **Record + mark stale** — record what changed (git is the changelog); mark the set `status: stale · superseded-by-
-   change` in your readiness view / the affected artifacts / tasks.
-4. **Re-process only the impact set, incrementally** (diff, don't regenerate): re-grill deltas →
-   re-derive (reading existing ADRs, applying a delta) → re-finalize affected tasks → re-run execution
-   for affected code. Nothing outside the set is touched. **When a re-derivation rewrites a derived
-   artifact** (anything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions|tasks|impl-design/`, or
-   root canonical `AGENTS.md` + import-only `CLAUDE.md`), **run `python3 scripts/guard_derived.py --record <those paths>`** so the
-   derived-guard sees a legitimate regeneration and doesn't false-block the commit. **After writing or
-   reconciling ANY area — grilled or derived — also run `python3
-   scripts/check_freshness.py --record <those paths>`** so the freshness baseline
-   captures the upstream those artifacts were just reconciled against (this is how a re-grill clears its own
-   stale flag).
-5. **Re-verify:** `lint_spec.py` + `guard_derived.py` + `check_freshness.py` (advisory) + `conformance-review`.
-Default end-state: **nothing stale remains.** The duty split: **worker skills stay system-blind** — their
-engines ship standalone, so they carry no propagation machinery; a worker only **names the changed IDs in
-its hand-off** and never chases dependents. **Steps 1–5 belong to whoever composes**: you, whenever you're
-driving; the audit skill's `--fix`/`--loop` modes under their exit contract. A skill invoked directly with
-no composer may therefore leave the tree stale — that is expected, and it is exactly what your **entry
-freshness check + the drain-the-stale-set option** exist to catch at the next session: the net is at the
-composer's door, never inside the workers.
-
-## ▣ RELEASE-READINESS CHECKLIST (advisory — *you* decide when to ship)
-**The system has no concept of "release".** It does continuous spec + code work; promoting to
-production is **your action, outside the system** (`deploy-release` runs it when you choose). This is
-just the checklist to consult *when you decide to ship* — nothing here blocks you: every MVP-phase task
-`done` & merged · a clean **`conformance-review --full`** pass · NFR/ASR targets have **test evidence**
-(not assertions — load/soak as applicable) · `derive-observability` done (SLOs + alerting + runbooks) ·
-required `migrate-data` tasks done · critical `OBL-`/`SEC-` verified · UAT/acceptance signed off by the **named sign-off owners** (legal · security · product, per the stakeholder/decision-rights table) — a gate has a real person to ask, not "the team".
-Surfaced on Dashboard C as a readiness view, not a lock.
-
-## Earn your place — no redundant layer (when is an area N/A?)
-An area produces its artifact **only if a layer below consumes it**; otherwise mark it **N/A**, don't
-fill it. (This is the test for "do we need use-cases?": `functional` earns its place because it
-produces the **`AC-` acceptance layer** that `derive-tasks`, `derive-test-strategy`, and
-`conformance-review` all reuse — assembled once with stable IDs instead of re-projected from raw `ddd`
-in every task. If a project's `ddd` ever made that projection add nothing, `functional` would be N/A.)
-Apply the same test everywhere: a layer that produces nothing a downstream layer reads is overhead.
-
-## Consistency linter (deterministic backbone)
-`scripts/lint_spec.py` (stdlib, no deps) mechanically checks what shouldn't need judgment, so
-re-validation is trustworthy at scale. It **complements, not replaces, you:**
-- **ERROR** (ground truth — hard violation): file outside the structure · missing/empty
-  `scope|excludes|format` header · dangling local link · placeholder/stale token (`{{`, TODO, NNNN) ·
-  **reference to an undefined ID** · **illegal downward reference** (a file referencing a layer it
-  shouldn't) · **ID defined in more than one place** (define once) · **ID defined outside its owning
-  directory** · **a child ID whose keyed parent is missing** (AC->UC, ASR->NFR) · **authorization
-  completeness** (an empty actor×command cell, a CMD- with no rule) · **an uncovered THR-** (no control,
-  no accepted-risk) · staged promotions at their gate: an uncovered **OBL-** once the solution layer
-  exists, an **AC- no task owns** once tasks exist, an **`unconfirmed` (unratified) value** once tasks
-  exist · **unresolved `GAP … UNRESOLVED` in a task** (the last-responsible-moment forcing checkpoint) ·
-  task-DAG cycle · afk-eligibility contradictions. Non-zero exit (use in CI).
-- **WARN** (you judge): marked-done-but-empty · content-but-not-started · architecture-before-gate ·
-  dense prose blocks · **structural coverage gaps** — an element with no downstream reference
-  (every `CMD-`→`UC-`, `UC-`→`AC-`, `AC-`→test, `AGG-`→`DATA-`, `OBL-`→control, …). *This WARN set is
-  the mechanical gap-detection surface for structural completeness; unknown-unknowns still need the
-  interview/test/prod layers.*
-- **INFO** (still your job): event→consumer, entitlement→feature, term-used-but-undefined are
-  *semantic* — the conductor judges these, **unless** skills emit machine refs (`[t](path)` /
-  `ADR-<PREFIX>-NNN`), which the linter *does* verify.
-Run it at session start and each run, before trusting any cached state.
-
-## Cross-area reconciliation (no shared singletons)
-There are **no shared mutable singletons**. Each area writes its own self-describing artifact; **`glossary.md`** and **`actors.md`** are deliverables only in the areas whose job is to define them — the **domain model** owns the canonical ubiquitous language and domain actor roster, **customer-discovery** owns personas/system-users, **system-context** owns the external/boundary actors + neighbor systems, and (optionally) **design-system**/**compliance** keep their own UI/regulatory lexicons; most areas own neither. **All ADRs** live in the **one shared `adr/`** folder, each filename prefixed with its area code (`ADR-<PREFIX>-NNN`) so no two skills collide. The conductor **reads the area outputs** and reconciles across them: it **maintains the system-wide `glossary.md` and `actors.md` at the spec root** (reconciled from the per-area ones — one term/one meaning; personas ↔ domain roles ↔ boundary actors unified into one roster), derives the **global ADR index** from `adr/` (every `ADR-` reference resolves; every filename carries a registered prefix), and harvests the **bet register** and **risks** inline from the artifacts. **No file may exist at a path not listed in `repo-layout.md`** — on scan, relocate or merge any stray file. Every file follows the house rules (header · style · tables); the glossary, actor roster, ADR index, and readiness dashboards are all tables.
-
-**What the conductor itself writes** (reconciled at the spec root — it owns no area artifact):
-
-| File (spec root) | Captures | Format |
+| Setting | Recommend | When |
 |---|---|---|
-| `glossary.md` | system-wide ubiquitous language, reconciled from the per-area glossaries (one term / one meaning) | table: `term · definition · context` (the same columns every per-area glossary uses) |
-| `actors.md` | the unified actor roster (personas ↔ domain roles ↔ boundary actors merged) | table: `actor · type (human/system/persona/role) · owning area · description` |
-| `_readiness.md` | the per-area readiness dashboard | table: `area · status (done/in-progress/not-started) · maturity (L0–L3) · open-count · gate state` |
+| `profile` | `lite` | a solo or pre-launch product: vision, constraints, domain, acceptance criteria, a few quality targets, a thin architecture |
+| | `standard` | the product handles personal data, money or paid tiers, or has a model capability whose quality must be gated |
+| | `regulated` | the documents themselves are a deliverable — an auditor, a regulator or another team reads them |
+| `delivery` | `trunk` | one person, no production users yet: work lands on the default branch, verification is local, CI only deploys |
+| | `pr` | production users or more than one contributor: a branch and pull request per task, the full CI gate before merge |
 
-DERIVED-by-reading the area outputs (NOT stored as files): the **global ADR index** (from `adr/`), the **bet register**, the **risk + technical-debt register** (each entry: category · probability · impact · owner · mitigation · status / paydown-trigger), and the **decisions log**. The conductor writes **no ADRs of its own** and **no area artifact** — every area artifact belongs to its worker skill.
+Either setting can be raised later; say so. For a project that already has a spec, read the tree and propose the profile it actually needs rather than the one its size implies.
+
+## Session start — from scratch, or when the user asks where things stand
+1. Run `python3 scripts/lint_spec.py`. Its ERRORs are the structural truth (paths, headers, references, the profile, the timeless rule, unratified values once tasks exist); fix or surface them before anything else. Then scan the area outputs and rebuild the state (below).
+2. Offer a short menu grounded in what the scan found, with one recommended default: the next area the profile calls for; resume an area in progress; fix a cross-area inconsistency; test the riskiest untested bet; an area the user names; migrate existing docs; audit the spec (`audit-spec`); once the solution is ready, prepare delivery (`derive-conventions` → `derive-tasks`); once tasks exist, work the next task, or every ready task unattended. Show what is blocked and what unblocks it. Optional areas (market, customer discovery, monetization, go-to-market, growth) appear only when the user asks for them.
+3. Run the chosen area yourself. The decision-mode solution areas are small and read the same inputs, so after the architecture write them together in one session rather than one session each.
+
+   The area skills are reference documents (`disable-model-invocation: true`), not agents: load the skill's `SKILL.md` and its engine and carry out the interview or derivation in line, or in a subagent you brief with that text. One focus per session; finish or park it, then start again. Start only what the user chose.
+
+When several sessions run at once, keep one area per session. Each area owns its own folder, so parallel areas do not contend; after a merge, rebuild the cross-area state from the tree.
+
+## What you give each skill, and what you take back
+The area skills know nothing about this system — no gates, no tree, no awareness of each other. That keeps them usable standalone, and makes the orchestration yours:
+- **Input.** Look the area up in `references/dependencies.json` (`consumes` = where to start, not a boundary; `profile` = the smallest profile it belongs to; rendered at `references/DEPENDENCY-GRAPH.md`). An interview or derivation integrates many concerns, so hand it every upstream area that exists, with the `consumes` set marked as the starting point. A build task is the opposite: `implement-task` gets its brief and the code, because a brief is written to stand alone.
+- **Target.** The working root (`spec/`) and the exact folder for its artifact, from `repo-layout.md`.
+- **Depth.** The project profile, so the skill captures the core for that profile and leaves the rest absent.
+- **Harvest.** Read what it wrote for terms, actors, bets and decisions. Then reconcile the system-wide glossary and actor views, run `lint_spec.py`, check cross-area consistency, and propagate (below).
+
+## The state you rebuild each run
+Three views, reported separately because they answer different questions:
+- **Spec health** — per in-profile area, a maturity level on a closed scale so two sessions rate alike: `L0` no content · `L1` framed (scope and first content, open points remain) · `L2` consistent (invariants pass; every point Resolved, Deferred or N/A) · `L3` validated (its load-bearing bets Validated or Accepted-risk).
+- **Bet health** — of the critical bets recorded across areas, how many are Validated / Testing / Accepted-risk / Untested / Invalidated, plus kill-criteria status. A consistent spec beside an untested bet is the point of keeping these apart.
+- **Delivery health** — once tasks exist: `python3 scripts/check_task.py spec` prints every task's tier, status, criteria covered and open items, computed from the tree.
+
+The stage chain, the per-area folders and the gates are in `repo-layout.md`; consult it rather than restating it. What the tree cannot show: discovery runs first and never closes; `derive-impl-design` is written just in time for a `critical` slice; the per-task loop is `implement-task`, followed for a `critical` task by `conformance-review`, with any failure routing back; the exec engine's queue rules extend that loop across the build order when the user asks for an unattended run; `generate-ui-prototype` builds the reviewed screen a UI slice is built against.
+
+## Readiness — offer what is answerable
+Offer a topic when its prerequisites have content, not when its area is merely started: nobody can answer a subscription question before a product function exists. A topic whose prerequisite is empty is recorded as `Deferred` with the trigger that reopens it, and promoted when the trigger is met. At the foundation, accept coarse answers ("roughly these areas") and let them sharpen later.
+
+**Gates**, each counting only in-profile areas:
+1. **Desirability** (soft, early) — the riskiest desirability bets are named with a test plan before deep speccing.
+2. **Architecture-readiness** — the in-profile foundation and requirement areas (design system and ux for a UI product) are consistent, and every critical bet is Validated or explicitly Accepted-risk. Proceeding on accepted risk is fine; scope the first build to test it cheaply.
+3. **Implementation-readiness** — the solution areas the profile includes are consistent, including the module map and seam contracts.
+4. **Delivery-readiness** — conventions exist; a walking-skeleton task is first; every in-scope use-case is covered by a task and every acceptance criterion owned by exactly one; the build order is acyclic. A cross-cutting rule reaches the build only through a task brief's `rules` cell, so confirm the ones in scope appear there.
+5. **Per-task done** — as the exec engine defines it.
+
+Gates are readiness signals, not locks: a skill can always be invoked directly.
+
+## Next task
+The build order is a hard constraint (a task waits for the tasks it depends on; the walking skeleton is first); product phasing (MVP → near → deferred) is the priority within what dependencies allow. The next task is the earliest-phase task whose dependencies are done. A brief is ready to build when it has no `UNRESOLVED` gap; a gap is surfaced at that task, the last responsible moment, and resolved by completing it, marking it N/A, or accepting a default as an ADR.
+
+Each brief carries a risk tier (`routine` · `feature` · `critical`) that decides how much process it owes; raise a tier when the work turns out riskier, and say so. For a UI slice whose screen is new, generate and review the prototype when the brief is finalized (`generate-ui-prototype`) so an unattended run builds against an approved screen; a slice the design system and screen inventory already determine needs none.
+
+## Consistency across areas
+Per-area open lists are caches; the truth is recomputed over the whole tree, because a correct new fact can break another area: a renamed term invalidates security or ux, a plan with no entitlement rule is a gap, a requirement cites a removed flow. Route each break to the owning area as an open point. An `Invalidated` critical bet is the same kind of event coming from the market: it can reopen scope, vision, even the domain.
+
+## Change propagation
+A change touches the areas it actually changes, and nothing else — there is no layer-by-layer walk.
+1. Identify what changed: the IDs you just touched, or `python3 scripts/impact.py --since <ref>`.
+2. Compute the impact set: `impact.py <IDs…>` lists the downstream spec files, tasks and the tests that claim those IDs, upstream first.
+3. Re-work that set and only that set: the owning skill updates each affected artifact in place (smallest change in meaning, re-authored so it reads as one document); affected briefs are re-finalized; the listed tests are re-run and the code under them changed.
+4. Re-verify with `lint_spec.py` and the project's gate.
+
+Worker skills stay unaware of the rest of the system; they name the IDs they changed in their hand-off, and propagation is yours whenever you are driving.
+
+## Skill kinds
+- **Interview (`grill-*`)** — elicits what only the human or the market holds: vision, domain, the values behind requirements. May ask.
+- **Derivation (`derive-*`)** — writes from the recorded spec; decides engineering trade-offs, surfaces user-owned values for ratification, and raises a gap to the owning interview skill rather than asking. Confirm its inputs exist before running it.
+- **Execution** (`implement-task` · `conformance-review` and the operate skills) — acts on the code; governed by `exec-engine.md`.
+
+## What you write
+You own no area artifact and write no ADRs. At the spec root you keep three reconciled views, each a table:
+
+| File | Holds |
+|---|---|
+| `glossary.md` | the system-wide vocabulary reconciled from the areas — `term · definition · context`, one term one meaning |
+| `actors.md` | one actor roster — personas, domain roles and boundary actors merged: `actor · type · owning area · description` |
+| `_readiness.md` | per in-profile area: `area · status · maturity (L0–L3) · open count · gate state` |
+
+The ADR index, the bet register and the risk register are read from the areas on demand, not stored. A file at a path `repo-layout.md` does not list is relocated or merged on scan.
+
+## Release readiness
+The system has no concept of a release; promoting to production is the user's action (`deploy-release` runs it). When they decide to ship, the things worth checking are: every MVP task done; `check_task.py` clean; quality targets backed by measured evidence; the objectives and their alerts in place where the profile includes them; required data migrations done; the critical obligations and security rules verified; sign-off from the named owners. In `trunk` delivery this is also the moment to run the CI jobs that are otherwise dispatch-only (security scan, accessibility, visual baseline, mutation), and `audit-build` gathers the evidence. This is a checklist to consult, not a lock.
+
+Friction that is a defect in this system itself follows the house rules' plugin-feedback route; mention the count of entries in `GRILLSPEC-FEEDBACK.md` in your end-of-run report.

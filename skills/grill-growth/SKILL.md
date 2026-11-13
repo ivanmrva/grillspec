@@ -1,9 +1,9 @@
 ---
 name: grill-growth
 description: >-
-  Pin the post-launch growth model — activation, retention and referral, an experiment backlog,
-  and the analytics events the product must emit to measure it; closes the loop from launch back
-  to discovery. Loads the shared grill engine.
+  Pin the post-launch growth model: the activation bar, the retention definition, the growth
+  loop, an experiment backlog, and the analytics events the product must emit to measure them. An
+  optional commercial area; use only when the user asks for growth or analytics planning.
 ---
 
 <!-- grillspec-portable-resources -->
@@ -13,32 +13,35 @@ description: >-
 
 **Load `references/grill-engine.md` first and follow it.** This skill applies that method to **Growth & analytics (post-launch loop)** — the growth model and the events that measure it.
 
-## Method
-- Model **growth loops** alongside the funnel — trigger → action → output → reinvested input — and **name the primary loop** that compounds acquisition.
-- Type **activation** as a bar: event + count + window (e.g. "created ≥3 projects within 7 days"), paired with a **time-to-value** target.
-- Define the **retention curve / cohorts** and treat the **plateau** as the durable-growth check; for high-frequency products also pin a **stickiness ratio** (DAU/MAU or equivalent).
-- Pin the **event-taxonomy naming convention** — object-action, controlled vocabulary — before listing events.
+Run this only when the user asks for it; nothing in the build path depends on it. When it is run, its analytics events are the one output the build picks up: the task that emits an event cites its `AEV-` id.
+
+## Depth by profile
+Optional at every profile. Capture what the user will use:
+
+- By default, the activation bar, the retention definition and the analytics events needed to measure them.
+- The growth-loop model, when the user is deciding where growth compounds.
+- The experiment backlog, when the user is going to run experiments.
 
 ## Rules
-- **post-launch and parallel** — don't gate the build on it; but its *analytics events* must reach the task breakdown so instrumentation is built in, not bolted on — **concretely: each `AEV-` event lands in the emitting slice's `obs` dimension by id** (with the `EXP-` it serves), which the Verification Record's `obs` gate row then holds to an emission assertion; an `AEV-` that reaches no task's `obs` cell will never be emitted (lint warns on it)
-- activation + retention are defined against the north-star; the experiment backlog has ≥1 `EXP-` carrying a metric
-- **activation** is a typed bar (event + count + window) with a time-to-value target — never an adjective
-- retention is a **cohort curve** whose plateau is the durable-growth check (+ a stickiness ratio when high-frequency)
-- every experiment declares an **MDE**, **power/alpha**, derived **sample size**, **min-runtime**, a **guardrail metric**, and a **stop-rule** — no peeking unless a sequential method is declared
-- events follow the pinned **object-action** controlled vocabulary and each carries an **owner**
+- Activation and retention are defined against the north star. Activation is a typed bar (event + count + window, such as "created ≥ 3 projects within 7 days") with a time-to-value target. Where the goals already set the bar, refine it here.
+- Retention is a cohort curve, and its plateau is the durable-growth check. A high-frequency product adds a stickiness ratio (DAU/MAU or an equivalent).
+- Model growth loops beside the funnel (trigger → action → output → reinvested input) and name the primary loop, the one that compounds acquisition.
+- Pin the event naming convention (object-action, from a controlled vocabulary) before listing events. Each event carries an owner and its consent or tracking classification.
+- Each event has an `AEV-` id and names the `EXP-` or the metric it serves. An event no task cites is never instrumented, and the linter warns on it.
+- Every experiment declares its hypothesis, primary metric, MDE, power and alpha, the sample size they imply, a minimum runtime, a guardrail metric and a stop rule. Read results at the planned horizon unless a sequential method is declared, because peeking inflates false positives.
 
 ## Output
-**Stable IDs** (bare type prefix, ID = the leading table column / row key): `EXP-` a growth experiment · `AEV-` an analytics event (the instrumentation contract — an event is referenceable by id, so a task's `obs` cell, an experiment, and a rename all trace to the same row).
+**IDs:** `EXP-` a growth experiment · `AEV-` an analytics event.
 Written under `commercial/growth/`:
 
 | File | Captures | Format |
 |---|---|---|
-| `growth-model.md` | acquisition → activation → retention → referral/revenue (tied to north-star) + **named primary growth loop** (trigger→action→output→reinvested input) + activation bar (event·count·window) + time-to-value + retention-curve/cohorts (plateau · stickiness) + leading indicators | funnel · loop · fields |
-| `experiments.md` | experiment backlog — id EXP-NNN | hypothesis · primary metric · MDE · power/alpha · sample size · min-runtime · guardrail metric · stop-rule |
-| `analytics-events.md` | events/properties to track — id `AEV-NNN` per event (object-action naming, with consent/tracking classification, the `EXP-` it serves) + cohort/funnel definitions | **`AEV-` id** · event · properties · classification · serves(`EXP-`) · owner |
+| `growth-model.md` | the funnel (acquisition → activation → retention → referral / revenue) tied to the north star · the activation bar and time-to-value · the retention curve and cohorts (plateau · stickiness) · the primary growth loop · leading indicators | funnel · typed fields · loop |
+| `experiments.md` | the experiment backlog | `EXP-NNN` id · hypothesis · primary metric · MDE · power/alpha · sample size · min-runtime · guardrail metric · stop-rule |
+| `analytics-events.md` | the events and properties to track, plus the cohort and funnel definitions | `AEV-NNN` id · event · properties · classification · serves(`EXP-` or metric) · owner |
 
 ADRs → `adr/ADR-GRW-NNN.md`
-Consumes: the compliance obligations / data classification (each event carries its consent/tracking class).
+Consumes: the goals (the north star and the activation bar), and the compliance obligations and data classification (each event's consent or tracking class).
 
 ## Excludes
 metric *targets* (→ the success metrics / goals) · the telemetry *plumbing* (→ the architecture) · pricing experiments' model (→ the commercial model)

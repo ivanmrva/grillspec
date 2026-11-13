@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Wire the project-local exec-loop gate for Claude Code, Codex, or both.
+"""Wire the project-local edit hook for Claude Code, Codex, or both.
 
 The walking-skeleton runs this beside the git pre-commit governance installer. It registers
-`gate_exec.py` as a project-local PreToolUse hook for file edits, enforcing red-before-green and
-blocking hollow done claims at tool-call time.
+`gate_exec.py` as a project-local PreToolUse hook for file edits (it denies a newly introduced skipped
+test or production fake at the keystroke) and vendors the tree-facing checkers the pre-commit hook runs.
 
 The default is deliberately `both`: a generated Grill Spec project remains governed when teammates
 alternate between Claude Code and Codex. Pass `--host claude` or `--host codex` to install one side.
@@ -22,7 +22,12 @@ CODEX_HOOK_CMD = ('python3 "$(git rev-parse --show-toplevel)/.grillspec/tools/ga
 CLAUDE_MATCHER = "Write|Edit|MultiEdit"
 CODEX_MATCHER = "apply_patch|Edit|Write"
 MARK = "grillspec-exec-gate"
-VENDOR = ("gate_exec.py", "check_task_record.py", "check_orphan_tests.py", "tier_contract.py")
+# Everything the project-local hooks run, so the project stays governed in a session (or CI job) that
+# does not have the plugin installed: the edit hook, and the checks the spec pre-commit hook calls.
+VENDOR = ("gate_exec.py", "check_task.py", "check_orphan_tests.py", "tier_contract.py",
+          "lint_spec.py", "check_contracts.py", "project_config.py")
+# Copied alongside when present (a shell script, not a Python tool): the spec pre-commit hook itself.
+VENDOR_OPTIONAL = ("spec_governance_hook.sh",)
 
 
 def root_dir(argv) -> Path:
@@ -78,6 +83,10 @@ def vendor_tools(root: Path) -> bool:
         target = dest / filename
         if source.resolve() != target.resolve():
             shutil.copy2(source, target)
+    for filename in VENDOR_OPTIONAL:
+        source = here / filename
+        if source.is_file() and source.resolve() != (dest / filename).resolve():
+            shutil.copy2(source, dest / filename)
     return all((dest / filename).is_file() for filename in VENDOR)
 
 

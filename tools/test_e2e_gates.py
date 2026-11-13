@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-# test_e2e_gates.py - end-to-end integration test for the accountability + ops gates as a CHAIN.
+# test_e2e_gates.py - end-to-end integration test for the tree-facing gates as a CHAIN.
 #
-# The per-tool suites (test_check_task_record / test_check_no_fakes / test_check_config_drift /
+# The per-tool suites (test_check_task / test_check_no_fakes / test_check_config_drift /
 # test_check_deploy_real / test_check_migration_real / test_check_mock_budget / test_check_test_tiers /
-# test_check_e2e_target / test_check_no_skips / test_check_operate_records) lock each tool's behaviour in isolation. THIS proves they
+# test_check_e2e_target / test_check_no_skips) lock each tool's behaviour in isolation. THIS proves they
 # compose on one realistic mini-project: a properly-done task (real code, no fakes, declared config, a real
-# deploy, a real migration, a backed Verification Record, a full tiered test tree, a reconciled operate record)
-# passes ALL gates, and each distinct kind of cheat trips exactly the gate that owns it. Stdlib only; no network.
+# deploy, a real migration, a done-claim the tree backs, a full tiered test tree) passes ALL gates, and each
+# distinct kind of cheat trips exactly the gate that owns it. Stdlib only; no network.
 # Run: python3 tools/test_e2e_gates.py
 import subprocess, sys, tempfile, shutil, pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
-REC  = HERE / "check_task_record.py"
+REC  = HERE / "check_task.py"
 FAKE = HERE / "check_no_fakes.py"
 DRIFT = HERE / "check_config_drift.py"
 DEPLOY = HERE / "check_deploy_real.py"
@@ -20,53 +20,21 @@ MB   = HERE / "check_mock_budget.py"
 TT   = HERE / "check_test_tiers.py"
 ET   = HERE / "check_e2e_target.py"
 NS   = HERE / "check_no_skips.py"
-OPR  = HERE / "check_operate_records.py"
 
 def project(d):
     """A clean, fully-backed mini-project: one done task, real code, declared config, @covers-tagged tests."""
     f = {
-        # the task + its frozen obligations
+        # the task brief: one acceptance criterion, a done-claim
         "spec/10-delivery/tasks/T-001.md":
-            "T-001 | phase: MVP | Charge an order\n"
-            "behavior:    UC-001 · AC-001a\n"
-            "api:         API-Charge\n"
-            "security:    SEC-1\n",
+            "<!-- scope: x | excludes: y | format: z -->\n# T-001 — Charge an order\n\n"
+            "| field | value |\n|---|---|\n| tier | feature |\n| phase | MVP · afk: eligible |\n"
+            "| status | done |\n| behavior | UC-001<br>AC-001a — Given an open order, when charged, then it is saved |\n"
+            "| touches | API-Charge |\n| rules | SEC-1 — only the owner may charge |\n",
         # the env matrix (the declared config side)
         "spec/09-solution/infra-ops/environments.md":
             "<!-- scope: x | excludes: y | format: matrix -->\n"
             "| Key | Purpose | dev | prod |\n|---|---|---|---|\n"
             "| DATABASE_URL | store | local | distinct |\n| STRIPE_API_KEY | pay | test | live |\n",
-        # the independent conformance verdict
-        "spec/10-delivery/verification/review-report.md":
-            "# review-report\nReviewed T-001 independently.\nVERDICT: PASS — T-001 conforms.\n",
-        # the traceability matrix
-        "spec/10-delivery/verification/traceability.md":
-            "| spec ID | T- | code | test | pass |\n|---|---|---|---|---|\n"
-            "| AC-001a | T-001 | src/charge.js | tests/e2e/charge.test.js | ✓ |\n"
-            "| API-Charge | T-001 | src/charge.js | tests/contract/charge.json | ✓ |\n",
-        # the backed Verification Record (status: done)
-        "spec/10-delivery/verification/tasks/T-001.md":
-            "status: done\ntask: T-001\nheld-out: AC-001a\n"
-            "| Obligation | Source | Required | Evidence | Status |\n|---|---|---|---|---|\n"
-            "| UC-001 | behavior | test | tests/e2e/charge.test.js | PASS |\n"
-            "| AC-001a | behavior | test | tests/e2e/charge.test.js | PASS |\n"
-            "| API-Charge | api | contract | tests/contract/charge.json | PASS |\n"
-            "| SEC-1 | security | enforced | tests/e2e/charge.test.js | PASS |\n"
-            "| tests-first | done-gate | trace | tests/e2e/charge.test.js | PASS |\n"
-            "| tests:layers | test-strategy | levels | tests/e2e/charge.test.js · tests/contract/charge.json | PASS |\n"
-            "| coverage | test-strategy | >= bar | 86% (bar 80%) | PASS |\n"
-            "| mutation | test-strategy | >= bar | N/A — no domain-logic change | N/A |\n"
-            "| fitness:no-fakes | done-gate | clean | check_no_fakes clean | PASS |\n"
-            "| fitness:architecture | done-gate | green | fitness green | PASS |\n"
-            "| spec-lint | done-gate | clean | lint clean | PASS |\n"
-            "| deploy | infra-ops | real | .github/workflows/deploy.yml | PASS |\n"
-            "| ux:states | ux | states tested | — | N/A — headless |\n"
-            "| a11y | ux | scan clean | — | N/A — headless |\n"
-            "| ux:rendered | ux | rendered vs prototype | — | N/A — headless |\n"
-            "| prototype-review | ux | reviewed or waived | — | N/A — headless |\n"
-            "| obs | obs | emitted + asserted | — | N/A — no observable surface |\n"
-            "| traceability | done-gate | updated | traceability.md | PASS |\n"
-            "| conformance | review | verdict | review-report.md | PASS |\n",
         # real production code: reads only DECLARED config, no test doubles
         "src/charge.js":
             "const db = process.env.DATABASE_URL;\n"
@@ -94,8 +62,6 @@ def project(d):
         # every declared tier has a suite; no mocks; the e2e reads its target from env
         "tests/unit/charge.unit.test.js": "it('adds', () => { expect(1 + 1).toBe(2); });\n",
         "tests/integration/charge.int.test.js": "it('persists', async () => { await db.save({}); });\n",
-        # a 12-operate deploy record naming a real T- to a declared env - the operate gate's clean side
-        "spec/12-operate/deploy-dev-1.0.0.md": "# deploy dev 1.0.0\nDeployed T-001 to dev.\n",
     }
     for rel, content in f.items():
         p = d / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(content, encoding="utf-8")
@@ -126,9 +92,8 @@ try:
     r6 = run(MB,    [str(d)])
     r7 = run(TT,    [str(d)])
     r8 = run(ET,    [str(d)])
-    r9 = run(OPR,   [str(d)])
     r10 = run(NS,   [str(d)])
-    check("clean: task-record passes",  r1.returncode == 0, r1.stdout + r1.stderr)
+    check("clean: task done-claim passes",  r1.returncode == 0, r1.stdout + r1.stderr)
     check("clean: no-fakes passes",     r2.returncode == 0, r2.stdout + r2.stderr)
     check("clean: config-drift passes", r3.returncode == 0, r3.stdout + r3.stderr)
     check("clean: deploy-real passes",  r4.returncode == 0, r4.stdout + r4.stderr)
@@ -136,10 +101,9 @@ try:
     check("clean: mock-budget passes",  r6.returncode == 0, r6.stdout + r6.stderr)
     check("clean: test-tiers passes",   r7.returncode == 0, r7.stdout + r7.stderr)
     check("clean: e2e-target passes",   r8.returncode == 0, r8.stdout + r8.stderr)
-    check("clean: operate-records passes", r9.returncode == 0, r9.stdout + r9.stderr)
     check("clean: no-skips passes",     r10.returncode == 0, r10.stdout + r10.stderr)
-    rr = run(REC, [str(d / "spec"), "--report", "T-001"])
-    check("clean: report says VERIFIED", "VERIFIED" in rr.stdout and rr.returncode == 0, rr.stdout)
+    rr = run(REC, [str(d / "spec"), "--trace"])
+    check("clean: trace names the covering test", "| AC-001a | T-001 | tests/e2e/charge.test.js |" in rr.stdout, rr.stdout)
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
@@ -163,24 +127,25 @@ try:
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
-# ── 4. an unbacked done-claim trips task-record ONLY ───────────────────────
-def break_verdict(d):
-    (d / "spec/10-delivery/verification/review-report.md").write_text("# review\nno verdict here\n")
-d = fresh(break_verdict)
+# ── 4. a `critical` task without its review trips the task check ONLY ──────
+def make_critical(d):
+    p = d / "spec/10-delivery/tasks/T-001.md"
+    p.write_text(p.read_text().replace("| tier | feature |", "| tier | critical — money path |\n| review | pending |"))
+d = fresh(make_critical)
 try:
     r = run(REC, [str(d / "spec"), "--task", "T-001"])
-    check("unbacked: task-record catches it", r.returncode == 1 and "VERDICT" in (r.stdout + r.stderr))
-    check("unbacked: no-fakes unaffected",    run(FAKE, [str(d)]).returncode == 0)
+    check("unreviewed: task check catches it", r.returncode == 1 and "review" in (r.stdout + r.stderr))
+    check("unreviewed: no-fakes unaffected",   run(FAKE, [str(d)]).returncode == 0)
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
-# ── 5. dropping a tagged test trips task-record's source-coverage check ─────
+# ── 5. dropping a tagged test trips the task check's source-coverage check ──
 def drop_tag(d):
     (d / "tests/e2e/charge.test.js").write_text("it('charges', () => {});\n")   # @covers AC-001a removed
 d = fresh(drop_tag)
 try:
     r = run(REC, [str(d / "spec"), "--task", "T-001"])
-    check("untagged: task-record catches missing @covers", r.returncode == 1 and "AC-001a" in (r.stdout + r.stderr))
+    check("untagged: task check catches missing @covers", r.returncode == 1 and "AC-001a" in (r.stdout + r.stderr))
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
@@ -204,17 +169,6 @@ try:
     check("fakemig: migration-real catches it", run(MIG,    [str(d)]).returncode == 1)
     check("fakemig: no-fakes unaffected",       run(FAKE,   [str(d)]).returncode == 0)
     check("fakemig: deploy-real unaffected",    run(DEPLOY, [str(d)]).returncode == 0)
-finally:
-    shutil.rmtree(d, ignore_errors=True)
-
-# ── 7. a done-claim that OMITS the deploy row trips task-record ─────────────
-def drop_deploy_row(d):
-    p = d / "spec/10-delivery/verification/tasks/T-001.md"
-    p.write_text("\n".join(l for l in p.read_text().splitlines() if "| deploy |" not in l) + "\n")
-d = fresh(drop_deploy_row)
-try:
-    r = run(REC, [str(d / "spec"), "--task", "T-001"])
-    check("nodeployrow: task-record catches omission", r.returncode == 1 and "deploy" in (r.stdout + r.stderr))
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
@@ -261,17 +215,6 @@ try:
     check("skip: no-skips catches it",       run(NS, [str(d)]).returncode == 1)
     check("skip: mock-budget unaffected",    run(MB, [str(d)]).returncode == 0)
     check("skip: test-tiers unaffected",     run(TT, [str(d)]).returncode == 0)
-finally:
-    shutil.rmtree(d, ignore_errors=True)
-
-# ── 11. a dangling ref in a 12-operate record trips operate-records ONLY ───
-def dangling_operate(d):
-    (d / "spec/12-operate/deploy-dev-1.0.0.md").write_text("# deploy\nDeployed T-999 to dev.\n")
-d = fresh(dangling_operate)
-try:
-    r = run(OPR, [str(d)])
-    check("danglingop: operate-records catches it", r.returncode == 1 and "T-999" in (r.stdout + r.stderr))
-    check("danglingop: no-fakes unaffected",        run(FAKE, [str(d)]).returncode == 0)
 finally:
     shutil.rmtree(d, ignore_errors=True)
 

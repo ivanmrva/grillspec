@@ -1,9 +1,9 @@
 ---
 name: grill-ddd
 description: >-
-  Turn an idea or existing docs into a Domain-Driven Design model — subdomains, bounded
-  contexts, aggregates — building the ubiquitous language and actor roster. Use when
-  modelling a domain, even if the user never says DDD. Loads the shared grill engine.
+  Turn an idea or existing docs into a Domain-Driven Design model: subdomains, bounded contexts,
+  aggregates with their invariants, commands and events, plus the ubiquitous language and actor
+  roster. Use when modelling a domain, even if the user never says DDD.
 ---
 
 <!-- grillspec-portable-resources -->
@@ -13,43 +13,59 @@ description: >-
 
 **Load `references/grill-engine.md` first and follow it.** This skill applies that method to **Domain-Driven Design** — turning an idea or existing docs into a domain model, building the ubiquitous language and actor roster as it goes.
 
+## Depth by profile
+In scope at every profile.
+
+| When | What the model captures |
+|---|---|
+| every profile | the bounded contexts and how they relate · the ubiquitous language and actor roster · per aggregate, its invariants, state table, commands and events · the policies that react to events |
+| the domain has them | hotspots · value objects and entities that carry rules of their own · read models a screen or report depends on · an event flow, where a process crosses aggregates or contexts |
+| the domain needs it, or `regulated` | catalogues of domain services (`SVC-`), repositories (`REPO-`) and factories (`FAC-`). In most domains a repository per aggregate is implied, and listing it tells the build nothing. |
+
 ## Method
-1. **Frame the domain** — what the product does, its subdomains, each classified **Core / Supporting / Generic** (drives build-vs-buy and where to invest). The Core/Supporting/Generic split is a **ratify-point, not a silent call** (it's a build-vs-buy one-way door): propose the classification + a one-line why per subdomain and surface it for the human to agree/override — recommend Core only for the genuinely differentiating subdomains, Supporting/Generic (buy/adopt) for the rest.
-2. **Discover event-first** (big-picture → process → design) — explore the domain as a **timeline of domain events** (the things that happened), then **derive the commands** that cause them and the actors/policies behind those, then **cluster commands+events into aggregates**, and use the natural seams in the flow to **find bounded-context boundaries**. Record **hotspots** (unresolved unknowns, conflicting opinions, terminology clashes) where they surface rather than papering over them, and mark **pivotal events** (the ones that shift responsibility or phase) — these are the cues for where context boundaries fall. Capture a **process-level event flow per context** (events in order with their triggering commands and reacting policies), not just the static model.
-3. **Map the bounded contexts** — the contexts and their boundaries (seamed at the pivotal events); draw the **context map** with typed relationships and their direction. The system-context boundary is taken as given.
-4. **Build the ubiquitous language** — per context, **agree the domain terms by proposing and confirming, never by silently christening** (a term the domain already has is the user's to give — elicit or ratify it, harvesting it from any provided input first; a label you coin for a genuinely-new concept is marked **coined** — an `inferred` term, or a `HOT-` if contested — so it can be renamed by superseding). Record terms (one meaning within the context) into `glossary.md`; capture the actors in `actors.md`.
-5. **Model each context tactically** — per context, **one block per aggregate** (root, invariants, **state model: states · allowed transitions · guards**, transaction boundary, commands, events, **size/throughput note**) plus entities, **value objects** (immutable, equality-by-value — push implicit concepts like Money/DateRange/typed-Ids and their rules *into* them), policies/sagas, read models, domain services, repositories, factories.
+The order matters: each step uses what the one before settled.
+
+1. **Frame the domain.** What the product does and its subdomains, each classified Core / Supporting / Generic. The split decides build-versus-buy and where to invest, so it is the user's to ratify. Propose a classification with a one-line reason per subdomain, and recommend Core only for what truly differentiates the product.
+2. **Discover event-first.** Explore the domain as a timeline of domain events (things that happened). Derive the commands that cause them and the actors and policies behind those, then cluster commands and events into aggregates. Mark the pivotal events, where responsibility or phase shifts, because context boundaries fall there. Record a hotspot (an unresolved unknown, a conflict of opinion, a terminology clash) where it surfaces.
+3. **Map the bounded contexts.** Seam them at the pivotal events and draw the context map with typed, directed relationships. The system-context boundary is taken as given.
+4. **Model each context tactically.** One block per aggregate, plus the entities, value objects, policies and read models the context has.
 
 ## Rules
-- **One ubiquitous language per bounded context** — domain-established terms only, one meaning within the context
-- **Effective-aggregate rules** — root + invariants + **state model (states · transitions · guards)** + transaction boundary + commands + events; **right-sized by its true invariant + expected throughput/contention** (as small as the invariant allows); references other aggregates **by identity only**; **one aggregate per transaction** (cross-aggregate consistency is eventual)
-- **Prefer value objects** — model any attribute-cluster with no identity as an **immutable value object** (equality by value); make implicit domain concepts explicit as VOs (Money · DateRange · Address · typed Ids) and push their validation/behaviour inside them rather than leaving bare primitives on entities
-- **Every cross-aggregate invariant names the reactive policy** that restores eventual consistency — stated as **"whenever EVT-… then CMD-…"** (the event that breaks it → the command that repairs it); a cross-aggregate rule with no such policy is incomplete
-- **Every command produces an event; every event has a consumer or an explicit none**
-- **Typed context relationships, drawn from the full set** — upstream/downstream: **Open-Host-Service** (the published API/contract the upstream exposes) · **Published-Language** (the shared schema the exchange speaks — distinct from OHS) · **Anti-Corruption-Layer** · **Conformist** · **Customer-Supplier**; symmetric: **Shared-Kernel** · **Partnership**; and the non-integration cases: **Separate Ways** (deliberate no integration — duplicate rather than couple) · a **wall-off** relationship around a legacy/big-ball-of-mud system (contained behind a boundary, not integrated into). Each relationship carries its up/down-stream direction.
-- stable IDs (bare type prefix): aggregate `AGG-`, command `CMD-`, event `EVT-`, value object `VO-`, entity `ENT-`, **invariant `INV-`**, policy/saga `POL-`, read-model `RM-`, hotspot `HOT-`, domain-service `SVC-`, repository `REPO-`, factory `FAC-`. **Write each element `<ID> <Name>` — the ID leads, then its PascalCase name** (e.g. `commands: CMD-201 ExtractAtoms · CMD-204 ReExtract`; or a table row keyed on the ID) — so every element registers as a definition. **Each aggregate invariant carries an `INV-` id** so a downstream `AC-` can trace to the exact domain rule it asserts (e.g. `INV-204 JobLeadTime`), rather than naming it in prose. Namespace contexts by **disjoint numeric bands** (e.g. orders `AGG-2xx`, billing `AGG-3xx`), never with a `<CTX>-` prefix
+- **Ubiquitous language.** One language per bounded context, and one meaning per term within it. Agree each term by proposing and confirming it: a term the domain already has is the user's to give, so harvest it from the input first. A label coined for a new concept is marked coined (an `inferred` term, or a `HOT-` if contested) so it can be superseded. Terms go to `glossary.md`, actors to `actors.md`.
+- **Aggregates.** Each has a root, invariants, a state model, a transaction boundary, commands and events. Size it by its true invariant and its expected throughput and contention: as small as the invariant allows. It references other aggregates by identity only, and one transaction changes one aggregate, so consistency across aggregates is eventual.
+- **Cross-aggregate invariants.** Each names the reactive policy that restores consistency, stated as "whenever EVT-… then CMD-…": the event that breaks the rule and the command that repairs it. A cross-aggregate rule without that policy is unenforced.
+- **Commands and events.** Every command produces an event. Every event has a consumer, or states that it has none.
+- **Value objects.** Model an attribute cluster with no identity as an immutable value object, equal by value. Make implicit concepts explicit (Money · DateRange · Address · typed ids) and put their validation inside them, so entities do not carry bare primitives.
+- **Context relationships** are typed and directed. Upstream/downstream: Open-Host-Service (the published API the upstream exposes) · Published-Language (the shared schema the exchange speaks) · Anti-Corruption-Layer · Conformist · Customer-Supplier. Symmetric: Shared-Kernel · Partnership. No integration: Separate Ways (duplicate rather than couple) · a wall-off around a legacy system that is contained, not integrated.
+
+## IDs
+aggregate `AGG-` · command `CMD-` · event `EVT-` · value object `VO-` · entity `ENT-` · invariant `INV-` · policy/saga `POL-` · read model `RM-` · hotspot `HOT-` · domain service `SVC-` · repository `REPO-` · factory `FAC-`
+
+- Write each element as `<ID> <Name>`, the id first and then its PascalCase name: `commands: CMD-201 ExtractAtoms · CMD-204 ReExtract`, or a table row keyed on the id. That form is what registers the element as a definition.
+- Every aggregate invariant carries an `INV-` id, so an acceptance criterion can trace to the exact rule it asserts.
+- Namespace contexts by disjoint numeric bands (orders `AGG-2xx`, billing `AGG-3xx`). A context prefix in front of the type breaks id resolution.
 
 ## Output
-Written under `domain/ddd/`:
-
-The DDD schema is grouped **per bounded context**, then **one block per aggregate** with its commands, events and invariants nested under it — **never a flat dump** of all commands, then all events, then all aggregates.
+Written under `domain/ddd/`, grouped per bounded context. Within a context, each aggregate is one block with its commands, events and invariants nested under it. A flat list of all commands, then all events, then all aggregates hides which rule belongs to which aggregate.
 
 | File | Captures | Format |
 |---|---|---|
-| `strategic/subdomains.md` | subdomains classified Core / Supporting / Generic | — |
-| `strategic/context-map.md` | bounded contexts + typed relationships (with direction) | Mermaid |
-| `strategic/event-flow.md` | process-level event flow **per context** — domain events in timeline order with their triggering commands and reacting policies; **pivotal events** marked (the boundary/phase-shift cues) | per context: ordered EVT- ⟵ CMD- → policy; pivotal flagged |
-| `strategic/hotspots.md` | hotspots — unresolved unknowns, conflicting opinions, terminology clashes surfaced during discovery, each with status (open/resolved) and where it bites | id HOT-NNN · area · question · status |
-| `tactical/<context>/aggregates.md` | one block per aggregate: root · invariants (each `INV-`-id'd; cross-aggregate ones naming "whenever EVT- then CMD-") · **state model as a transition table — columns `from · trigger · to · guard`, with the initial state's `from` and terminal states' `to` marked `(initial)`/`(terminal)`** (so every state is reachable and either exits or is terminal, and same-`from`-same-`trigger` forks carry a distinguishing guard) · transaction boundary · commands · events · **size/throughput note (what right-sizes it)** | transition table |
-| `tactical/<context>/entities.md` | entities — identity + lifecycle | — |
-| `tactical/<context>/value-objects.md` | value objects — immutable, equality-by-value; the concepts + invariants pushed into them (Money · DateRange · typed Ids) | — |
-| `tactical/<context>/policies.md` | policies / sagas (`POL-`), domain services (`SVC-`) | — |
-| `tactical/<context>/read-models.md` | read models (`RM-`), repositories (`REPO-`), factories (`FAC-`) | — |
-| `glossary.md` | ubiquitous language (per-context terms) | — |
-| `actors.md` | actor roster | — |
+| `strategic/subdomains.md` | subdomains classified Core / Supporting / Generic, each with its reason | table |
+| `strategic/context-map.md` | the bounded contexts and their typed, directed relationships | Mermaid |
+| `strategic/event-flow.md` | per context, the domain events in timeline order with their triggering commands and reacting policies; pivotal events marked | per context: ordered `EVT-` ⟵ `CMD-` → policy |
+| `strategic/hotspots.md` | the unresolved unknowns, conflicts of opinion and terminology clashes, and where each one bites | `HOT-NNN` · area · question · status (open / resolved) |
+| `tactical/<context>/aggregates.md` | one block per aggregate: root · invariants (`INV-`) · state model · transaction boundary · commands · events · size/throughput note | a block per aggregate; the state model is a transition table |
+| `tactical/<context>/entities.md` | entities: identity and lifecycle | one entry per `ENT-` |
+| `tactical/<context>/value-objects.md` | value objects and the rules pushed into them | one entry per `VO-` |
+| `tactical/<context>/policies.md` | policies and sagas (`POL-`); domain services (`SVC-`) where catalogued | one entry per id; a policy reads "whenever EVT-… then CMD-…" |
+| `tactical/<context>/read-models.md` | read models (`RM-`); repositories (`REPO-`) and factories (`FAC-`) where catalogued | one entry per id |
+| `glossary.md` | the ubiquitous language, per context | term · context · definition |
+| `actors.md` | the actor roster | actor · what they do |
+
+The state model is a transition table with the columns `from · trigger · to · guard`. Mark the initial state by writing `(initial)` in its `from` cell and a terminal state by writing `(terminal)` in its `to` cell. Every state is then reachable and either exits or is terminal, and two transitions that share a `from` and a `trigger` each carry a distinguishing guard.
 
 ADRs → `adr/ADR-DDD-NNN.md`
-Consumes: the product vision's **coarse scope** (which bounded contexts exist), the **constraints** (bounds the model), and the **system context** (the external boundary + neighbor systems the model sits inside).
+Consumes: the product vision's coarse scope (which bounded contexts exist), the constraints (the bounds on the model), and the system context where it exists (the external boundary and neighbor systems the model sits inside).
 
 ## Excludes
 implementation/tech · NFRs · pricing · GTM · UX visuals

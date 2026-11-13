@@ -1,28 +1,26 @@
 # grill-security-reqs — worked example
 
-Setting the authorization rule for *reschedule-job* and the matching tampering threat.
+Illustrative: it shows the shape of the output, not a list to fill. The rule is for rescheduling a job in a multi-branch product on the `standard` profile.
 
-> **Agent:** Default-deny: who may reschedule a job? If any dispatcher can move any branch's job, that's a cross-tenant hole. *(I'd allow only the dispatcher whose branch booked it — a tenant predicate, not a flat role grant.)*
-> **User:** Only the booking branch's dispatcher. A tech can't reschedule at all.
-> **Agent:** Then the risk is a dispatcher tampering with another branch's schedule by guessing a job-id — I'll log every reschedule append-only so it's at least attributable. Accept or control?
-> **User:** Control it — enforce the predicate and keep the audit trail.
+> **Agent:** Default-deny: who may reschedule a job? If any dispatcher can move any branch's job, that is a cross-tenant hole. *(I'd allow only the dispatcher whose branch booked it: a tenant predicate, not a flat role grant.)*
+> **User:** Only the booking branch's dispatcher. A tech cannot reschedule at all.
+> **Agent:** Then the risk is a dispatcher changing another branch's schedule by guessing a job id. Accept it, or control it?
+> **User:** Control it. Enforce the predicate and keep an audit trail.
 
-Recorded: one default-deny authz rule carrying a tenant predicate, plus the tampering/repudiation control.
+## Output — `authorization.md`
+| SEC-id | actor | command | decision | condition |
+|---|---|---|---|---|
+| SEC-002 | Dispatcher | CMD-202 | allow | `job.bookingBranch == actor.branch` |
+| SEC-003 | Technician | CMD-202 | deny | — |
 
-## Output
-`requirements/security/authorization.md`
+Model shape: relationship-based (ownership predicate), decided in ADR-SREQ-001.
 
-**SEC-002 — Reschedule job**
-- actor × command: Dispatcher × RescheduleJob → **allow** if `job.bookingBranch == actor.branch`; else **deny**
-- Technician × RescheduleJob → **deny** (unspecified = forbidden)
-- model shape: relationship-based (ownership predicate) — decided in `adr/ADR-SREQ-001.md`
+## Output — `threat-model.md`
+Verification level: OWASP ASVS L2. Threat actor: a negligent or malicious dispatcher with a valid session, shifting load to another branch.
 
-`requirements/security/threat-model.md`
-- id: THR-002 · asset: Job schedule · boundary: authenticated-dispatcher → Scheduling
-  - threat (tampering): dispatcher mutates another branch's job by guessing job-id
-  - control: enforce SEC-002 tenant predicate at command handler
-- id: THR-003 · asset: Job schedule · same boundary
-  - threat (repudiation): dispatcher denies making a disruptive reschedule
-  - control: append-only, tamper-evident reschedule audit log · retention 24 months
-- ASVS target: L2 · OWASP Top-10: 2021 edition
-- threat actor: negligent/malicious insider (dispatcher) — capability: valid session; motive: load-shifting
+| THR-id | asset | threat | boundary | control / accepted-risk | owner |
+|---|---|---|---|---|---|
+| THR-002 | job schedule | tampering: changes another branch's job by guessing its id | dispatcher → Scheduling | SEC-002 | Scheduling |
+| THR-003 | job schedule | repudiation: denies a disruptive reschedule | dispatcher → Scheduling | append-only reschedule audit log, kept 24 months (ADR-SREQ-002) | Scheduling |
+
+The threats every web application shares are covered by the ASVS level and are not listed.

@@ -1,37 +1,28 @@
 # grill-ml-reqs — worked example
 
-ML requirements for auto-categorizing uploaded receipts in an expense app.
-> **Agent:** "It works" isn't a bar — what's the metric and target for category prediction, on a held-out set? *(I'd anchor on macro-F1, not raw accuracy; your categories are imbalanced — "Meals" dwarfs "Software".)*
-> **User:** Macro-F1, and it has to beat the rule-based baseline we ship today.
-> **Agent:** Below what confidence does the model stop auto-applying and ask the user? Silent wrong categories are worse than asking. *(I'd default 0.80 → present top-3 for one tap.)*
-> **User:** 0.80 sounds right; auto-apply above, suggest below.
+Illustrative: it shows the shape of the output, not a list to fill. The capability auto-categorises uploaded receipts in an expense app on the `standard` profile.
+
+> **Agent:** "It works" is not a bar. What are the metric and target for category prediction on a held-out set? *(I'd anchor on macro-F1, not raw accuracy: your categories are imbalanced, and "Meals" dwarfs "Software".)*
+> **User:** Macro-F1, and it has to beat the rule-based baseline we ship.
+> **Agent:** Below what confidence does the model stop auto-applying and ask the user? A silent wrong category is worse than a question. *(I'd default to 0.80, then offer the top 3 for one tap.)*
+> **User:** 0.80 is right. Auto-apply above, suggest below.
 
 ## Output — `capabilities.md`
-| id | task | I/O | decision it drives | HITL | serves (UC-) |
-|---|---|---|---|---|---|
-| ML-002 | classify | in: receipt image + OCR text · out: expense category + confidence | which GL category the expense posts to | below threshold → user picks from top-3; finance approves any >$2k regardless | `UC-022` (auto-categorize an uploaded receipt) |
+| id | task | I/O | decision it drives | HITL | serves (UC-) | draws-on (DATA-) |
+|---|---|---|---|---|---|---|
+| ML-002 | classify | in: receipt image + OCR text · out: category + confidence | which ledger category the expense posts to | below threshold the user picks from the top 3; finance approves anything over $2k | UC-022 | DATA-009 |
 
 ## Output — `evals.md`
-| metric | target | eval-set | offline + online bar |
-|---|---|---|---|
-| macro-F1 | ≥ 0.88 and > rule-baseline (0.71) | 4,000 held-out human-labeled receipts, frozen | offline: gate the release · online: canary 5%, auto-apply acceptance (no user edit) ≥ 90% over 7 days |
-| top-3 recall | ≥ 0.97 | same held-out set | offline gate (the suggest-list must contain the truth) |
-
-## Output — `data-needs.md`
-| data-class (DATA-) | source | labelling | volume | refresh |
+| metric | ML | target | eval-set | pass-bar |
 |---|---|---|---|---|
-| `DATA-009` (training/feedback receipts) | historical user-confirmed receipts | the user's accepted/edited category = label | ~120k seed, +8k/wk | monthly retrain; drift check weekly (PSI on category mix) |
+| macro-F1 | ML-002 | ≥ 0.88 and above the rule baseline (0.71) | 4,000 held-out human-labelled receipts, frozen | gates activation |
+| top-3 recall | ML-002 | ≥ 0.97 | the same set | gates activation: the suggestion list must contain the truth |
 
 ## Output — `quality-bars.md`
-- **Error cost:** false category is recoverable (user edits) but erodes trust → cap auto-apply error ≤ 8%; never auto-apply a *tax-deductible* flag.
-- **Latency/cost:** ≤ 600 ms p95 per receipt; ≤ $0.004/inference.
-- **Fallback (<0.80):** don't auto-apply — show top-3 + "Other"; if OCR empty, decline and request a clearer photo.
+| bar | ML | value | fallback |
+|---|---|---|---|
+| auto-apply error rate | ML-002 | ≤ 8% | — |
+| latency and cost per receipt | ML-002 | ≤ 600 ms p95 · ≤ $0.004 | — |
+| confidence threshold | ML-002 | 0.80 | below it, show the top 3 plus "Other"; with empty OCR, decline and ask for a clearer photo |
 
-## Output — `responsible-ai.md`
-| risk | requirement |
-|---|---|
-| merchant-name bias (non-US vendors mis-categorized) | report macro-F1 sliced by vendor locale; no slice < 0.80 |
-| transparency | show "suggested" badge + why (top merchant signal); user can always override |
-| misuse | block using category data to infer protected attributes; audit-log overrides |
-
-Recorded: ML-002 (serving `UC-022`, drawing on `DATA-009`) anchored on macro-F1 with a baseline to beat; mandatory 0.80 threshold + top-3 fallback; HITL at low-confidence and >$2k; offline gate AND online canary both defined; fairness sliced by locale. Serving architecture and eval-harness code excluded — that's the ML architecture.
+The capability is not trained on the product's own pipeline and does not decide about people, so `data-needs.md` and `responsible-ai.md` were not written. Serving and the eval harness belong to the ML architecture.

@@ -1,6 +1,6 @@
 interface:
   display_name: "Audit Build"
-  short_description: "The whole-build audit \u2014 the independent, release-time\u2026"
-  default_prompt: "Use $audit-build to the whole-build audit \u2014 the independent, release-time attestation that the BUILD followed the spec's declared process: the evidence ledger really ran,\u2026"
+  short_description: "Check the whole build against the spec before a release\u2026"
+  default_prompt: "Use $audit-build to check the whole build against the spec before a release, from the tree: done-claims hold, every acceptance criterion still has a real test, nothing faked or\u2026"
 policy:
   allow_implicit_invocation: true
