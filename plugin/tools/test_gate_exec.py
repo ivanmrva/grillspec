@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Behavior tests for the exec-loop gate + its installer. Run: python3 tools/test_gate_exec.py"""
+"""Behavior tests for the edit-time cheat tripwire + its installer. Run: python3 tools/test_gate_exec.py"""
 import json
 import os
 import shutil
@@ -23,25 +23,16 @@ def run_hook(root, tool_name, tool_input, env_extra=None):
                           input=payload, capture_output=True, text=True, env=env)
 
 
-def run_sub(root, *args, env_extra=None):
-    env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root))
-    if env_extra:
-        env.update(env_extra)
-    return subprocess.run([sys.executable, str(GATE), *args],
-                          capture_output=True, text=True, env=env, cwd=str(root))
-
-
 def mkproject():
     d = Path(tempfile.mkdtemp())
-    (d / "spec" / "10-delivery" / "verification").mkdir(parents=True)
-    # a live spec ID for --red --covers to resolve (the chat-is-spec-input tripwire)
-    (d / "spec" / "acceptance.md").write_text("- AC-001 sample criterion\n")
+    (d / "spec").mkdir(parents=True)
+    (d / "spec" / "acceptance.md").write_text("- AC-001 sample criterion\n")   # tracked, so a worktree has spec/
     (d / "src").mkdir()
     return d
 
 
 def mkgitproject(branch):
-    """A git project checked out on `branch` — for the branch-derived (parallel-safe) active task."""
+    """A git project checked out on `branch`."""
     d = mkproject()
     (d / "README").write_text("x\n")          # something to track so the initial commit isn't empty
     env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t",
@@ -68,156 +59,40 @@ def check(name, cond):
 def main():
     # --- not a grillspec project → fail open --------------------------------------------
     empty = Path(tempfile.mkdtemp())
-    r = run_hook(empty, "Edit", {"file_path": str(empty / "src" / "a.py"),
-                                 "old_string": "x", "new_string": "y"})
+    r = run_hook(empty, "Write", {"file_path": str(empty / "tests" / "a.test.js"),
+                                  "content": "it.skip('x', () => {})\n"})
     check("no spec/ dir → allow", r.returncode == 0)
 
-    # --- src edit with NO active task → allow (not inside an exec loop) ------------------
-    p = mkproject()
-    src = p / "src" / "a.py"
-    r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
-    check("no active task → src edit allowed", r.returncode == 0)
+    # --- an ordinary production edit is never blocked -------------------------------------
+    plain = mkproject()
+    r = run_hook(plain, "Write", {"file_path": str(plain / "src" / "a.py"), "content": "print(1)\n"})
+    check("ordinary src edit allowed", r.returncode == 0)
+    r = run_hook(plain, "Write", {"file_path": str(plain / "spec" / "10-delivery" / "tasks" / "T-002.md"),
+                                  "content": "| status | done |\n"})
+    check("spec edits are not the hook's business", r.returncode == 0)
+    check("the hook keeps no state in the project", not (plain / ".grillspec" / "gate").exists())
 
-    # --- active task, no red-log → DENY -------------------------------------------------
-    run_sub(p, "--start", "T-007")
-    r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
-    check("active task + no red-log → src edit DENIED", r.returncode == 2)
-    check("deny message mentions failing test", "failing test" in r.stderr.lower())
-
-    # --- test file is never gated -------------------------------------------------------
-    r = run_hook(p, "Write", {"file_path": str(p / "src" / "a.test.py"), "content": "t"})
-    check("test file edit allowed even with active task", r.returncode == 0)
-
-    # --- --red refuses a PASSING test command -------------------------------------------
-    r = run_sub(p, "--red", "--test", "true", "--covers", "AC-001")
-    check("--red on a passing test is rejected", r.returncode == 1)
-    r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
-    check("still denied after failed --red attempt", r.returncode == 2)
-
-    # --- --red refuses a covers-less red (chat is spec input, not code input) ------------
-    r = run_sub(p, "--red", "--test", "false")
-    check("covers-less --red is rejected", r.returncode == 1)
-    check("covers-less message names the doctrine", "spec input" in r.stderr)
-    r = run_sub(p, "--red", "--test", "false", "--covers", "AC-999")
-    check("--red with an ID that exists nowhere under spec/ is rejected", r.returncode == 1)
-    check("unknown-ID message says mint the ID first", "nowhere under spec/" in r.stderr)
-    r = run_sub(p, "--red", "--test", "false", "--covers", "not-an-id")
-    check("--red with a non-ID-shaped covers token is rejected", r.returncode == 1)
-    r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
-    check("still denied after rejected covers attempts", r.returncode == 2)
-
-    # --- --red on a FAILING test records the log → src edit now allowed ------------------
-    r = run_sub(p, "--red", "--test", "false", "--covers", "AC-001")
-    check("--red on a failing test recorded", r.returncode == 0)
-    check("red-log file exists",
-          (p / ".grillspec" / "gate" / "red" / "T-007.json").is_file())
-    check("red-log records the covers IDs",
-          json.loads((p / ".grillspec" / "gate" / "red" / "T-007.json").read_text())
-          .get("covers") == ["AC-001"])
-    check("gate dir self-ignores (transient state not committed)",
-          (p / ".grillspec" / "gate" / ".gitignore").read_text().strip().endswith("*"))
-    r = run_hook(p, "Write", {"file_path": str(src), "content": "print(1)"})
-    check("src edit allowed after red-log", r.returncode == 0)
-
-    # --- a project may opt out of the covers requirement --------------------------------
-    optout = mkproject()
-    (optout / ".grillspec").mkdir()
-    (optout / ".grillspec" / "grillspec-gate.json").write_text(
-        json.dumps({"red_requires_covers": False}))
-    run_sub(optout, "--start", "T-008")
-    r = run_sub(optout, "--red", "--test", "false")
-    check("covers-less --red allowed when red_requires_covers is false", r.returncode == 0)
-
-    # --- override env bypasses the gate -------------------------------------------------
-    p2 = mkproject()
-    run_sub(p2, "--start", "T-009")
-    r = run_hook(p2, "Write", {"file_path": str(p2 / "src" / "b.py"), "content": "x"},
-                 env_extra={"GRILLSPEC_GATE_OFF": "1"})
-    check("GRILLSPEC_GATE_OFF bypasses RED gate", r.returncode == 0)
-
-    # --- gate configuration is shared under .grillspec (no host-specific fallback) ------
+    # --- the production tree is configured under .grillspec (no host-specific fallback) ---
     configured = mkproject()
     (configured / ".grillspec").mkdir()
     (configured / ".grillspec" / "grillspec-gate.json").write_text(
         json.dumps({"production_globs": ["service/"]}))
-    run_sub(configured, "--start", "T-010")
-    r = run_hook(configured, "Write",
-                 {"file_path": str(configured / "service" / "api.py"), "content": "x"})
+    r = run_hook(configured, "Write", {"file_path": str(configured / "service" / "gw.py"),
+                                       "content": "class FakeGateway:\n    pass\n"})
     check("shared .grillspec gate config is honored", r.returncode == 2)
-
     legacy_config = mkproject()
     (legacy_config / ".claude").mkdir()
     (legacy_config / ".claude" / "grillspec-gate.json").write_text(
         json.dumps({"production_globs": ["service/"]}))
-    run_sub(legacy_config, "--start", "T-011")
-    r = run_hook(legacy_config, "Write",
-                 {"file_path": str(legacy_config / "service" / "api.py"), "content": "x"})
+    r = run_hook(legacy_config, "Write", {"file_path": str(legacy_config / "service" / "gw.py"),
+                                          "content": "class FakeGateway:\n    pass\n"})
     check("legacy .claude gate config is not a fallback", r.returncode == 0)
 
-    # --- Codex apply_patch payload: same RED gate, including multi-file normalization ---
-    patch = """*** Begin Patch
-*** Update File: src/b.py
-@@
-+print('production')
-*** End Patch"""
-    r = run_hook(p2, "apply_patch", {"command": patch})
-    check("Codex apply_patch + active task + no red-log → DENIED", r.returncode == 2)
-    check("Codex deny message points at shared gate", ".grillspec/tools/gate_exec.py" in r.stderr)
-
-    # --- done-claim gate: status: done with a failing record → DENY ---------------------
-    rec_dir = p / "spec" / "10-delivery" / "verification" / "tasks"
-    rec_dir.mkdir(parents=True, exist_ok=True)
-    rec = rec_dir / "T-007.md"
-    rec.write_text("status: in-progress\n\n| id | ... | status |\n|----|-----|--------|\n"
-                   "| AC-1 | x | PENDING |\n")
-    r = run_hook(p, "Edit", {"file_path": str(rec),
-                             "old_string": "status: in-progress",
-                             "new_string": "status: done"})
-    check("flip to done with unmet obligations → DENIED", r.returncode == 2)
-
-    # --- a non-done edit to the same record is not gated --------------------------------
-    r = run_hook(p, "Edit", {"file_path": str(rec),
-                             "old_string": "PENDING", "new_string": "PASS"})
-    check("non-done edit to record allowed", r.returncode == 0)
-
-    # --- branch-derived active task (parallel-safe, no --start needed) ------------------
-    gb = mkgitproject("task/T-021-foo")
-    bsrc = gb / "src" / "c.py"
-    r = run_hook(gb, "Write", {"file_path": str(bsrc), "content": "x"})
-    check("on a task branch + no red-log → src edit DENIED (branch is the signal)", r.returncode == 2)
-    r = run_sub(gb, "--red", "--test", "false", "--covers", "AC-001")   # no --start — task comes from the branch
-    check("--red works with no --start (task derived from branch)", r.returncode == 0)
-    check("red-log keyed by the branch task",
-          (gb / ".grillspec" / "gate" / "red" / "T-021.json").is_file())
-    r = run_hook(gb, "Write", {"file_path": str(bsrc), "content": "x"})
-    check("src edit allowed after branch-derived red-log", r.returncode == 0)
-
-    # --- a real task branch beats a stale --start pointer -------------------------------
-    run_sub(gb, "--start", "T-999")                       # stale/wrong explicit pointer
-    r = run_sub(gb, "--red", "--test", "false", "--covers", "AC-001")   # should still record under T-021 (the branch)
-    check("branch task overrides a stale --start pointer",
-          (gb / ".grillspec" / "gate" / "red" / "T-021.json").is_file())
-
-    # --- two parallel worktrees on different branches don't clobber ---------------------
-    # (each worktree has its own local .grillspec/gate/; branch keys the red-log — simulate with 2 repos)
-    wa = mkgitproject("task/T-030-a")
-    wb = mkgitproject("task/T-031-b")
-    run_sub(wa, "--red", "--test", "false", "--covers", "AC-001")
-    run_sub(wb, "--red", "--test", "false", "--covers", "AC-001")
-    # A's edit needs A's red-log; it must NOT be unblocked by B's, and vice-versa
-    ra = run_hook(wa, "Write", {"file_path": str(wa / "src" / "a.py"), "content": "x"})
-    rb = run_hook(wb, "Write", {"file_path": str(wb / "src" / "b.py"), "content": "x"})
-    check("parallel worktree A enforces its own task", ra.returncode == 0)
-    check("parallel worktree B enforces its own task", rb.returncode == 0)
-    check("worktree A red-log is A's task only",
-          (wa / ".grillspec/gate/red/T-030.json").is_file()
-          and not (wa / ".grillspec/gate/red/T-031.json").is_file())
-
-    # --- gate 3: content tripwires — fire with NO active task (the bootstrap window) -----
+    # --- the content tripwires: a cheat is denied at the keystroke ----------------------------
     g3 = mkproject()
     tf = g3 / "tests" / "pay.test.js"
     r = run_hook(g3, "Write", {"file_path": str(tf), "content": "it.skip('x', () => {})\n"})
-    check("skip marker into a test file → DENIED (no task needed)", r.returncode == 2)
+    check("skip marker into a test file → DENIED", r.returncode == 2)
     check("deny message says red is the truthful signal", "truthful signal" in r.stderr)
     r = run_hook(g3, "Write", {"file_path": str(tf), "content": "it('x', () => { expect(1).toBe(1) })\n"})
     check("clean test write allowed", r.returncode == 0)
@@ -265,8 +140,8 @@ def main():
     check("installer wrote a PreToolUse block", any(b.get("_source") == "grillspec-exec-gate" for b in blocks))
     check("installer vendored shared gate_exec.py",
           (fresh / ".grillspec" / "tools" / "gate_exec.py").is_file())
-    check("installer vendored shared check_task_record.py",
-          (fresh / ".grillspec" / "tools" / "check_task_record.py").is_file())
+    check("installer vendored shared check_task.py",
+          (fresh / ".grillspec" / "tools" / "check_task.py").is_file())
     check("installer vendored check_orphan_tests.py + its tier_contract.py helper",
           (fresh / ".grillspec" / "tools" / "check_orphan_tests.py").is_file()
           and (fresh / ".grillspec" / "tools" / "tier_contract.py").is_file())
@@ -308,42 +183,21 @@ def main():
     check("partial source toolset writes no host configs",
           not (target / ".claude").exists() and not (target / ".codex").exists())
 
-    # --- sibling worktrees: the gate validates the tree being EDITED ---------------------
-    # The session env var can point at a SIBLING worktree of the same repo. Validating that tree
-    # reads another checkout's state — which false-denied a legitimate `status: done` against a
-    # stale record. The anchor (the file the hooked call touches) must win over the env var.
-    wt_a = mkgitproject("plain-branch")                      # env points HERE; no active task
-    wt_b = Path(tempfile.mkdtemp()).resolve() / "sibling"    # ...but the edits land HERE
-    subprocess.run(["git", "worktree", "add", "-q", "-b", "task/T-042-x", str(wt_b)],
+    # --- sibling worktrees: the hook validates the tree being EDITED ----------------------
+    # The session env var can point at a SIBLING worktree of the same repo; the file the hooked call
+    # touches decides which project is checked.
+    wt_a = mkgitproject("main-line")                         # env points HERE: default production tree
+    wt_b = Path(tempfile.mkdtemp()).resolve() / "sibling"    # ...but the edit lands HERE
+    subprocess.run(["git", "worktree", "add", "-q", "-b", "side", str(wt_b)],
                    cwd=wt_a, capture_output=True, text=True)
     check("sibling worktree created", (wt_b / "spec").is_dir())
-
-    # gate 1: the edited tree is on a task branch with no red-log → DENY, though the env-pointed
-    # tree has no active task at all (pre-fix this resolved to wt_a and fell open).
-    (wt_b / "src").mkdir(exist_ok=True)
-    r = run_hook(wt_a, "Write", {"file_path": str(wt_b / "src" / "a.py"), "content": "print(1)"})
-    check("sibling worktree: RED gate follows the edited tree, not the env var", r.returncode == 2)
-
-    # gate 2: the done-claim is checked against the EDITED tree's record. Stub checkers stand in
-    # for the record contents — the assertion is purely which tree's checker runs.
-    for tree, code in ((wt_a, 1), (wt_b, 0)):
-        (tree / ".grillspec" / "tools").mkdir(parents=True, exist_ok=True)
-        (tree / ".grillspec" / "tools" / "check_task_record.py").write_text(
-            "import sys; sys.exit(%d)\n" % code)
-    rec = wt_b / "spec" / "10-delivery" / "verification" / "T-042.md"
-    rec.parent.mkdir(parents=True, exist_ok=True)
-    r = run_hook(wt_a, "Write", {"file_path": str(rec), "content": "status: done\n"})
-    check("sibling worktree: done-claim checked against the edited tree's record",
-          r.returncode == 0)
-    # ...and the env-pointed tree's own record still governs edits made inside it
-    rec_a = wt_a / "spec" / "10-delivery" / "verification" / "T-042.md"
-    rec_a.parent.mkdir(parents=True, exist_ok=True)
-    r = run_hook(wt_a, "Write", {"file_path": str(rec_a), "content": "status: done\n"})
-    check("done-claim inside the env-pointed tree still gated", r.returncode == 2)
-
-    # a Write to a not-yet-created directory still anchors on its repo (climbs to a real ancestor)
-    r = run_hook(wt_a, "Write", {"file_path": str(wt_b / "src" / "new" / "deep" / "b.py"),
-                                 "content": "print(1)"})
+    (wt_b / ".grillspec").mkdir(exist_ok=True)
+    (wt_b / ".grillspec" / "grillspec-gate.json").write_text(json.dumps({"production_globs": ["service/"]}))
+    r = run_hook(wt_a, "Write", {"file_path": str(wt_b / "service" / "gw.py"),
+                                 "content": "class FakeGateway:\n    pass\n"})
+    check("sibling worktree: the edited tree's config governs, not the env var's", r.returncode == 2)
+    r = run_hook(wt_a, "Write", {"file_path": str(wt_b / "service" / "new" / "deep" / "gw.py"),
+                                 "content": "class FakeGateway:\n    pass\n"})
     check("anchor resolves through a not-yet-created directory", r.returncode == 2)
     subprocess.run(["git", "worktree", "remove", "--force", str(wt_b)], cwd=wt_a, capture_output=True)
 

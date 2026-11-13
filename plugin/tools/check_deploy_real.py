@@ -4,8 +4,8 @@
 # Why it exists (the sibling of check_no_fakes.py for the deploy/release surface): the same adherence gap that
 # lets a stub reach src/ lets a *deploy script* be quietly faked or skipped - a CI job that `echo "deploying"`s
 # and exits 0, a workflow with the deploy step commented out or `if: false`, a `# TODO: implement deploy`
-# placeholder - so the task reports "done · deployed" while nothing ever ships. The accountability gate
-# (check_task_record.py) makes the deploy a CARRIED obligation; THIS makes "the artifact is real" mechanical.
+# placeholder - so the task reports "done · deployed" while nothing ever ships.
+# The walking skeleton owes a real deploy; THIS makes "the artifact is real" mechanical.
 # It is the cross-stack backstop that fires even before a project authors its own pipeline test.
 #
 # It is deliberately conservative (a noisy gate gets `--no-verify`d): it scans only deploy-INTENT artifacts and

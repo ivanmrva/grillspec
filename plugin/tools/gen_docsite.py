@@ -55,7 +55,7 @@ AREA_TITLES = {
     "09-solution/ml": "ML architecture",
     "10-delivery": "Delivery", "10-delivery/conventions": "Conventions", "10-delivery/tasks": "Tasks",
     "10-delivery/impl-design": "Implementation design",
-    "10-delivery/verification": "Verification", "12-operate": "Operations", "adr": "ADRs",
+    "12-operate": "Operations", "adr": "ADRs",
 }
 
 def esc(s):

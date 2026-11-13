@@ -36,14 +36,27 @@ def count_entries(name):
     hits = list(SPEC.glob("**/" + name))
     if not hits: return None
     return sum(1 for l in read(hits[0]).splitlines() if re.match(r"^\s*([-*]|\d+\.)\s+\S", l))
-tps = list(SPEC.glob("**/traceability.md"))
-trace = set()
-if tps:
-    for l in read(tps[0]).splitlines(): trace |= set(IDTOK.findall(l))
+# The project profile (.grillspec/project.json) - reported so the rollup is read against the right scope.
+def _profile():
+    import json
+    try:
+        v = str(json.loads((SPEC.resolve().parent / ".grillspec" / "project.json").read_text(encoding="utf-8")).get("profile", "")).lower()
+    except Exception:
+        return "regulated (no .grillspec/project.json)"
+    return v if v in ("lite", "standard", "regulated") else "regulated (unrecognized value)"
+def _task_status(p):
+    for l in read(p).splitlines():
+        m = re.match(r"^\s*\|\s*\**status\**\s*\|\s*[*`_]*([a-z-]+)", l, re.I)
+        if m: return m.group(1).lower()
+    return "todo"
+statuses = {}
+for p in task_files:
+    if re.fullmatch(r"T-\d+\w*", p.stem):
+        st = _task_status(p); statuses[st] = statuses.get(st, 0) + 1
 adrs = of("ADR") or sorted(set(re.findall(r"ADR-[A-Za-z][A-Za-z0-9]*-\d+", " ".join(p.name for p in files))))
 def pct(a, b): return ("%d%%" % round(100.0 * a / b)) if b else "n/a"
 def shown(x): return "-" if x is None else str(x)
-print("SPEC STATUS  (" + str(SPEC) + ")")
+print("SPEC STATUS  (" + str(SPEC) + ")   profile: " + _profile())
 print("=" * 54)
 if not files:
     print("no spec/*.md found - nothing to report."); sys.exit(0)
@@ -57,7 +70,7 @@ print("acceptance criteria: %d" % len(ac))
 print("NFRs / ASRs:         %d / %d" % (len(nfr), len(asr)))
 print("tasks:               %d  (afk eligible: %d, blocked: %d)" % (len(tasks), afk_elig, afk_block))
 print("ADRs:                %d" % len(adrs))
-print("traceability matrix: %s%s" % ("present" if tps else "ABSENT", ("  (%d ids referenced)" % len(trace)) if tps else ""))
+print("task status:         %s" % (" · ".join("%s %d" % (k, statuses[k]) for k in sorted(statuses)) or "-"))
 print("-" * 54)
 blockers = []
 if gaps: blockers.append("%d unresolved GAP(s) in tasks" % gaps)

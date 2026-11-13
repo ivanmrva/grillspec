@@ -1,5 +1,5 @@
 {
-  "_comment": "ADVISORY dependency map. `consumes` = each area's PRIMARY/start-here inputs, NOT an exhaustive or gating list: the layer rule lets an area reference anything strictly upstream, and the conductor hands it ALL upstream layers. Authoritative change-propagation is the actual ID reference graph (tools/impact.py), not this file. `method` = skill family (grill|derive|exec); `kind` = data-flow posture (spec areas: elicit|derive|model; non-spec areas: exec|validate|publish).",
+  "_comment": "ADVISORY dependency map. `consumes` = each area's PRIMARY/start-here inputs, NOT an exhaustive or gating list: the layer rule lets an area reference anything strictly upstream, and the conductor hands it ALL upstream layers. Authoritative change-propagation is the actual ID reference graph (tools/impact.py), not this file. `method` = skill family (grill|derive|exec); `kind` = data-flow posture (spec areas: elicit|derive|model; non-spec areas: exec|validate|publish). `profile` = the smallest project profile (lite < standard < regulated) the area belongs to; `optional` = a strategy area run only on request; `any` = profile-independent (delivery, execution, operate). `full_mode_at` = the profile at which a solution area writes its full descriptive output; below it the area records decisions only.",
   "stages": [
     "0-discovery",
     "0-foundation",
@@ -22,7 +22,8 @@
       "kind": "elicit",
       "consumes": [],
       "produces_ids": [],
-      "method": "grill"
+      "method": "grill",
+      "profile": "lite"
     },
     "product-vision": {
       "stage": "0-foundation",
@@ -35,7 +36,8 @@
       "produces_ids": [
         "CA"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "lite"
     },
     "customer-discovery": {
       "stage": "0-foundation",
@@ -46,7 +48,8 @@
         "product-vision"
       ],
       "produces_ids": [],
-      "method": "grill"
+      "method": "grill",
+      "profile": "optional"
     },
     "market": {
       "stage": "0-foundation",
@@ -57,7 +60,8 @@
         "product-vision"
       ],
       "produces_ids": [],
-      "method": "grill"
+      "method": "grill",
+      "profile": "optional"
     },
     "goals": {
       "stage": "0-foundation",
@@ -68,7 +72,8 @@
         "product-vision"
       ],
       "produces_ids": [],
-      "method": "grill"
+      "method": "grill",
+      "profile": "standard"
     },
     "constraints": {
       "stage": "0-foundation",
@@ -77,7 +82,8 @@
       "kind": "elicit",
       "consumes": [],
       "produces_ids": [],
-      "method": "grill"
+      "method": "grill",
+      "profile": "lite"
     },
     "system-context": {
       "stage": "0-foundation",
@@ -91,7 +97,8 @@
       "produces_ids": [
         "IF"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "standard"
     },
     "ddd": {
       "stage": "1-domain",
@@ -117,7 +124,8 @@
         "REPO",
         "FAC"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "lite"
     },
     "derive-functional": {
       "stage": "2-requirements",
@@ -131,7 +139,8 @@
         "UC",
         "AC"
       ],
-      "method": "derive"
+      "method": "derive",
+      "profile": "lite"
     },
     "quality": {
       "stage": "2-requirements",
@@ -145,7 +154,8 @@
         "NFR",
         "ASR"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "lite"
     },
     "data-reqs": {
       "stage": "2-requirements",
@@ -158,7 +168,8 @@
       "produces_ids": [
         "DATA"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "standard"
     },
     "integration-reqs": {
       "stage": "2-requirements",
@@ -170,7 +181,8 @@
         "ddd"
       ],
       "produces_ids": [],
-      "method": "grill"
+      "method": "grill",
+      "profile": "standard"
     },
     "security-reqs": {
       "stage": "2-requirements",
@@ -186,7 +198,8 @@
         "SEC",
         "THR"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "standard"
     },
     "ux-reqs": {
       "stage": "4-ux",
@@ -203,7 +216,8 @@
       "produces_ids": [
         "JRN"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "standard"
     },
     "design-system": {
       "stage": "3-design-system",
@@ -216,7 +230,8 @@
       "produces_ids": [
         "DS"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "standard"
     },
     "compliance": {
       "stage": "2-requirements",
@@ -229,7 +244,8 @@
       "produces_ids": [
         "OBL"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "standard"
     },
     "ml-reqs": {
       "stage": "2-requirements",
@@ -243,7 +259,8 @@
       "produces_ids": [
         "ML"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "standard"
     },
     "entitlements": {
       "stage": "2-requirements",
@@ -256,7 +273,8 @@
       ],
       "produces_ids": [
         "ENTL"
-      ]
+      ],
+      "profile": "standard"
     },
     "monetization": {
       "stage": "9-commercial",
@@ -269,7 +287,8 @@
         "goals"
       ],
       "produces_ids": [],
-      "method": "grill"
+      "method": "grill",
+      "profile": "optional"
     },
     "go-to-market": {
       "stage": "9-commercial",
@@ -280,7 +299,8 @@
         "product-vision"
       ],
       "produces_ids": [],
-      "method": "grill"
+      "method": "grill",
+      "profile": "optional"
     },
     "growth": {
       "stage": "9-commercial",
@@ -295,7 +315,8 @@
       "produces_ids": [
         "EXP"
       ],
-      "method": "grill"
+      "method": "grill",
+      "profile": "optional"
     },
     "derive-architecture": {
       "stage": "5-solution",
@@ -319,7 +340,8 @@
       "produces_ids": [
         "MOD"
       ],
-      "method": "derive"
+      "method": "derive",
+      "profile": "lite"
     },
     "derive-data-architecture": {
       "stage": "5-solution",
@@ -333,7 +355,9 @@
         "derive-architecture"
       ],
       "produces_ids": [],
-      "method": "derive"
+      "method": "derive",
+      "profile": "standard",
+      "full_mode_at": "regulated"
     },
     "derive-api-contracts": {
       "stage": "5-solution",
@@ -349,7 +373,9 @@
       "produces_ids": [
         "API"
       ],
-      "method": "derive"
+      "method": "derive",
+      "profile": "standard",
+      "full_mode_at": "regulated"
     },
     "derive-security-architecture": {
       "stage": "5-solution",
@@ -362,7 +388,9 @@
         "derive-data-architecture"
       ],
       "produces_ids": [],
-      "method": "derive"
+      "method": "derive",
+      "profile": "standard",
+      "full_mode_at": "regulated"
     },
     "derive-infra-ops": {
       "stage": "5-solution",
@@ -375,7 +403,9 @@
         "derive-architecture"
       ],
       "produces_ids": [],
-      "method": "derive"
+      "method": "derive",
+      "profile": "standard",
+      "full_mode_at": "regulated"
     },
     "derive-observability": {
       "stage": "5-solution",
@@ -390,7 +420,9 @@
       "produces_ids": [
         "SLO"
       ],
-      "method": "derive"
+      "method": "derive",
+      "profile": "standard",
+      "full_mode_at": "regulated"
     },
     "derive-test-strategy": {
       "stage": "5-solution",
@@ -407,7 +439,9 @@
         "security-reqs"
       ],
       "produces_ids": [],
-      "method": "derive"
+      "method": "derive",
+      "profile": "standard",
+      "full_mode_at": "regulated"
     },
     "derive-impl-design": {
       "stage": "7-execution",
@@ -419,7 +453,8 @@
         "derive-tasks"
       ],
       "produces_ids": [],
-      "method": "derive"
+      "method": "derive",
+      "profile": "any"
     },
     "derive-ml-architecture": {
       "stage": "5-solution",
@@ -432,7 +467,9 @@
         "derive-data-architecture"
       ],
       "produces_ids": [],
-      "method": "derive"
+      "method": "derive",
+      "profile": "standard",
+      "full_mode_at": "regulated"
     },
     "derive-conventions": {
       "stage": "6-delivery-prep",
@@ -444,7 +481,8 @@
         "derive-test-strategy"
       ],
       "produces_ids": [],
-      "method": "derive"
+      "method": "derive",
+      "profile": "any"
     },
     "derive-tasks": {
       "stage": "6-delivery-prep",
@@ -463,7 +501,8 @@
       "produces_ids": [
         "T"
       ],
-      "method": "derive"
+      "method": "derive",
+      "profile": "any"
     },
     "implement-task": {
       "stage": "7-execution",
@@ -477,7 +516,8 @@
         "derive-impl-design"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "run-tests": {
       "stage": "7-execution",
@@ -489,12 +529,13 @@
         "implement-task"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "conformance-review": {
       "stage": "7-execution",
       "skill": "conformance-review",
-      "folder": "10-delivery/verification",
+      "folder": "(review)",
       "kind": "exec",
       "consumes": [
         "derive-tasks",
@@ -509,7 +550,8 @@
         "ddd"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "autorun": {
       "stage": "7-execution",
@@ -520,7 +562,8 @@
         "derive-tasks"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "deploy-release": {
       "stage": "8-operate",
@@ -532,7 +575,8 @@
         "derive-observability"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "migrate-data": {
       "stage": "8-operate",
@@ -544,7 +588,8 @@
         "derive-data-architecture"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "operate-incident": {
       "stage": "8-operate",
@@ -556,7 +601,8 @@
         "derive-infra-ops"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "diagnose": {
       "stage": "8-operate",
@@ -565,7 +611,8 @@
       "kind": "exec",
       "consumes": [],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "prototype": {
       "stage": "any",
@@ -574,7 +621,8 @@
       "kind": "validate",
       "consumes": [],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "generate-docs": {
       "stage": "any",
@@ -585,7 +633,8 @@
         "conformance-review"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "generate-api-reference": {
       "stage": "any",
@@ -596,7 +645,8 @@
         "derive-api-contracts"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     },
     "generate-ui-prototype": {
       "stage": "any",
@@ -609,7 +659,8 @@
         "derive-functional"
       ],
       "produces_ids": [],
-      "method": "exec"
+      "method": "exec",
+      "profile": "any"
     }
   }
 }

@@ -145,15 +145,15 @@ for path in installers:
         if required not in text:
             fail(f"{path.relative_to(ROOT)}: shared hook/tool invariant missing {required!r}")
 
-guards = list(DIST.rglob("guard_derived.py"))
-if not guards:
-    fail("release contains no guard_derived.py")
-for path in guards:
+linters = list(DIST.rglob("lint_spec.py"))
+if not linters:
+    fail("release contains no lint_spec.py")
+for path in linters:
     text = path.read_text(encoding="utf-8")
-    if 'LOCK = os.path.join(".grillspec", "derived.lock")' not in text:
-        fail(f"{path.relative_to(ROOT)}: derived lock is not under .grillspec")
-    if 'CLAUDE_IMPORT = "@AGENTS.md\\n"' not in text:
+    if 'CLAUDE_IMPORT = "@AGENTS.md"' not in text:
         fail(f"{path.relative_to(ROOT)}: import-only CLAUDE.md invariant is absent")
+    if '".grillspec" / "project.json"' not in text:
+        fail(f"{path.relative_to(ROOT)}: project settings are not read from .grillspec/project.json")
 
 derive_guides = list(DIST.rglob("skills/derive-conventions/SKILL.md"))
 if not derive_guides:

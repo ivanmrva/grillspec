@@ -78,17 +78,13 @@ expect("duplicate-id", run(LINT, {
     "04-domain/ddd/b.md": idtable(("AGG-1", "Order2")),
 }), must=["defined in multiple files"])
 
-# a per-task Verification Record REFERENCES ids (its H1 leads with the T-, obligation rows key on the AC-/… it
-# verifies); it never DEFINES them, so it must NOT register as a duplicate / out-of-area definition.
-expect("verification-record-not-a-defsite", run(LINT, {
+# done is checked against the tree (check_task.py), so there is no verification ledger under spec/ - a file
+# written there is outside the structure, like any other stray file.
+expect("verification-ledger-outside-structure", run(LINT, {
     "05-functional-spec/uc.md": idtable(("UC-001", "Login"), ("AC-001a", "Valid login")),
     "10-delivery/tasks/T-001.md": HDR + "\n# T-001 — Walking skeleton\nbehavior: AC-001a\n",
-    "10-delivery/verification/tasks/T-001.md":
-        HDR + "\n# T-001 — Verification Record\n\nstatus: in-progress\ntask: T-001\n\n"
-        "| Obligation | Source | Required | Evidence | Status |\n|---|---|---|---|---|\n"
-        "| AC-001a | behavior | test | tests/e2e/login.test.js | PASS |\n"
-        "| deploy | infra-ops | real | .github/workflows/deploy.yml | PASS |\n",
-}), must=["0 error(s)"], forbid=["defined in multiple files", "outside its owning area"])
+    "10-delivery/verification/tasks/T-001.md": HDR + "\n# T-001 — record\n\nstatus: in-progress\n",
+}), must=["file outside the defined structure"])
 
 # a downstream TRACE/EVIDENCE table keyed on an UPSTREAM id (09-solution/arch/quality.md keying its rows on the
 # ASR- it realizes, the same shape traceability.md uses) is a row-key REFERENCE, not a re-definition — it must
@@ -224,7 +220,7 @@ expect("contract-coverage-credit", run(LINT, {
 expect("task-traceability", run(LINT, {"10-delivery/tasks/T-9.md": idtable(("T-9", "x"))}),
        must=["cites no upstream spec ID"])
 
-# 19b an AC is the unit of acceptance: exactly one task may carry it (its Verification Record + @covers test).
+# 19b an AC is the unit of acceptance: exactly one task may carry it (the one whose done-claim its @covers test backs).
 # two tasks both naming AC-001a -> WARN (split ownership); each AC owned by one task -> clean (a sibling that
 # builds on the work depends-on the owner, it does not re-name the AC).
 expect("ac-single-owner-violation", run(LINT, {
@@ -443,7 +439,7 @@ expect("impl-design-trace-ok", run(LINT, {
 
 # build-order.md is a task REGISTER (rows key on T- as REFERENCES to the per-file defs) — not a defsite, so a
 # T- leading both build-order.md and its own T-NNN.md must NOT fire 'defined in multiple files' (same exemption
-# class as traceability.md / verification records)
+# class as a trace table)
 expect("build-order-register-not-a-defsite", run(LINT, {
     "05-functional-spec/uc.md": idtable(("UC-1", "x")),
     "10-delivery/tasks/T-001.md": idtable(("T-001", "Walking skeleton")) + "\nimplements UC-1\n",
@@ -529,7 +525,7 @@ expect("placement-ui-ux-na-warns", run(LINT, {
     "05-functional-spec/uc.md": idtable(("UC-1", "Pay")),
     "10-delivery/tasks/T-051.md": HDR + "\n# T-051\n\n| field | value |\n|---|---|\n| implements | UC-1 |\n"
         "| ux | N/A — headless |\n| placement | billing · src/billing/ui/components |\n| human-prereq | N/A |\n",
-}), must=["placement names a UI surface"])
+}), must=["the touched surface names a UI"])
 expect("placement-ui-reuse-exempt", run(LINT, {
     "05-functional-spec/uc.md": idtable(("UC-1", "Pay")),
     "07-design-system/design-system.md": HDR + "\n| ID | element |\n|---|---|\n| DS-001 | Button |\n",
@@ -662,6 +658,76 @@ expect("dotted-member-resolves", run(LINT, {
     "06-requirements/data/d.md": idtable(("DATA-Customer.id", "key")),
     "05-functional-spec/uc.md": idtable(("UC-1", "Place")) + "\nUC-1 references DATA-Customer.id\n",
 }), forbid=["undefined ID"])
+
+# ── 40 timeless artifacts ──────────────────────────────────────────────────
+TL = {"04-domain/ddd/a.md": idtable(("AGG-1", "Order"))}
+expect("timeless-stamp-errors", run(LINT, dict(TL, **{
+    "_human-input.md": HDR + "\n| topic | value | status |\n|---|---|---|\n| region | eu-central | ratified 2026-07-26 |\n"})),
+    must=["edit-trace stamp"])
+expect("timeless-resolved-stamp-errors", run(LINT, dict(TL, **{
+    "06-requirements/quality/q.md": HDR + "\n- RESOLVED 2026-07-24: the bar is p95 300 ms\n" + idtable(("NFR-1", "latency"))})),
+    must=["edit-trace stamp"])
+expect("timeless-plain-date-warns", run(LINT, dict(TL, **{
+    "06-requirements/compliance/c.md": HDR + "\n- the act applies from 2025-06-28\n" + idtable(("OBL-1", "a11y"))})),
+    must=["dated statement"], forbid=["edit-trace stamp"])
+expect("timeless-waiver-quiet", run(LINT, dict(TL, **{
+    "06-requirements/compliance/c.md": HDR + "\n- the act applies from 2025-06-28 <!-- timeless: allow regulation effective date -->\n" + idtable(("OBL-1", "a11y"))})),
+    forbid=["dated statement", "edit-trace stamp"])
+expect("timeless-history-phrase-warns", run(LINT, dict(TL, **{
+    "05-functional-spec/uc.md": idtable(("UC-1", "Pay")) + "\n- the phase tag was previously omitted\n"})),
+    must=["edit-history phrasing"])
+expect("timeless-code-span-and-fence-quiet", run(LINT, dict(TL, **{
+    "06-requirements/data/d.md": HDR + "\n- example payload `{\"at\": \"2026-01-01\"}`\n```\nset 2026-01-01\n```\n" + idtable(("DATA-1", "x"))})),
+    forbid=["dated statement", "edit-trace stamp"])
+expect("timeless-operate-and-provisioning-exempt", run(LINT, dict(TL, **{
+    "12-operate/releases.md": HDR + "\n- released 2026-08-01 to prod\n",
+    "_provisioning.md": HDR + "\n| key | consumed-by | state | evidence |\n|---|---|---|---|\n| K | T-1 | provisioned | set 2026-08-01 in CI |\n"})),
+    forbid=["dated statement", "edit-trace stamp"])
+
+# ── 41 the project profile ─────────────────────────────────────────────────
+def profile(name):
+    return {"../.grillspec/project.json": '{"profile": "%s", "delivery": "trunk"}' % name}
+PF = {"04-domain/ddd/a.md": idtable(("AGG-1", "Order")),
+      "06-requirements/data/d.md": idtable(("DATA-1", "orders")) + "\n- DATA-1 persists AGG-1\n"}
+expect("profile-absent-is-silent", run(LINT, PF), forbid=["outside the project's", "full-mode artifact"])
+expect("profile-lite-flags-standard-area", run(LINT, dict(PF, **profile("lite"))),
+       must=["outside the project's `lite` profile"])
+expect("profile-standard-accepts-standard-area", run(LINT, dict(PF, **profile("standard"))),
+       forbid=["outside the project's"])
+expect("profile-optional-area-never-flagged", run(LINT, dict(profile("lite"), **{
+    "04-domain/ddd/a.md": idtable(("AGG-1", "Order")),
+    "02-product/market/m.md": HDR + "\n- two incumbents\n"})), forbid=["outside the project's"])
+expect("profile-standard-flags-full-mode-file", run(LINT, dict(PF, **dict(profile("standard"), **{
+    "09-solution/data/schema.md": HDR + "\n| table | column |\n|---|---|\n| orders | id |\n"}))),
+    must=["full-mode artifact under the `standard` profile"])
+expect("profile-regulated-accepts-full-mode-file", run(LINT, dict(PF, **dict(profile("regulated"), **{
+    "09-solution/data/schema.md": HDR + "\n| table | column |\n|---|---|\n| orders | id |\n"}))),
+    forbid=["full-mode artifact"])
+expect("profile-gate-ignores-out-of-profile-areas", run(LINT, dict(profile("lite"), **{
+    "04-domain/ddd/a.md": idtable(("AGG-1", "Order")),
+    "05-functional-spec/uc.md": idtable(("UC-1", "Pay")),
+    "06-requirements/quality/q.md": idtable(("NFR-1", "latency")),
+    "09-solution/arch/modules.md": HDR + "\n| id | module | role |\n|---|---|---|\n| MOD-1 | Billing | domain |\n"})),
+    forbid=["architecture-readiness gate not met"])
+
+# ── 42/43 the task brief: risk tier + self-contained acceptance criteria ───
+def brief(tier_row, behavior, extra=""):
+    return (HDR + "\n# T-060\n\n| field | value |\n|---|---|\n%s| phase | MVP · afk: eligible |\n"
+            "| behavior | %s |\n| human-prereq | N/A |\n%s" % (tier_row, behavior, extra))
+BR = {"05-functional-spec/uc.md": idtable(("UC-1", "Pay"), ("AC-1a", "valid payment"))}
+GOODB = "UC-1<br>AC-1a — Given an open invoice, when the client pays, then the invoice is marked paid"
+expect("tier-missing-warns", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("", GOODB)})),
+       must=["carries no `tier` row"])
+expect("tier-unknown-warns", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("| tier | huge |\n", GOODB)})),
+       must=["unrecognized tier"])
+expect("tier-feature-clean", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("| tier | feature — new behaviour in billing |\n", GOODB)})),
+       forbid=["tier", "bare id"])
+expect("tier-critical-needs-review-row", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("| tier | critical — money path |\n", GOODB)})),
+       must=["`critical` task has no `review` row"])
+expect("tier-critical-with-review-clean", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("| tier | critical — money path |\n", GOODB, "| review | pending |\n")})),
+       forbid=["has no `review` row"])
+expect("brief-bare-ac-warns", run(LINT, dict(BR, **{"10-delivery/tasks/T-060.md": brief("| tier | feature |\n", "UC-1<br>AC-1a")})),
+       must=["cited by bare id"])
 
 # ── check_contracts (needs PyYAML) ─────────────────────────────────────────
 if HAVE_YAML:

@@ -64,9 +64,9 @@ DOC_PREFIX    = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/docs/")
 # referenced by the skill profiles and shared engines. At 160 KB total, bundling the set into a
 # skill that needs tooling is smaller and safer than maintaining a fragile Python-import resolver.
 PORTABLE_TOOLS = (
-    "check_freshness.py", "check_orphan_tests.py", "check_task_record.py", "gate_exec.py",
-    "guard_derived.py", "impact.py", "install_exec_gates.py", "lint_spec.py",
-    "plugin_feedback.py", "tier_contract.py",
+    "check_orphan_tests.py", "check_task.py", "gate_exec.py",
+    "impact.py", "install_exec_gates.py", "lint_spec.py",
+    "plugin_feedback.py", "project_config.py", "tier_contract.py",
 )
 
 def version():
@@ -344,7 +344,7 @@ Drive everything through the conductor:
 /grillspec:grill-spec-conductor
 ```
 It scans the spec, recommends the next step, hands each worker its input and target location, runs
-the linters (`lint_spec`, `guard_derived`) and change propagation, and keeps the cross-area views
+the linter (`lint_spec`) and change propagation, and keeps the cross-area views
 consistent. Any individual skill can also be invoked directly with `/grillspec:<skill>`.
 
 {_WORKFLOW_MD}

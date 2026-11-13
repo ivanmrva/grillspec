@@ -29,8 +29,8 @@ jobs:
           pip install --quiet pyyaml
           python3 plugin/tools/test_lint_spec.py
 
-      - name: task-record regression suite — every accountability check still fires
-        run: python3 plugin/tools/test_check_task_record.py
+      - name: task-check regression suite — every done-claim check still fires
+        run: python3 plugin/tools/test_check_task.py
 
       - name: no-fakes regression suite — the production-tree tripwire still fires
         run: python3 plugin/tools/test_check_no_fakes.py
@@ -53,19 +53,19 @@ jobs:
       - name: e2e-target regression suite — the e2e-against-a-local-stack tripwire still fires
         run: python3 plugin/tools/test_check_e2e_target.py
 
-      - name: operate-records regression suite — the 12-operate reconciliation still fires
-        run: python3 plugin/tools/test_check_operate_records.py
+      - name: no-skips regression suite — the skipped-test tripwire still fires
+        run: python3 plugin/tools/test_check_no_skips.py
 
-      - name: release-attestation regression suite — the opt-in release gate still fires
-        run: python3 plugin/tools/test_check_release_attestation.py
+      - name: orphan-tests regression suite — every test still needs a live spec driver
+        run: python3 plugin/tools/test_check_orphan_tests.py
 
-      - name: e2e gate-chain — the accountability gates compose on a realistic project
+      - name: e2e gate-chain — the tree-facing gates compose on a realistic project
         run: python3 plugin/tools/test_e2e_gates.py
 
-      - name: project exec-gate — Claude Code and Codex hook adapters stay equivalent
+      - name: edit hook — Claude Code and Codex hook adapters stay equivalent
         run: python3 plugin/tools/test_gate_exec.py
 
-      - name: neutral project state — shared paths and canonical agent guide stay host-independent
+      - name: neutral project state — project settings and the canonical agent guide stay host-independent
         run: python3 plugin/tools/test_project_state.py
 
       - name: standalone emitter — auxiliary bundles remain portable and dual-host

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Wire the project-local exec-loop gate for Claude Code, Codex, or both.
+"""Wire the project-local edit hook for Claude Code, Codex, or both.
 
 The walking-skeleton runs this beside the git pre-commit governance installer. It registers
-`gate_exec.py` as a project-local PreToolUse hook for file edits, enforcing red-before-green and
-blocking hollow done claims at tool-call time.
+`gate_exec.py` as a project-local PreToolUse hook for file edits (it denies a newly introduced skipped
+test or production fake at the keystroke) and vendors the tree-facing checkers the pre-commit hook runs.
 
 The default is deliberately `both`: a generated Grill Spec project remains governed when teammates
 alternate between Claude Code and Codex. Pass `--host claude` or `--host codex` to install one side.
@@ -22,7 +22,7 @@ CODEX_HOOK_CMD = ('python3 "$(git rev-parse --show-toplevel)/.grillspec/tools/ga
 CLAUDE_MATCHER = "Write|Edit|MultiEdit"
 CODEX_MATCHER = "apply_patch|Edit|Write"
 MARK = "grillspec-exec-gate"
-VENDOR = ("gate_exec.py", "check_task_record.py", "check_orphan_tests.py", "tier_contract.py")
+VENDOR = ("gate_exec.py", "check_task.py", "check_orphan_tests.py", "tier_contract.py")
 
 
 def root_dir(argv) -> Path:

@@ -2,66 +2,66 @@
 # Dependency graph — what each area consumes & produces
 
 **Generated from `grill-shared/dependencies.json` by `tools/gen_depgraph.py` — do not hand-edit.**
-The conductor reads the JSON to know, before running an area's skill, which upstream artifacts/IDs to gather and hand it. `Consumes` = the upstream areas it builds from; `Produces` = the stable-ID prefixes it mints.
+The conductor reads the JSON to know, before running an area's skill, which upstream artifacts/IDs to gather and hand it. `Consumes` = the upstream areas it builds from; `Produces` = the stable-ID prefixes it mints. `Profile` = the smallest project profile (lite < standard < regulated) the area belongs to — `optional` areas run only on request, `any` is profile-independent, and `standard*` marks a solution area that records decisions only until the project is `regulated`.
 
-| Area | Skill | Kind | Consumes (upstream) | Produces (IDs) |
-|---|---|---|---|---|
-| **0 · Discovery** | | | | |
-| `problem-validation` | grill-problem-validation | elicit | — | — |
-| **0 · Foundation** | | | | |
-| `constraints` | grill-constraints | elicit | — | — |
-| `customer-discovery` | grill-customer-discovery | elicit | product-vision | — |
-| `goals` | grill-goals | elicit | product-vision | — |
-| `market` | grill-market | elicit | product-vision | — |
-| `product-vision` | grill-product-vision | elicit | problem-validation | CA- |
-| `system-context` | grill-system-context | elicit | customer-discovery, constraints | IF- |
-| **1 · Domain** | | | | |
-| `ddd` | grill-ddd | model | product-vision, constraints, system-context | CMD-, EVT-, AGG-, VO-, INV-, ENT-, POL-, RM-, HOT-, SVC-, REPO-, FAC- |
-| **2 · Requirements** | | | | |
-| `compliance` | grill-compliance | elicit | constraints | OBL- |
-| `data-reqs` | grill-data-reqs | derive | ddd | DATA- |
-| `derive-functional` | derive-functional | derive | ddd | UC-, AC- |
-| `entitlements` | grill-entitlements | derive | derive-functional | ENTL- |
-| `integration-reqs` | grill-integration-reqs | elicit | system-context, ddd | — |
-| `ml-reqs` | grill-ml-reqs | elicit | derive-functional, data-reqs | ML- |
-| `quality` | grill-quality | derive | ddd | NFR-, ASR- |
-| `security-reqs` | grill-security-reqs | derive | data-reqs, ddd, product-vision | SEC-, THR- |
-| **3 · Design system** | | | | |
-| `design-system` | grill-design-system | elicit | quality | DS- |
-| **4 · UX** | | | | |
-| `ux-reqs` | grill-ux-reqs | derive | derive-functional, ddd, design-system, quality, product-vision | JRN- |
-| **5 · Solution** | | | | |
-| `derive-api-contracts` | derive-api-contracts | derive | ddd, integration-reqs, security-reqs, derive-architecture | API- |
-| `derive-architecture` | derive-architecture | derive | derive-functional, ddd, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, entitlements | MOD- |
-| `derive-data-architecture` | derive-data-architecture | derive | data-reqs, ddd, derive-functional, derive-architecture | — |
-| `derive-infra-ops` | derive-infra-ops | derive | quality, constraints, derive-architecture | — |
-| `derive-ml-architecture` | derive-ml-architecture | derive | ml-reqs, derive-architecture, derive-data-architecture | — |
-| `derive-observability` | derive-observability | derive | quality, security-reqs, derive-architecture | SLO- |
-| `derive-security-architecture` | derive-security-architecture | derive | security-reqs, derive-architecture, derive-data-architecture | — |
-| `derive-test-strategy` | derive-test-strategy | derive | derive-functional, ux-reqs, derive-architecture, quality, derive-api-contracts, derive-observability, security-reqs | — |
-| **6 · Delivery prep** | | | | |
-| `derive-conventions` | derive-conventions | derive | derive-architecture, derive-test-strategy | — |
-| `derive-tasks` | derive-tasks | derive | derive-functional, ddd, derive-architecture, derive-conventions, product-vision, ux-reqs, derive-api-contracts | T- |
-| **7 · Execution** | | | | |
-| `autorun` | autorun | exec | derive-tasks | — |
-| `conformance-review` | conformance-review | exec | derive-tasks, implement-task, derive-architecture, derive-api-contracts, derive-data-architecture, security-reqs, compliance, quality, derive-conventions, ddd | — |
-| `derive-impl-design` | derive-impl-design | derive | derive-architecture, derive-tasks | — |
-| `implement-task` | implement-task | exec | derive-tasks, derive-architecture, derive-conventions, derive-impl-design | — |
-| `run-tests` | run-tests | exec | derive-tasks, implement-task | — |
-| **8 · Operate** | | | | |
-| `deploy-release` | deploy-release | exec | derive-infra-ops, derive-observability | — |
-| `diagnose` | diagnose | exec | — | — |
-| `migrate-data` | migrate-data | exec | data-reqs, derive-data-architecture | — |
-| `operate-incident` | operate-incident | exec | derive-observability, derive-infra-ops | — |
-| **post-launch · Commercial** | | | | |
-| `go-to-market` | grill-go-to-market | elicit | product-vision | — |
-| `growth` | grill-growth | elicit | goals, compliance, data-reqs | EXP- |
-| `monetization` | grill-monetization | elicit | entitlements, product-vision, goals | — |
-| **Any stage** | | | | |
-| `generate-api-reference` | generate-api-reference | publish | derive-api-contracts | — |
-| `generate-docs` | generate-docs | publish | conformance-review | — |
-| `generate-ui-prototype` | generate-ui-prototype | publish | ux-reqs, design-system, derive-functional | — |
-| `prototype` | prototype | validate | — | — |
+| Area | Skill | Kind | Profile | Consumes (upstream) | Produces (IDs) |
+|---|---|---|---|---|---|
+| **0 · Discovery** | | | | | |
+| `problem-validation` | grill-problem-validation | elicit | lite | — | — |
+| **0 · Foundation** | | | | | |
+| `constraints` | grill-constraints | elicit | lite | — | — |
+| `customer-discovery` | grill-customer-discovery | elicit | optional | product-vision | — |
+| `goals` | grill-goals | elicit | standard | product-vision | — |
+| `market` | grill-market | elicit | optional | product-vision | — |
+| `product-vision` | grill-product-vision | elicit | lite | problem-validation | CA- |
+| `system-context` | grill-system-context | elicit | standard | customer-discovery, constraints | IF- |
+| **1 · Domain** | | | | | |
+| `ddd` | grill-ddd | model | lite | product-vision, constraints, system-context | CMD-, EVT-, AGG-, VO-, INV-, ENT-, POL-, RM-, HOT-, SVC-, REPO-, FAC- |
+| **2 · Requirements** | | | | | |
+| `compliance` | grill-compliance | elicit | standard | constraints | OBL- |
+| `data-reqs` | grill-data-reqs | derive | standard | ddd | DATA- |
+| `derive-functional` | derive-functional | derive | lite | ddd | UC-, AC- |
+| `entitlements` | grill-entitlements | derive | standard | derive-functional | ENTL- |
+| `integration-reqs` | grill-integration-reqs | elicit | standard | system-context, ddd | — |
+| `ml-reqs` | grill-ml-reqs | elicit | standard | derive-functional, data-reqs | ML- |
+| `quality` | grill-quality | derive | lite | ddd | NFR-, ASR- |
+| `security-reqs` | grill-security-reqs | derive | standard | data-reqs, ddd, product-vision | SEC-, THR- |
+| **3 · Design system** | | | | | |
+| `design-system` | grill-design-system | elicit | standard | quality | DS- |
+| **4 · UX** | | | | | |
+| `ux-reqs` | grill-ux-reqs | derive | standard | derive-functional, ddd, design-system, quality, product-vision | JRN- |
+| **5 · Solution** | | | | | |
+| `derive-api-contracts` | derive-api-contracts | derive | standard* | ddd, integration-reqs, security-reqs, derive-architecture | API- |
+| `derive-architecture` | derive-architecture | derive | lite | derive-functional, ddd, quality, data-reqs, integration-reqs, security-reqs, ux-reqs, compliance, ml-reqs, system-context, constraints, entitlements | MOD- |
+| `derive-data-architecture` | derive-data-architecture | derive | standard* | data-reqs, ddd, derive-functional, derive-architecture | — |
+| `derive-infra-ops` | derive-infra-ops | derive | standard* | quality, constraints, derive-architecture | — |
+| `derive-ml-architecture` | derive-ml-architecture | derive | standard* | ml-reqs, derive-architecture, derive-data-architecture | — |
+| `derive-observability` | derive-observability | derive | standard* | quality, security-reqs, derive-architecture | SLO- |
+| `derive-security-architecture` | derive-security-architecture | derive | standard* | security-reqs, derive-architecture, derive-data-architecture | — |
+| `derive-test-strategy` | derive-test-strategy | derive | standard* | derive-functional, ux-reqs, derive-architecture, quality, derive-api-contracts, derive-observability, security-reqs | — |
+| **6 · Delivery prep** | | | | | |
+| `derive-conventions` | derive-conventions | derive | any | derive-architecture, derive-test-strategy | — |
+| `derive-tasks` | derive-tasks | derive | any | derive-functional, ddd, derive-architecture, derive-conventions, product-vision, ux-reqs, derive-api-contracts | T- |
+| **7 · Execution** | | | | | |
+| `autorun` | autorun | exec | any | derive-tasks | — |
+| `conformance-review` | conformance-review | exec | any | derive-tasks, implement-task, derive-architecture, derive-api-contracts, derive-data-architecture, security-reqs, compliance, quality, derive-conventions, ddd | — |
+| `derive-impl-design` | derive-impl-design | derive | any | derive-architecture, derive-tasks | — |
+| `implement-task` | implement-task | exec | any | derive-tasks, derive-architecture, derive-conventions, derive-impl-design | — |
+| `run-tests` | run-tests | exec | any | derive-tasks, implement-task | — |
+| **8 · Operate** | | | | | |
+| `deploy-release` | deploy-release | exec | any | derive-infra-ops, derive-observability | — |
+| `diagnose` | diagnose | exec | any | — | — |
+| `migrate-data` | migrate-data | exec | any | data-reqs, derive-data-architecture | — |
+| `operate-incident` | operate-incident | exec | any | derive-observability, derive-infra-ops | — |
+| **post-launch · Commercial** | | | | | |
+| `go-to-market` | grill-go-to-market | elicit | optional | product-vision | — |
+| `growth` | grill-growth | elicit | optional | goals, compliance, data-reqs | EXP- |
+| `monetization` | grill-monetization | elicit | optional | entitlements, product-vision, goals | — |
+| **Any stage** | | | | | |
+| `generate-api-reference` | generate-api-reference | publish | any | derive-api-contracts | — |
+| `generate-docs` | generate-docs | publish | any | conformance-review | — |
+| `generate-ui-prototype` | generate-ui-prototype | publish | any | ux-reqs, design-system, derive-functional | — |
+| `prototype` | prototype | validate | any | — | — |
 
 ## Diagram
 

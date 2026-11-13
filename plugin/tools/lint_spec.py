@@ -15,7 +15,7 @@ LEAF_DIRS = ["01-discovery","02-product/vision","02-product/customers","02-produ
     "11-commercial/monetization","11-commercial/go-to-market","11-commercial/growth",
     "09-solution/arch","09-solution/data","09-solution/api","09-solution/security","09-solution/infra-ops",
     "09-solution/observability","09-solution/test","09-solution/ml",
-    "10-delivery/conventions","10-delivery/tasks","10-delivery/impl-design","10-delivery/verification","12-operate"]
+    "10-delivery/conventions","10-delivery/tasks","10-delivery/impl-design","12-operate"]
 # Per-area deliverables: glossary.md / actors.md may appear in ANY area folder (no shared root singletons).
 AREA_FILES = ["glossary.md", "actors.md"]
 AREA_DIR = {"problem-validation":"01-discovery","product-vision":"02-product/vision",
@@ -28,8 +28,7 @@ AREA_DIR = {"problem-validation":"01-discovery","product-vision":"02-product/vis
     "derive-api-contracts":"09-solution/api","derive-security-architecture":"09-solution/security",
     "derive-infra-ops":"09-solution/infra-ops","derive-observability":"09-solution/observability",
     "derive-test-strategy":"09-solution/test","derive-impl-design":"10-delivery/impl-design","derive-ml-architecture":"09-solution/ml",
-    "derive-conventions":"10-delivery/conventions","derive-tasks":"10-delivery/tasks",
-    "conformance-review":"10-delivery/verification"}
+    "derive-conventions":"10-delivery/conventions","derive-tasks":"10-delivery/tasks"}
 # Which ID-prefixes are DEFINED in which directory (enforces stage purity / no-unrelated-content).
 # The type-prefix set here is the SINGLE source of truth; selfcheck.py diffs it against the prefixes
 # the skills declare, so adding a prefix to a skill without registering it here is caught.
@@ -42,6 +41,52 @@ PREFIX_OWNER = {"UC":"05-functional-spec","AC":"05-functional-spec",
     "SLO":"09-solution/observability","EXP":"11-commercial/growth","AEV":"11-commercial/growth","T":"10-delivery/tasks","DS":"07-design-system","JRN":"08-ux","SCR":"08-ux",
     "FAC":"04-domain/ddd","REPO":"04-domain/ddd","SVC":"04-domain/ddd",
     "IF":"03-system-context","MOD":"09-solution/arch","CA":"02-product"}
+# Project settings (.grillspec/project.json, written by project_config.py): the PROFILE scales which areas
+# the project carries and how deep the solution layer goes. Absent/unreadable -> the widest reading
+# (`regulated`), so nothing is skipped by accident and the profile checks below stay silent.
+PROFILES = ("lite", "standard", "regulated")
+def _load_profile():
+    import json
+    cfg = SPEC.resolve().parent / ".grillspec" / "project.json"
+    try:
+        val = str(json.loads(cfg.read_text(encoding="utf-8")).get("profile", "")).strip().lower()
+    except Exception:
+        return "regulated", False
+    return (val, True) if val in PROFILES else ("regulated", False)
+PROFILE, PROFILE_EXPLICIT = _load_profile()
+PROFILE_RANK = PROFILES.index(PROFILE)
+# The smallest profile each area folder belongs to (mirrors dependencies.json `profile`; gen_depgraph.py
+# checks the two agree). `optional` = a founder/strategy area no coding step consumes: never required,
+# never flagged. Folders absent here (delivery, operate) are profile-independent.
+AREA_PROFILE = {"01-discovery":"lite","02-product/vision":"lite","03-constraints":"lite","04-domain/ddd":"lite",
+    "05-functional-spec":"lite","06-requirements/quality":"lite","09-solution/arch":"lite",
+    "02-product/goals":"standard","03-system-context":"standard","06-requirements/data":"standard",
+    "06-requirements/security":"standard","06-requirements/compliance":"standard",
+    "06-requirements/entitlements":"standard","06-requirements/integration":"standard",
+    "06-requirements/ml":"standard","07-design-system":"standard","08-ux":"standard",
+    "09-solution/data":"standard","09-solution/api":"standard","09-solution/security":"standard",
+    "09-solution/infra-ops":"standard","09-solution/observability":"standard","09-solution/test":"standard",
+    "09-solution/ml":"standard",
+    "02-product/customers":"optional","02-product/market":"optional","11-commercial/monetization":"optional",
+    "11-commercial/go-to-market":"optional","11-commercial/growth":"optional"}
+# Areas that apply only to some products (an AI capability, a UI): never REQUIRED by the gate below a
+# `regulated` profile, where the full path is the point.
+CONDITIONAL_AREAS = {"06-requirements/ml", "07-design-system", "08-ux"}
+# The solution areas beyond the architecture run in DECISION mode below `regulated`: they record the
+# decisions code cannot state, and leave the description to the artifact that enforces it. These are the
+# full-mode (descriptive) files - present under a smaller profile, the spec is restating what code says.
+FULL_MODE_FILES = {"09-solution/data": ("schema.md", "read-models.md", "migration.md"),
+    "09-solution/api": ("openapi.yaml", "openapi.yml", "asyncapi.yaml", "asyncapi.yml"),
+    "09-solution/security": ("controls.md", "supply-chain.md"),
+    "09-solution/observability": ("telemetry.md", "alerting.md", "runbooks.md"),
+    "09-solution/infra-ops": ("iac.md", "delivery-metrics.md", "scaling-dr.md", "cost.md"),
+    "09-solution/test": ("traceability.md", "edge-discovery.md", "nfr-evidence.md", "test-data.md"),
+    "09-solution/ml": ("pipeline.md", "monitoring.md", "guardrails.md", "model-registry.md")}
+def area_in_profile(d):
+    need = AREA_PROFILE.get(d)
+    if need is None: return True
+    if need == "optional": return False
+    return PROFILES.index(need) <= PROFILE_RANK
 def file_layer(r):
     if r.startswith("04-domain/ddd"): return 1
     if r.startswith("05-functional-spec") or r.startswith("06-requirements/"): return 2
@@ -166,7 +211,8 @@ if rd.exists():
 
 # 9 gate order
 if any(ccount(d) > 0 for d in LEAF_DIRS if d.startswith("09-solution/")):
-    empty = [d for d in LEAF_DIRS if (d.startswith("05-functional-spec") or d.startswith("06-requirements/") or d.startswith("07-design-system") or d.startswith("08-ux")) and ccount(d) == 0]
+    empty = [d for d in LEAF_DIRS if (d.startswith("05-functional-spec") or d.startswith("06-requirements/") or d.startswith("07-design-system") or d.startswith("08-ux")) and ccount(d) == 0
+             and area_in_profile(d) and (PROFILE == "regulated" or d not in CONDITIONAL_AREAS)]
     if empty:
         add("WARN", "(gate)", "09-solution/* has content but requirements/design-system/ux incomplete (" + ", ".join(empty) + ") - architecture-readiness gate not met")
 
@@ -235,13 +281,6 @@ SEP = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
 def in_owner_area(tok, r):
     owner = PREFIX_OWNER.get(tok.split("-")[0].upper())
     return bool(owner) and (r == owner or r.startswith(owner + "/"))
-# Files under .../verification/ (the per-task Verification Records, review reports, the traceability matrix)
-# RECORD results ABOUT ids — they reference them (the record's H1 leads with its T-, every obligation row keys
-# on an AC-/API-/… it verifies), they never DEFINE one. So they are exempt from the definition-site scan, the
-# same reference-only nature as the traceability.md exemption (which lives in this directory). Without this, a
-# record's leading-ID lines register as out-of-area duplicate definitions of ids owned elsewhere.
-def is_verification_file(r):
-    return "/verification/" in "/" + r
 # An authorization matrix (header first-cell command/cmd/operation, other cols = actors) keys its rows by
 # CMD- as a ROW-KEY REFERENCE, not a definition (the command is defined in ddd). Precompute those body-row
 # line numbers so the definition scan skips them — same spirit as the traceability.md exemption.
@@ -259,7 +298,7 @@ for p, r in cmd_files():
         else:
             i += 1
 for p, r in cmd_files():
-    if os.path.basename(r) in ("traceability.md", "build-order.md") or is_verification_file(r): continue   # registers/records key rows on IDs as REFERENCES to the per-item definitions, never define one: the traceability matrix, the task build-order register (rows key on T- → the per-task T-NNN.md), and the verification records
+    if os.path.basename(r) in ("traceability.md", "build-order.md"): continue   # registers/records key rows on IDs as REFERENCES to the per-item definitions, never define one: the traceability matrix, the task build-order register (rows key on T- → the per-task T-NNN.md), and the verification records
     lines = read(p).splitlines()
     arows = authz_rows.get(r, ())
     for i, l in enumerate(lines):
@@ -419,7 +458,7 @@ STAGE_LAYER = {"04-domain":1,"05-functional-spec":2,"06-requirements":2,"11-comm
 # unambiguous bare leaf-area names — those living at exactly one layer. 'data'/'security'/'ml' exist at BOTH
 # L2 (06-requirements) and L5 (09-solution), so they are omitted: only a numbered-prefix path resolves them.
 BARE_AREA_LAYER = {"infra-ops":5,"arch":5,"api":5,"observability":5,"test":5,
-    "impl-design":6,"conventions":6,"tasks":6,"verification":6,
+    "impl-design":6,"conventions":6,"tasks":6,
     "quality":2,"integration":2,"entitlements":2,"compliance":2,
     "monetization":2,"go-to-market":2,"growth":2,"design-system":3,"ux":4,"ddd":1}
 PATHTOK = re.compile(r"(?<![\w./-])((?:\.\.?/)*[\w][\w.-]*(?:/[\w.-]+)+)")
@@ -518,11 +557,6 @@ COV_HINT = {"CMD":"expected a use-case (UC-) projecting it","EVT":"no downstream
     "HOT":"nothing addresses this hotspot (no task/ADR/impl-design cites it) - a flagged risk left unowned",
     "SCR":"no journey step, task ux cell, or prototype references this screen - dead information architecture",
     "AEV":"no task's obs cell emits it - a defined analytics event nothing instruments never fires"}
-trace_ids = set()
-_tp = SPEC / "10-delivery" / "verification" / "traceability.md"
-if _tp.exists():
-    for l in read(_tp).splitlines():
-        trace_ids |= set(IDTOK.findall(l))
 # The machine contracts (openapi/asyncapi under solution/api) are REAL artifacts, but the scan above is
 # .md-only - so an EVT-/API- whose only consumer is the YAML contract would false-WARN 'no downstream
 # consumer'. Credit raw ID tokens found in the contract YAML as references for coverage purposes only
@@ -615,7 +649,7 @@ for tok in sorted(defined):
     if pre not in COV_HINT: continue
     dts = DOWN_TYPE.get(pre)
     if dts and not any(t in present_types for t in dts): continue   # downstream layer empty - premature to warn
-    if tok in refset or tok in trace_ids or tok in keyed_parents or tok in loose_credit: continue
+    if tok in refset or tok in keyed_parents or tok in loose_credit: continue
     if pre == "THR" and tok in thr_covered: continue            # mitigated by a non-SEC control / accepted-risk (its own block)
     if pre == "EVT" and tok in evt_sinks: continue              # intentional audit-only / operator-console-internal sink
     if pre == "INV" and tok in inv_covered: continue            # enforced structurally (by construction / a DATA- constraint) — no AC needed
@@ -656,7 +690,7 @@ DEVTRACE = [re.compile(p, re.I) for p in [
 #      never naming a skill, engine, tool, or generation step.
 SELFREF = re.compile(r"\b(?:grill-[a-z]\w*|(?:derive|exec)-engine|derive-(?:functional|architecture|data-architecture|"
     r"api-contracts|security-architecture|infra-ops|observability|test-strategy|impl-design|ml-architecture|"
-    r"conventions|tasks)|lint_spec|guard_derived|selfcheck|plugin_feedback|gen_depgraph|gen_docsite|skill_guide|"
+    r"conventions|tasks)|lint_spec|check_task|selfcheck|plugin_feedback|gen_depgraph|gen_docsite|skill_guide|"
     r"spec_status|impact\.py|re-deriv(?:e|ed|es|ing)|seeded by)\b", re.I)
 # (iii) CTXID - a context-namespaced id '<CTX>-TYPE-NNN' silently fails to register while bare references to it
 #       resolve. Real ids use a bare type prefix; ADR-<AREA>-NNN is the one legitimate two-segment form (the
@@ -822,8 +856,8 @@ for p, r in cmd_files():
         add("WARN", r, "task cites no upstream spec ID - a task must trace to what it implements (a UC-/AC-/CMD-/NFR-/DATA-/API-…), else its code has no spec basis to conformance-check against")
 
 # 19b an AC is owned by EXACTLY ONE task (the down-direction mirror of #19). An acceptance criterion is the
-#    unit of acceptance: its Verification Record is generated from the single task that carries it, and
-#    check_task_record requires THAT task to hold an '@covers AC-' test. If two task files both name an AC,
+#    unit of acceptance: check_task.py holds the ONE task that carries it to an '@covers AC-' test before
+#    that task can claim done. If two task files both name an AC,
 #    ownership is split - which task's `done` retires it? whose test discharges it? - so the gate is ambiguous.
 #    The ZERO-owner case is already #14 (an AC with no downstream task); this is the >1 mirror. Heuristic - an
 #    AC token in a task file is read as that task CLAIMING it (a sibling that only builds on the work should
@@ -839,7 +873,7 @@ if "T" in present_types:
     for ac in sorted(ac_owners):
         if len(ac_owners[ac]) > 1:
             add("WARN", sorted(defsites.get(ac) or def3sites.get(ac) or ["(?)"])[0],
-                "%s is claimed by %d tasks (%s) - an AC is the unit of acceptance and needs exactly one accountable task (its Verification Record + @covers test); give it one owner and have the other task(s) depends-on that task, not re-cover the AC" % (ac, len(ac_owners[ac]), ", ".join(sorted(ac_owners[ac]))))
+                "%s is claimed by %d tasks (%s) - an AC is the unit of acceptance and needs exactly one accountable task (the one whose done-claim its @covers test backs); give it one owner and have the other task(s) depend on that task, not re-cover the AC" % (ac, len(ac_owners[ac]), ", ".join(sorted(ac_owners[ac]))))
 
 # 20 every ADR declares a recognized lifecycle status - makes the obsolete-ADR check (#17) reliable and
 #    keeps supersession trackable. (template.md / _archive/ exempt.)
@@ -1220,22 +1254,21 @@ for p, r in cmd_files():
     add("ERROR", r, "afk:eligible with a non-N/A ux dimension but its prototype-review is not review-cleared (\"%s\") - a prose JRN- does not ratify a screen; freeze the reviewed prototype at finalization, record `prototype-review: waived - <why>`, or mark afk:blocked - visual/UX review pending" % ((pr or "(absent)").strip()[:60]))
 
 # 31 a non-N/A `ux` cell must be the structured visual contract, not a prose blob: it references the journey by
-#    JRN- id (ERROR - only ids the linter sees are enforced, and the Verification Record's ux obligation row is
-#    generated from exactly this reference) and names the interaction states this slice realises (WARN - a UI
-#    slice with no states list ships a happy-path-only screen; the `ux:states` gate row has nothing to hold it to).
+#    JRN- id (ERROR - only ids the linter sees are enforced) and names the interaction states this slice
+#    realises (WARN - a UI slice with no states list ships a happy-path-only screen, and check_task.py has no
+#    state set to require `@state:` tests for).
 for p, r in cmd_files():
     if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
     txt = read(p)
     ux = task_dim(txt, "ux")
     if ux is None or is_na(ux): continue
     if not re.search(r"(?<![A-Za-z0-9-])JRN-", ux):
-        add("ERROR", r, "non-N/A ux dimension cites no JRN- journey id - the ux cell is the slice's visual contract and the record's ux obligation row is generated from it; reference the journey by bare JRN- id (or mark the cell N/A - headless / N/A - reuses DS-...)")
+        add("ERROR", r, "non-N/A ux dimension cites no JRN- journey id - the ux cell is the slice's visual contract; reference the journey by bare JRN- id (or mark the cell N/A - headless / N/A - reuses DS-...)")
     if not re.search(r"(?i)\bstates?\s*[:\-—]", ux):         # requires the list form 'states: a · b' - the bare word ('renders states per spec') names nothing
-        add("WARN", r, "non-N/A ux dimension names no interaction states - list the states this slice realises ('states: empty · loading · error · ...') so the ux:states gate row has a concrete set to hold the screen to, not just the happy path")
+        add("WARN", r, "non-N/A ux dimension names no interaction states - list the states this slice realises ('states: empty · loading · error · ...') so the @state:-tagged tests have a concrete set to cover, not just the happy path")
 
 # 32 a slice with a non-N/A `ux` dimension may not leave `a11y` N/A or absent - a screen with no pinned keyboard
-#    path / focus order / WCAG criteria is an unreviewable screen, and the record's a11y gate row would gate on
-#    nothing. (The reverse - a11y set while ux is N/A - is legal: a headless slice can still carry an a11y
+#    path / focus order / WCAG criteria is an unreviewable screen. (The reverse - a11y set while ux is N/A - is legal: a headless slice can still carry an a11y
 #    obligation, e.g. an API serving an accessible client.)
 for p, r in cmd_files():
     if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
@@ -1244,9 +1277,9 @@ for p, r in cmd_files():
     if ux is None or is_na(ux): continue
     ay = task_dim(txt, "a11y")
     if ay is None or is_na(ay):
-        add("ERROR", r, "non-N/A ux dimension but the a11y dimension is %s - a UI slice must pin its keyboard path, focus order, contrast and the applicable WCAG success criteria (the a11y gate row holds the slice to exactly this cell); N/A - headless is only legitimate when ux is N/A too" % ("absent" if ay is None else "N/A"))
+        add("ERROR", r, "non-N/A ux dimension but the a11y dimension is %s - a UI slice must pin its keyboard path, focus order, contrast and the applicable WCAG success criteria (the review holds the slice to exactly this cell); N/A - headless is only legitimate when ux is N/A too" % ("absent" if ay is None else "N/A"))
     elif not re.search(r"(?i)\bSC\s*\d|\b\d\.\d+\.\d+\b|keyboard|focus", ay):
-        add("WARN", r, "a11y dimension pins nothing checkable (\"%s\") - name the keyboard/focus path and the applicable WCAG success criteria (e.g. 'keyboard tab->confirm - SC 2.4.7'); a content-free a11y cell gives the a11y gate row nothing to hold the slice to" % ay.strip()[:50])
+        add("WARN", r, "a11y dimension pins nothing checkable (\"%s\") - name the keyboard/focus path and the applicable WCAG success criteria (e.g. 'keyboard tab->confirm - SC 2.4.7'); a content-free a11y cell gives the review nothing to hold the slice to" % ay.strip()[:50])
 
 # 33 a `ux: N/A - reuses DS-...` claim anchors to the screen it edits: cite the SCR- id. The reuse escape is
 #    the sanctioned exemption from the prototype/review gates (the IA + design system fully determine the
@@ -1271,9 +1304,9 @@ for p, r in cmd_files():
     ux = task_dim(txt, "ux")
     if ux is not None and not is_na(ux): continue
     if ux and re.search(r"(?i)reuse", ux): continue          # a reuse claim IS a confirmed UI classification (#33 owns its anchoring)
-    pl = task_dim(txt, "placement")
+    pl = task_dim(txt, "touches") or task_dim(txt, "placement")
     if pl and UIISH.search(pl):
-        add("WARN", r, "placement names a UI surface (\"%s\") but the ux dimension is %s - a UI-touching slice carries its JRN-/SCR- visual contract (or an explicit reuse claim); if the slice is truly headless, say why the UI-looking placement isn't one" % (pl.strip()[:50], "absent" if ux is None else "N/A"))
+        add("WARN", r, "the touched surface names a UI (\"%s\") but the ux dimension is %s - a UI-touching slice carries its JRN-/SCR- visual contract (or an explicit reuse claim); if the slice is truly headless, say why the UI-looking placement isn't one" % (pl.strip()[:50], "absent" if ux is None else "N/A"))
 
 # 35 spec-root `_*.md` files bypass the layer checks by design (orchestration handoffs, not spec content) -
 #    so the bypass is an explicit ALLOWLIST, not a filename pattern: an unexpected `_something.md` at the
@@ -1331,7 +1364,7 @@ if _pv.exists():
             st = re.sub(r"[*`_]", "", row[sti]).strip().lower() if sti < len(row) else ""
             ev = re.sub(r"[*`_]", "", row[evi]).strip() if evi is not None and evi < len(row) else ""
             if st == "provisioned" and (evi is None or ev in ("", "—", "-", "n/a", "tbd")):
-                add("WARN", "_provisioning.md", "credential '%s' is provisioned but its evidence cell is empty - record where/when it was set (e.g. 'CI secret, set 2026-08-18') so the eligibility claim is auditable, never a rubber stamp" % (row[0].strip() if row else "?"))
+                add("WARN", "_provisioning.md", "credential '%s' is provisioned but its evidence cell is empty - record where it is set (e.g. 'CI secret in the staging environment') so the eligibility claim is auditable, never a rubber stamp" % (row[0].strip() if row else "?"))
 
 # 39 audit reports are transient session artifacts - committed, their commit-stamp freshness check silently
 #    degrades. INFO: presence at the project root is expected mid-session; just keep them git-ignored.
@@ -1341,6 +1374,104 @@ _gitext = read(_gi) if _gi.exists() else ""
 for _rep in ("spec-audit-report.md", "build-audit-report.md"):
     if (_root / _rep).exists() and _rep not in _gitext:
         add("INFO", _rep, "audit report present at the project root but not in .gitignore - it is a transient session artifact whose freshness is commit-stamped; git-ignore it so a stale copy is never mistaken for current")
+
+# 40 timeless artifacts, mechanically. A spec file states what is true NOW; its history is git's. Two tells
+#    of a document narrating its own evolution:
+#      - an EDIT-TRACE STAMP: a status/process word beside an ISO date ('RESOLVED 2026-07-24', 'ratified
+#        2026-07-26', 'set 2026-07-04') -> ERROR. No current-state fact is phrased that way.
+#      - any other ISO date in prose, or edit-history phrasing ('previously', 'no longer', 'renamed from',
+#        'newly added', 'this round', 'as discussed') -> WARN: usually a change note, occasionally a genuine
+#        domain fact (a regulation's effective date) or domain language ('the account is no longer active').
+#    Exempt: 12-operate/ (operations records are dated by nature), _provisioning.md (live state + evidence),
+#    fenced code and inline `code` spans, and any line carrying `timeless: allow <why>`.
+ISO_DATE = re.compile(r"(?<![\w.-])(?:19|20)\d\d-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])(?![\w-])")
+TRACE_WORD = (r"(?:resolved|decided|ratified|re-?confirmed|confirmed|approved|authored|reconcil\w+|updated|"
+              r"added|removed|withdrawn|superseded|closed|cleared|flipped|merged|shipped|built|landed|"
+              r"provisioned|completed|done|set|frozen|signed[ -]off|as of|since|until)")
+STAMP = re.compile(r"(?i)\b" + TRACE_WORD + r"\b[^.|\n]{0,24}?" + ISO_DATE.pattern + r"|" +
+                   ISO_DATE.pattern + r"[^.|\n]{0,12}?\b(?:resolved|ratified|approved|reconcil\w+|sign-?off)\b")
+HISTORY_PHRASE = re.compile(r"(?i)\b(?:previously|formerly|no longer|renamed from|newly added|"
+                            r"this (?:round|iteration|pass|session)|as discussed)\b")
+TIMELESS_WAIVER = re.compile(r"(?i)timeless:\s*allow\b")
+for p, r in cmd_files():
+    if r.startswith("12-operate/") or r == "_provisioning.md": continue
+    if os.path.basename(r) == "template.md" and "adr/" in r: continue
+    fence = False
+    for i, l in enumerate(read(p).splitlines(), 1):
+        if l.lstrip().startswith("```"): fence = not fence; continue
+        if fence or TIMELESS_WAIVER.search(l): continue
+        t = INLINE_CODE.sub(" ", l)
+        if l.lstrip().startswith("<!--") and "scope:" in l: continue
+        m = STAMP.search(t)
+        if m:
+            add("ERROR", r, "edit-trace stamp ('%s') - a spec file states what is true now; drop the stamp (git is the changelog) and keep only the current fact" % m.group(0).strip()[:48], i)
+            continue
+        d = ISO_DATE.search(t)
+        if d:
+            add("WARN", r, "dated statement ('%s') - if this narrates when something changed, remove it (git is the changelog); a genuine domain date stays, marked `<!-- timeless: allow <why> -->`" % d.group(0), i)
+            continue
+        h = HISTORY_PHRASE.search(t)
+        if h:
+            add("WARN", r, "edit-history phrasing ('%s') - state the current rule as if it were the only one that ever existed; if this is domain language, mark the line `<!-- timeless: allow <why> -->`" % h.group(0), i)
+
+# 41 the project PROFILE is honoured. Only with an explicit .grillspec/project.json (no file = the widest
+#    reading, nothing to flag). Two tells of a spec larger than its declared profile:
+#      - content in an area the profile does not include (WARN): either the area is needed - raise the
+#        profile - or it is spec nobody will read. Optional strategy areas are never flagged.
+#      - below `regulated`, a FULL-MODE solution artifact (WARN): schema DDL, a hand-authored OpenAPI, a
+#        control register ... restate what an executable artifact states better. Keep the decision record.
+if PROFILE_EXPLICIT:
+    for d in LEAF_DIRS:
+        need = AREA_PROFILE.get(d)
+        if need in (None, "optional") or area_in_profile(d) or ccount(d) == 0: continue
+        add("WARN", d, "area has content but is outside the project's `%s` profile (it belongs to `%s`) - raise the profile in .grillspec/project.json if the product needs it, or remove the area" % (PROFILE, need))
+    if PROFILE != "regulated":
+        for d, names in FULL_MODE_FILES.items():
+            for nm in names:
+                if (SPEC / d / nm).is_file() and read(SPEC / d / nm).strip():
+                    add("WARN", d + "/" + nm, "full-mode artifact under the `%s` profile - below `regulated` this area records decisions only and the code carries the description; fold any decision into the area's decision record and remove the file, or raise the profile" % PROFILE)
+
+# 42 every task carries a risk TIER, from the closed set routine | feature | critical. The tier decides
+#    what the task owes (a design note and a fresh-context review bind `critical` only), so a missing or
+#    off-vocabulary tier leaves that undecided. WARN (a brief is still buildable; the conductor sets it).
+#    A `critical` brief names its design note when it declares design-first, and may not be afk-eligible
+#    while its review cell is absent - the review is what an unattended run would otherwise skip.
+TIERS = ("routine", "feature", "critical")
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    txt = read(p)
+    tier = task_dim(txt, "tier")
+    tv = re.sub(r"[*`_]", "", tier or "").strip().lower()
+    tname = next((t for t in TIERS if re.match(t + r"\b", tv)), None)
+    if tier is None:
+        add("WARN", r, "task carries no `tier` row - set routine | feature | critical (the tier decides whether a design note and a fresh-context review are owed)")
+    elif tname is None:
+        add("WARN", r, "unrecognized tier \"%s\" - use routine | feature | critical" % tier.strip()[:40])
+    elif tname == "critical" and task_dim(txt, "review") is None:
+        add("WARN", r, "`critical` task has no `review` row - add `review | pending`; the fresh-context reviewer flips it to PASS, and check_task.py will not accept `done` without it")
+
+# 43 a task brief is SELF-CONTAINED: each acceptance criterion in its `behavior` cell carries its text, not
+#    only its id, so the slice can be built from the brief and the code without an id chase. WARN.
+ACTOK = re.compile(r"(?<![A-Za-z0-9-])AC-[A-Za-z0-9._-]*[A-Za-z0-9]")
+for p, r in cmd_files():
+    if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
+    beh = task_dim(read(p), "behavior")
+    if not beh: continue
+    bare = []
+    for seg in re.split(r"(?i)<br\s*/?>", beh):
+        ids = ACTOK.findall(seg)
+        if not ids: continue
+        words = [w for w in re.findall(r"[A-Za-z]{2,}", IDTOK.sub(" ", INLINE_CODE.sub(lambda m: m.group(0).strip("`"), seg)))]
+        if len(words) < 4: bare.extend(ids)
+    if bare:
+        add("WARN", r, "acceptance criteria cited by bare id in `behavior` (%s) - put each criterion's text inline ('AC-101a - Given ... When ... Then ...') so the brief is self-contained" % ", ".join(sorted(set(bare))[:6]))
+
+# 44 one canonical agent guide. When the project root carries both AGENTS.md and CLAUDE.md, CLAUDE.md is
+#    the import-only adapter - exactly `@AGENTS.md` - so two hosts never read two diverging guides.
+CLAUDE_IMPORT = "@AGENTS.md"
+_ag, _cl = _root / "AGENTS.md", _root / "CLAUDE.md"
+if _ag.is_file() and _cl.is_file() and read(_cl).strip() != CLAUDE_IMPORT:
+    add("ERROR", "CLAUDE.md", "CLAUDE.md must contain only @AGENTS.md - AGENTS.md is the one canonical agent guide; move any content there")
 
 order = {"ERROR": 0, "WARN": 1, "INFO": 2}
 F.sort(key=lambda x: (order[x[0]], x[1], x[2]))
