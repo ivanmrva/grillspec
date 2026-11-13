@@ -128,7 +128,7 @@ def acs_of(fields):
     return out
 
 
-STATE_LIST_END = {"prototype", "nav", "registered", "incl", "each", "per"}
+STATE_LIST_END = {"prototype", "frozen", "nav", "registered", "incl", "each", "per"}
 
 
 def ux_states(cell):
