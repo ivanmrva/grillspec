@@ -712,6 +712,12 @@ expect("profile-optional-area-never-flagged", run(LINT, dict(profile("lite"), **
 expect("profile-standard-flags-full-mode-file", run(LINT, dict(PF, **dict(profile("standard"), **{
     "09-solution/data/schema.md": HDR + "\n| table | column |\n|---|---|\n| orders | id |\n"}))),
     must=["full-mode artifact under the `standard` profile"])
+expect("profile-standard-accepts-a-kept-full-mode-file", run(LINT, dict(PF, **dict(profile("standard"), **{
+    "09-solution/data/schema.md": HDR + "\n<!-- full-mode: keep - the erasure gate reads this table -->\n| table | column |\n|---|---|\n| orders | id |\n"}))),
+    forbid=["full-mode artifact"])
+expect("provisioning-unverified-is-a-state", run(LINT, {
+    "_provisioning.md": HDR + "\n| key | consumed-by | state | evidence |\n|---|---|---|---|\n| K | T-1 | unverified | |\n| L | T-1 | maybe | |\n"}),
+    must=["'L' has unrecognized state"], forbid=["'K' has unrecognized state"])
 expect("profile-regulated-accepts-full-mode-file", run(LINT, dict(PF, **dict(profile("regulated"), **{
     "09-solution/data/schema.md": HDR + "\n| table | column |\n|---|---|\n| orders | id |\n"}))),
     forbid=["full-mode artifact"])

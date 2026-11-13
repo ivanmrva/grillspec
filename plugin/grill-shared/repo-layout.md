@@ -101,7 +101,7 @@ Bets, risks and gaps live inline in the artifact they concern, each with a statu
 | File | Holds | Shape |
 |---|---|---|
 | `_human-input.md` | the asks only a human can clear, batched so they can be cleared in one sitting | `## Ratify queue` — `\| topic/ID \| recommended value \| why \| status \|`, status `unconfirmed` → `ratified` / `overridden`; once settled the value is written into the owning artifact and the row removed. `## Blockers` — one entry per blocked task, led by its `T-` id: the blocker and what the human must do |
-| `_provisioning.md` | one row per external credential or config key (matching `infra-ops/environments.md` where the project has it) | `\| key \| owner \| consuming tasks \| state \| evidence \|`, state `pending` / `provisioned`. `derive-tasks` seeds it and keeps existing state; an unattended run reads it to know which tasks must wait |
+| `_provisioning.md` | one row per external credential or config key (matching `infra-ops/environments.md` where the project has it) | `\| key \| owner \| consuming tasks \| state \| evidence \|`, state `pending` / `provisioned` / `unverified` (said to be set, but nothing in the repo shows it). `derive-tasks` seeds it and keeps existing state; an unattended run reads it to know which tasks must wait |
 
 Both state what is open now. A cleared ask is removed, not annotated.
 

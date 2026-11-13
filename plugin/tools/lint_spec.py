@@ -1207,8 +1207,8 @@ def task_dim(text, name):                                    # a named dimension
 # pending state. It is layer-free because it joins a credential (infra, L5) to the tasks that consume it
 # (delivery, L6) - a map that on a derived L5 file would be an illegal downward ref; state must be authored,
 # not regenerated, so it survives task re-derivation. First table column = the credential key (matches
-# `environments.md`, the join token); a `state` column holds provisioned|pending.
-PROV_STATES = {"provisioned", "pending"}
+# `environments.md`, the join token); a `state` column holds provisioned|pending|unverified (said to be set, but nothing in the repo shows it).
+PROV_STATES = {"provisioned", "pending", "unverified"}
 def parse_provisioning(text):
     reg = {}
     for header, body in md_tables(text.splitlines()):
@@ -1224,7 +1224,7 @@ prov_reg = parse_provisioning(read(_prov)) if _prov.exists() else None
 if prov_reg is not None:                                     # register present: sanity-check each row's state value
     for k, st in prov_reg.items():
         if st and st not in PROV_STATES:
-            add("WARN", "_provisioning.md", "credential '%s' has unrecognized state '%s' - use provisioned | pending" % (k, st))
+            add("WARN", "_provisioning.md", "credential '%s' has unrecognized state '%s' - use provisioned | pending | unverified" % (k, st))
 for p, r in cmd_files():
     if not r.startswith("10-delivery/tasks/") or r.split("/")[-1] == "build-order.md": continue
     txt = read(p)
@@ -1437,8 +1437,10 @@ if PROFILE_EXPLICIT:
     if PROFILE != "regulated":
         for d, names in FULL_MODE_FILES.items():
             for nm in names:
-                if (SPEC / d / nm).is_file() and read(SPEC / d / nm).strip():
-                    add("WARN", d + "/" + nm, "full-mode artifact under the `%s` profile - below `regulated` this area records decisions only and the code carries the description; fold any decision into the area's decision record and remove the file, or raise the profile" % PROFILE)
+                _fm = read(SPEC / d / nm) if (SPEC / d / nm).is_file() else ""
+                if re.search(r"full-mode:\s*keep\b", _fm): continue      # kept on purpose, with its reason beside the marker
+                if _fm.strip():
+                    add("WARN", d + "/" + nm, "full-mode artifact under the `%s` profile - below `regulated` this area records decisions only and the code carries the description; fold any decision into the area's decision record and remove the file, raise the profile, or keep it with `full-mode: keep <why>` in the file when a tool or a person still reads it" % PROFILE)
 
 # 42 every task carries a risk TIER, from the closed set routine | feature | critical. The tier decides
 #    what the task owes (a design note and a fresh-context review bind `critical` only), so a missing or

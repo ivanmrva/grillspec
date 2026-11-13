@@ -17,6 +17,9 @@ All notable changes to the `grillspec` plugin. Versions follow
   method without the user naming a skill.
 - Readiness is computed by `spec_status.py`, not stored in `spec/_readiness.md`. A stored dashboard drifted
   from the tree; the conductor reads the report when it needs the picture. An existing file can be deleted.
+- A full-mode solution file a tool or a person still reads is kept with `full-mode: keep <why>` in the file,
+  and the profile check leaves it alone.
+- `_provisioning.md` has a third state, `unverified`: said to be set, but nothing in the repo shows it.
 - `lint_spec.py --errors` prints only the errors and the summary. The pre-commit hook uses it, so a blocked
   commit shows what blocks it.
 
