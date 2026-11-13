@@ -1,106 +1,125 @@
 # exec-engine — shared core for build/verify skills (NOT an interview)
 
-The shared method behind every exec profile. The profile's `SKILL.md` is the entrypoint and names what varies (the task, scope, what it touches); this engine is the judgment that's the same for all of them — the TDD cadence and test layers, the autonomous done-gate, the workflow, and what to decide vs. ask.
+The shared method behind every exec profile. The profile's `SKILL.md` is the entrypoint and names what varies (the task, scope, what it touches); this engine is the judgment that is the same for all of them: how much process a change owes, the test-first cadence, what "done" means, and when to stop and ask.
 
-Your output is code and reports in the project source tree — that, plus your ADRs in the shared `adr/` folder, is the record; there is no side ledger. Code lives in the repo, never in `spec/`; the spec is the source of truth you implement to, and you never edit it to match your code. On a re-run you resume from the current state of the code and tests, not from memory.
+Your output is code and short reports in the project source tree. Code lives in the repo, never in `spec/`. The spec states what the product must do; when you find it wrong or silent, the fix goes into the spec area that owns it, in the same change as the code, so the two never disagree. On a re-run you resume from the current state of the code and tests, not from memory.
 
-**Shared rules:** load `${CLAUDE_PLUGIN_ROOT}/grill-shared/house-rules.md` (the workspace-only source fence · timeless artifacts · output discipline · ID mechanics · plugin-feedback routing) and `${CLAUDE_PLUGIN_ROOT}/grill-shared/decision-classes.md` (what you DECIDE vs. escalate — apply it to every fork; in one line: default hard toward deciding what engineering merit settles, raise a gap only for a fact the user/org/platform holds, pick the conventional option for inconsequential taste).
+**Shared rules:** load `${CLAUDE_PLUGIN_ROOT}/grill-shared/house-rules.md` (the workspace as source of truth · timeless artifacts · writing for the reader · ID mechanics · plugin-feedback routing) and `${CLAUDE_PLUGIN_ROOT}/grill-shared/decision-classes.md` (what you decide vs. escalate: decide what engineering merit settles, ask only for a fact the user, org or platform holds).
 
-## Step zero — arm the project-local gates before ANY file is written
-First action of every exec session, before any task — including the walking skeleton and setup/bootstrap work: when this method's toolset is available, run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/install_exec_gates.py` (idempotent — an instant no-op when already wired). It vendors `gate_exec.py` + `check_task_record.py` + `check_orphan_tests.py` (with its `tier_contract.py` helper) once under `.grillspec/tools/` and merges equivalent host adapters into `.claude/settings.json` and `.codex/hooks.json`; both adapters execute the same shared gate. Arming at entry means the skip/fake tripwires fire from the first line ever written — the earliest setup tasks are exactly where "X isn't provisioned yet" is most tempting as a licence to fake. The walking-skeleton task still commits both hook configs + `.grillspec/tools/` (so worktrees and later sessions inherit them) and stands up the rest of the governance (pre-commit hooks, CI). GrillSpec-owned state lives only under `.grillspec/`. In Codex, review and trust the project hook through `/hooks` after installation. Standalone — a lone skill with no such toolset: every discipline in this engine still binds; work it without the mechanical backstops, never fake a gate's output or claim a check you couldn't run, and never remove or ignore a gate the project itself carries.
+## Project settings
 
-## Tight context — honor the spec, don't reinvent it
-Load only the task, the exact spec IDs it references, and the code it touches. A coding slice is construction, not synthesis: it needs its acceptance criteria, the domain elements it realises, the contracts/schema at its boundary, the architecture boundaries it must respect, and the conventions — that scoped set. Pull a specific upstream artifact on demand if a boundary is unclear, but never ingest all upstream layers: irrelevant context measurably degrades focused work (broad context belonged to the synthesis that drew this slice's edges, not to building it). Implement to the referenced spec IDs exactly. If the spec is wrong, contradictory, or missing for this slice, **stop and raise it** — record the blocking gap on the task and escalate to re-open the source spec; never silently diverge.
+Two settings in `.grillspec/project.json` scale everything below. Read them with `python3 ${CLAUDE_PLUGIN_ROOT}/tools/project_config.py`.
 
-## Gaps and mid-task instructions — chat is spec input, not code input
-Code reveals edge cases no model anticipated — expected, not a failure. When you hit an undecided behavior mid-implementation, stop, don't guess: record `GAP <what's undecided> — <owning area> — UNRESOLVED` on the task and resolve it just-in-time — **complete it** (elicit the rule; it lands in the source spec), **mark N/A** for this slice, or **accept a default** (an ADR in `adr/`). The task is implementation-final again only once the gap is resolved. The same rule covers a missing or inadequate design-system element a UI slice needs: a `GAP … — design-system — UNRESOLVED`, never bespoke-styled around.
-
-The mirror of *never edit the spec to match the code*: **never grow the code past the spec.** An instruction that arrives in chat mid-task ("also make it do X") is a spec-change event, not a coding instruction — implementing it directly is how code silently drifts off-spec. Route it: **(a) an in-slice behavior change** → mint or amend the driving ID in its owning spec area first (a minimal-touch amend done inline), then proceed test-first against that ID; **(b) new scope** → a new task via the task machinery; **(c) non-behavioral** (a rename, a pure refactor under a green suite) → proceed, no ID needed. Enforced mechanically: `--red` refuses a covers-less red and a covers ID that exists nowhere under `spec/`, and `check_orphan_tests.py` fails the done-gate and the commit on any behavioral test with no live spec driver.
-
-## Boundaries and increments
-Respect bounded-context boundaries, layering, and the dependency rules in your conventions on every task — no cross-boundary shortcuts. On a re-run after a change, re-touch only the impacted code; don't rewrite green, in-boundary code — re-run the tests and the conformance check on exactly the impacted slices.
-
-## TDD & vertical slices — red → green → refactor
-Build one minimal vertical slice at a time, end to end (entrypoint → application → domain → persistence); no horizontal layers, no big-bang. Within a slice, never write production code without a failing test that demands it:
-1. **RED** — write ONE small test for the next bit of observable behavior (from an `AC-` or a test-strategy edge); run it, watch it fail for the right reason — a test you didn't see fail proves nothing. Record the red run so the project-local exec-gate lets you write the code: `python3 ${CLAUDE_PLUGIN_ROOT}/tools/gate_exec.py --red --test "<the command that runs this failing test>" --covers "<the AC-/spec IDs this test drives>"`. It re-runs the command, requires a failing exit, and only then unblocks `src/**` edits; it refuses a covers-less red and any covers ID absent from `spec/`. The gate reads the active task from your `task/T-NNN` branch (parallel-safe); off a task branch, set it with `--start T-NNN`. Override for a sanctioned non-TDD edit (a spike, a pure refactor): `GRILLSPEC_GATE_OFF=1`.
-2. **GREEN** — the minimal code to pass; the smallest *real* implementation, never a fake (see Production-only below).
-3. **REFACTOR** — only with the suite green: improve names, structure, duplication without changing behavior, re-running after each step.
-
-Don't batch: writing all tests then all code is horizontal slicing and produces tests that assert imagined behavior. One test → one implementation → repeat. Tests assert observable behavior through the public interface, not internals (a test that breaks on a behavior-preserving refactor is a bad test). Each `AC-` gets at least one test; an edge discovered here becomes a test — and, if it reveals an undecided rule, a gap.
-
-## Production-only — no fakes anywhere in the shipping path
-From the very first line, `src/` carries only production behavior — there is no "early stage" in which fake code is acceptable scaffolding. A stub, mock, in-memory double, hardcoded/canned response, `TODO`-shaped short-circuit, or an "if the real system isn't wired yet, return something plausible" branch is non-production code; test doubles live only under `tests/`. A thin-but-real slice (a real call, a real query, a real adapter) is the green; a fake that imitates the behavior is not done even when every test passes against it — green tests over a fake ship a system that does nothing real, and the fake outlives the excuse for it.
-
-**An absent dependency is something the test must reveal, not something production code is bent around.** If a dependency isn't available, the slice's test goes red — the truthful signal that the prerequisite isn't met. Never adapt production code to no-op without it or to turn the test green in its absence. Resolve it one of two ways: **(a)** drive the real dependency through a test container / local double in the test layer, while the production adapter stays real; or **(b)** if the real thing genuinely can't run yet, escalate — append the provisioning step to `spec/_human-input.md` and the walking-skeleton `bootstrap.md`, ensure the credential has a `spec/_provisioning.md` row (`state: pending`, flipped to `provisioned` when set), mark the task `blocked`, and move to other work. The only sanctioned throwaway is a **spike**: it proves shape, lives outside the slice, and is deleted before the green slice.
-
-The bar covers every artifact the slice ships, not just `src/`:
-- **Deploy, CI/CD, IaC, migrations, and env-config are production code**, produced from the first task as the design specifies. The walking skeleton ships a real deploy of the running system to the first environment of the ratified promotion path (per `infra-ops/topology.md`) with a smoke test, an automated rollback, and the CI/CD pipeline the design defines. A fake deploy (an `echo "deploying"`/`exit 0` job, a `# TODO: deploy`, a commented-out or `if: false` step) is a stub — and *omitting* a required artifact by deducing the environment "isn't ready" is the same cheat: ship it real (it may honestly fail or stay red until the env is provisioned — that is the truthful signal, recorded in `_human-input.md` + `bootstrap.md`) or mark the task `blocked` and escalate the precise missing prerequisite. A task whose deploy pipeline can't actually ship, or whose schema change doesn't actually migrate, is not done. Backstops: `check_deploy_real.py`, `check_migration_real.py`.
-- **UI is production from the first screen — the prototype is the visual contract.** A slice with a non-`N/A` `ux` dimension carries a second acceptance reference next to its ACs: the frozen prototype + the `JRN-` journey's interaction states + the `DS-` components/tokens + the task's `a11y` cell — loaded before the first test and built to the way you build to the ACs. Styling flows only through the design system's semantic/component tokens and components (a raw value or bespoke style is the UI fake; a missing DS element is a gap to the design system, never improvised around). Every interaction state the `ux` cell names (empty · loading · success · error · permission-denied · …) is implemented, reachable, and covered by a test tagged `@state:<state>` (verified by `check_task_record.py`); the `a11y` cell's keyboard/focus path and WCAG success criteria become assertions; the screen holds at the design system's breakpoints. There is no "quick draft now, polish later" tier — an unstyled, states-missing, inaccessible screen is a stub wearing a UI, and it binds from the first UI slice (the app shell included), because no later task re-opens screens to "finish" them.
-
-## The slice's test set spans every layer it touches — produced WITH the code
-A tracer bullet cuts through all layers, so its tests must too. Per your test strategy's levels:
-- **unit** — domain logic, invariants, pure functions (fast, no I/O; the bulk).
-- **integration** — the adapters and persistence the slice adds (real DB/queue via a test container or a double); the boundary to an external system. This is where test containers / `docker-compose` belong — NOT e2e.
-- **contract** — every `API-`/`EVT-` the slice exposes or consumes (schema, versioning), provider- and/or consumer-side.
-- **e2e** — the slice's user-observable path against a REAL deployed environment (the first env of the ratified promotion path — an ephemeral preview env by default, or the e2e/staging env the test strategy names), never a local `docker-compose`/testcontainers stack (that's integration mislabelled — it never exercises the deploy, env-config, secrets, or networking that break in prod). One happy path + the load-bearing edges; kept few. Because it hits the deployed system, a green e2e/smoke is itself the behavioural proof the deploy pipeline shipped — the authoritative deploy check once the env can run; `check_deploy_real.py` is the static backstop for the early window before it can.
-
-Still TDD and one-at-a-time within each level. An `NFR-`/`ASR-` target gets its evidence test here, not an assertion. The task's cross-cutting cells are test obligations shipped with the slice, never deferred: each `SEC-`/`ENTL-` rule gets its deny-path / over-limit / lapsed-billing test, each `obs`-cell signal (`SLO-` telemetry, `AEV-` analytics event) gets an emission assertion, each owned `DATA-` retention/deletion trigger gets exercised, an `ML-` capability gets its eval-harness run vs its bar, and a UI slice ships its state-coverage tests, a11y scan + keyboard-path assertions, and breakpoint render check. A cross-cutting requirement with no test in the slice that ships it is exactly how a spec'd obligation silently never gets built. These are the per-slice (Tier-A) tests; cross-feature journeys, architecture fitness functions, and NFR-evidence runs are the system suite (Tier-B) — owned by the test strategy, seeded by the walking-skeleton task, run in CI.
-
-## The bookends — tests open every task, the conformance review closes it
-The per-task loop has a fixed shape that is itself part of Done: it opens with the failing tests (implementation cannot begin until the slice's tests exist and were seen to fail for the right reason) and closes with an independent conformance review that records a `VERDICT: PASS`. Skipping either bookend means not done, even if the code looks finished and the suite is green.
-- **Tests-first is enforced by its trace, not by trust.** Every referenced `AC-` must be exercised by a behavior-pinning test that is able to fail (the mutation gate proves the assertions bite); a back-filled or missing test shows up as an `AC-` without a failing-capable test — a red gate. Live enforcement: the PreToolUse exec-gate (armed by step zero) blocks a `src/**` edit until this task's RED was recorded, and blocks flipping the record to `status: done` until `check_task_record.py` passes.
-- **The conformance review is a real artifact or it didn't happen.** A recorded `VERDICT: PASS` for this `T-` must exist on disk under `spec/10-delivery/verification/`, produced in a fresh / independent context — never the implementing loop asserting its own pass.
-
-Both bookends are reconciled by the per-task **Verification Record** — `spec/10-delivery/verification/tasks/T-NNN.md`, an obligation table generated from the task's frozen spec references (including the manifest's behavior/tests cells, so the bar can't be authored to mark its own homework). Generate it before implementation (`python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task_record.py spec --init T-NNN` — every row `PENDING`), fill each row's evidence as you go, and flip `status:` to `done` only when every row is `PASS`/`N/A`. The checker fails any done-claim with an unmet obligation, a missing referenced obligation (a shrunk bar), an omitted `deploy` or `tests:layers` gate row, no independent verdict on disk, an `AC-`/`API-`/`EVT-` without a passing traceability row, an `AC-` without a literal `@covers` tag in a failing-capable test source, a nonexistent evidence path, or a coverage/mutation number below its bar. An in-progress record never blocks — only an unbacked done-claim does. The checker reconciles mechanical evidence; the review still owes the semantic judgment (does the test truly pin the `AC-`).
-
-## The done-gate — the one canonical list (run as ONE gate; the same set CI runs)
-**Done = every row green, or that row's stated `N/A` form. Never mark done on red; never mark done without the conformance artifact and a green Verification Record.**
-
-| Gate | Green means | Enforced by |
+| Setting | Values | What it changes here |
 |---|---|---|
-| build · format · lint · types | all clean | toolchain |
-| tests: layers | unit · integration · contract · e2e green; every level the test strategy requires for this slice present (a missing *declared* tier is a per-commit WARN by design — tiers land with their tasks — and an ERROR at release, where the audit passes `--require-all-tiers`) | suite · `check_test_tiers.py` |
-| tests-first trace | every `AC-` exercised by a passing, failing-capable test carrying a literal `@covers AC-…` tag | `check_task_record.py` |
-| no orphan tests | every behavioral test traces to a live spec driver — no orphan source, no dangling `@covers` ID, no off-grammar test filename (`test_*` / `*.test.*` / `*_test.*` / `*Spec.*` — an off-grammar file is invisible to every classifier gate) | `check_orphan_tests.py` |
-| coverage + mutation | diff-scoped: every changed `src/**` line test-executed; mutants on the changed logic killed at the ratified bar (a whole-tree % hides an untested snippet in its slack) | coverage/mutation runs |
-| architecture | fitness functions green; boundaries and dependency rules intact | fitness functions |
-| spec integrity | spec-lint clean; derived files not hand-edited | `lint_spec.py` · `guard_derived.py` |
-| no fakes | `src/` free of stubs/mocks/doubles/canned responses/unwired fallbacks | `check_no_fakes.py` + fitness fn |
-| tier contract | no mock beyond a tier's ceiling; every declared tier has a suite; e2e targets the real deployed env, not a local stack | `check_mock_budget.py` · `check_test_tiers.py` · `check_e2e_target.py` |
-| no skipped tests | no `skip`/`xfail`/`ignore`, no `.only`/`fit` suite-shrinker, no CI step swallowing a red (`\|\| true`, `ignoreFailures`) | `check_no_skips.py` + exec-gate |
-| deploy | real, smoke-verified deploy/CI artifact reaching the first env of the promotion path — or `N/A — no new deployable surface` | `check_deploy_real.py` + green e2e/smoke |
-| migration | any schema/data change ships a real migration (no `-- TODO`, no empty `operations = []`, no DDL-less file) — or `N/A` | `check_migration_real.py` |
-| security | every referenced `SEC-`/`ENTL-` rule's deny / over-limit / lapsed-billing path exercised by a test | slice tests |
-| obs | every `obs`-cell signal (`SLO-` telemetry · `AEV-` analytics events) emission-asserted — or `N/A — no observable surface` | slice tests |
-| data | each owned `DATA-` retention/deletion trigger exercised | slice tests |
-| ml | any `ML-` capability's eval-harness evidence measured against its stated bar — or `N/A` | eval harness |
-| nfr | referenced `NFR-`/`ASR-` targets evidenced by tests, not assertions | evidence tests |
-| ui | every `ux`-cell state exercised by a `@state:`-tagged test; a11y scan zero critical/serious + the `a11y` cell's keyboard/focus path asserted; screens hold at the DS breakpoints and conform to the frozen prototype — or `N/A — headless` | `ux:states` / `a11y` / `ux:rendered` record rows |
-| prototype-review | the slice's prototype human-reviewed at finalization (`frozen — <path>`) or explicitly `waived — <why>` — or `N/A — headless` | `check_task_record.py` record row |
-| traceability | the matrix updated for the slice's IDs | `lint_spec.py` |
-| conformance | a recorded independent `VERDICT: PASS` for this `T-` on disk under `spec/10-delivery/verification/`, produced in a fresh context | the on-disk artifact |
-| record | the Verification Record fully evidenced — `deploy` + `tests:layers` rows carried, `status: done` | `check_task_record.py --task T-NNN` |
+| `profile` | `lite` · `standard` · `regulated` | how much spec exists to build against. Build to what is there; a missing area is not a gap to fill unless the task needs a decision only that area would hold. |
+| `delivery` | `trunk` · `pr` | where work lands and where verification runs (see Delivery below). |
 
-## The loop, the invariants, and escalation (AFK execution)
-For autonomous work, don't stop at the first failure or hand back a half-done task — drive the gate to fully green yourself, fixing your own code, and stop only on a true blocker. The loop: (1) run the whole gate, collect all failures; (2) diagnose each to root cause; (3) fix the implementation code, re-run the whole gate; (4) if the failure set didn't shrink for two consecutive iterations, or you hit the cap, stop and escalate — don't thrash.
+## Step zero — arm the edit hook
 
-**Anti-cheat invariants — violating any means NOT done, even with everything green:**
-- **Fix the code, never move the goalposts.** Never delete or weaken a test or assertion, lower a threshold, add `skip`/`xfail`/`ignore`, loosen a lint/type/fitness rule, or stub a function to fake a pass. A test changes only when the spec changed. (The exec-gate denies the edit that introduces a skip/`.only`; `check_no_skips.py` catches the end state.)
-- **The spec is the source of truth** — never edit the spec or an `AC-` to match buggy code; escalate.
-- **Never grow the code past the spec** — chat is spec input (§ Gaps and mid-task instructions), even when the user asked directly.
-- **Green ≠ done** — the independent conformance verdict and the tests-first trace are still required. **The implementing loop never authors its own review artifact**: the per-task review file and its `VERDICT:` line are written only by the independent reviewer in a fresh context — an implementer writing them is self-certification, the exact fraud the bookend exists to prevent (the checker can verify the file exists, not who wrote it — this invariant is what makes the artifact meaningful).
-- **Gate state is a trust boundary, not a fortress** — the exec-gate's transient RED state under `.grillspec/gate/` is session-scoped and forgeable at the OS level; deleting or forging it to unlock an edit is a violation identical to weakening a test, even though no checker can see it.
-- **Never disable a gate, fitness function, or hook** to make progress.
-- **No fakes in the shipping path** (§ Production-only) — including the deploy/CI surface and the UI contract.
-- **Clean architecture always wins** — never cross a context or layer boundary, reach into another module's internals, bypass a port, fatten an interface, duplicate logic, or introduce a cycle to make a test green. If the clean design genuinely can't satisfy the test/`AC-`, that's a design/spec signal — escalate, not a licence to hack.
-- **A red suite over a real implementation is a VALID, reportable end-state** — `status: blocked` + the escalation record with the suite honestly red is a process success (the blocker is visible and actionable). A fake green is the only failing outcome: the skip flag, the mock in `src/`, the weakened assertion, and the e2e that quietly avoids the not-ready path are each the actual failure, even when they buy a green run.
+At the start of an exec session, when this method's toolset is available, run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/install_exec_gates.py` (idempotent). It vendors the project-local tools under `.grillspec/tools/` — the edit hook (`gate_exec.py`), the task and test-driver checks (`check_task.py`, `check_orphan_tests.py`), and the spec pre-commit hook with the checks it runs (`spec_governance_hook.sh`, `lint_spec.py`, `check_contracts.py`) — and wires one PreToolUse hook into `.claude/settings.json` and `.codex/hooks.json`. The project is then governed in any session, with or without this toolset installed. The hook denies an edit that introduces a skipped test or a fake in the production tree, at the moment it is written; that is cheaper than finding it after code has been built on top of it. In Codex, review and trust the project hook through `/hooks`. Without the toolset the rules below still apply; say plainly which checks you could not run.
 
-**Escalate (stop autonomy) only when:** the spec is genuinely ambiguous or contradictory for this slice · a HITL input is truly required (a visual/UX decision, a product/legal/strategy call, an external credential/access) · the clean design can't satisfy the test/`AC-` without crossing a boundary · the loop can't converge after the cap. Append to `spec/_human-input.md`: the task id · the precise blocker · the actionable step-by-step resolution (for a credential/provisioning block, exactly what to create and where to set it — never the secret value; for a UX or decision block, your proposed default for the human to ratify) — detailed enough to clear in one sitting. Mark the task `blocked`, move to other AFK-eligible tasks. The CI run on the PR is the backstop, not the bar.
+## Risk tier — how much process a change owes
 
-## Engineering workflow (standard practice — from conventions)
-Per task: branch off main (`task/T-NNN-…`, never commit to main) → layered tests first → implement → pre-commit runs the enforcers (spec-lint · format · lint · type · secret-scan · fast tests · the mechanical conformance and fitness functions on the changed scope) → conventional commit → one MR/PR → CI (build · full tests · full conformance · gate checks) → review → merge (auto-merge on green only where the conventions' review policy permits solo-merge; where it mandates ≥2-person review, an `afk:eligible` agent parks the merge for a human) → deploy to the first environment of the ratified promotion path → e2e/integration pipeline + docs site, then promote along the path per the ratified gates. Small, atomic, reversible — the checks aren't optional; the release decision is the team's.
+Process is paid for by risk, not charged uniformly. The task brief carries the tier; a change with no brief is `routine` unless it meets a `critical` condition, in which case it gets a brief first.
 
-**What a good review still checks beyond CI green:** behavior matches the referenced `AC-` and contracts · architecture boundaries and dependency rules intact · tests assert behavior (not internals) and cover the edges · names use the ubiquitous language · no dead code, no scope creep beyond the task.
+| Tier | What it is | What it owes |
+|---|---|---|
+| `routine` | a bug fix, a copy or visual tweak, a refactor, a dependency bump — no new behaviour | a failing test first where behaviour is involved (for a bug, tagged `@covers` the criterion it violated), the fix, the gate. No task file. |
+| `feature` | new behaviour inside an existing module or context | the brief, test-first, the gate |
+| `critical` | a new aggregate or context · a schema or data migration · authentication, authorization, erasure, billing or another money/legal path · a model/LLM seam · any one-way door | the brief, a short design note before coding (`derive-impl-design`), the gate, and one fresh-context conformance review |
 
-## House style (exec additions)
-Reports and artifacts: tight, structured, spec IDs cited; tables per the house rules — a trace/gate/failure/AC×status listing is a table with the ID as the leading column. Records you write under `spec/` (verification and operations records) follow every house rule for spec files, timeless-artifact rule included; a transient run-report back to the orchestrator may say what changed.
+If work turns out riskier than its tier (a `feature` that needs a migration), raise the tier and say so; do not finish it under the lighter one.
+
+## Scoped context
+
+Load the task brief, the code it touches, and the spec passages the brief points at when you need more than the brief quotes. A brief is written to be self-contained: its acceptance criteria carry their text, and its `rules` cell states the cross-cutting obligations that bind the slice. Reading the whole upstream spec for a coding slice costs attention and makes the work worse; the broad view belonged to the step that cut the slice.
+
+When the spec is wrong, contradictory or silent for this slice:
+- If two competent engineers would settle it the same way, decide, and write the decision where it belongs (the acceptance criterion, the owning requirement, or an ADR for a costly-to-reverse choice) in the same change.
+- If it turns on a fact only the user or organisation holds, record `GAP <what is undecided> — <owning area> — UNRESOLVED` on the brief, ask once with your recommended default, and continue with work that does not depend on the answer.
+
+A request that arrives in chat mid-task is handled the same way: a behaviour change becomes an acceptance criterion in the spec and a test before it becomes code; new scope becomes a new brief; a rename or pure refactor just proceeds.
+
+Two situations need a different first move than writing a test:
+- **A bug that resists.** Before forming theories, build a fast, deterministic pass/fail signal for it — a failing test at the right seam, a scripted request, a bisection — and shrink it to the smallest case that still fails. A fix made without a reproduced signal is a guess. The fix itself is a `routine` change, and the signal stays behind as its regression test.
+- **An unknown only running code can settle** (will this state model hold, is this approach fast enough, does this flow work). Answer it with a throwaway spike under `prototypes/<question>/`: the least code that answers that one question, with no tests or structure. Record the answer where that kind of fact lives — the owning spec area, the task's design note, or an ADR — and delete the spike; it is not promoted into the source tree.
+
+## Test-first, one behaviour at a time
+
+Build one thin vertical slice at a time, end to end (entrypoint → application → domain → persistence). Within it:
+
+1. Write one small test for the next piece of observable behaviour, taken from an acceptance criterion or an edge you found. Run it and see it fail for the right reason; a test never seen failing proves nothing.
+2. Write the smallest real implementation that passes.
+3. Refactor only with the suite green.
+
+Then the next behaviour. Writing all the tests and then all the code produces tests that assert imagined behaviour, so keep the cycle short. Tests assert behaviour through the public interface, not internals. Tag each behaviour test with what it proves: `@covers AC-…` for an acceptance criterion, `@state:<name>` for a UI interaction state. Those tags are how done is checked (below) and how a later change finds the tests to re-run.
+
+Tests span the layers the slice touches, per the project's tier contract (`09-solution/test/levels.md` where the project has one, otherwise its conventions): unit for domain logic; integration for the adapters and persistence the slice adds, against a real local dependency; contract for a seam it exposes or consumes; e2e only for a user-observable path that needs the deployed system, kept few. A cross-cutting rule named in the brief (an authorization rule, a retention trigger, an entitlement limit, a quality target, an emitted signal) is proven by a test in the slice that ships it — the deny path, the over-limit path, the measured number — because a rule with no test is the one that silently never gets built.
+
+A test proves a criterion only at the level the criterion lives. A user-observable criterion needs a test through the real interface; a cross-component, persistence or messaging criterion needs an integration test against real dependencies; a pure domain rule needs a unit test. Assert outcomes — the resulting state, the output, the emitted events — rather than which calls were made, and cover the error and negative paths as well as the happy one. Asynchronous behaviour is tested on its real path: the job is enqueued, a real worker consumes it, and the observable effect is asserted; a test that only asserts "enqueued" has not tested the job. For changed domain logic, assert boundaries on both sides and rejections by their reason, which is what the mutation bar measures.
+
+## Production code is real from the first line
+
+The shipping tree carries only production behaviour. A stub, an in-memory double, a canned response, or an "if the real thing isn't wired, return something plausible" branch makes every test pass against a system that does nothing, and the fake outlives the excuse for it. Test doubles live under the test tree and are injected through the production constructor.
+
+When a dependency is not available, let the test stay red: that is the accurate signal. Either drive the real dependency through a local container in the test layer, or, when it truly cannot run yet, record the provisioning step in `spec/_human-input.md` (and the credential in `spec/_provisioning.md`), mark the task `blocked`, and move on. A red suite over a real implementation is a good outcome to report; a green suite over a fake is the failure.
+
+The same holds for what ships around the code: the deploy pipeline really deploys, a schema change really migrates, and a UI screen is built to its prototype, its named states and the design system's tokens rather than as a rough draft to polish later. `check_deploy_real.py` and `check_migration_real.py` are the static backstops.
+
+## Done
+
+A task is done when its behaviour is proven and the project's gate is green. Concretely:
+
+| What | Checked by |
+|---|---|
+| format · lint · types · build clean; the test tiers the slice touches pass; coverage and mutation bars met | the project's one gate command (from its conventions) |
+| architecture boundaries and the project's other fitness functions hold | the same gate |
+| every acceptance criterion in the brief has a `@covers` test; every named UI state has a `@state:` test; no unresolved gap (a dependency not marked done is reported as a note) | `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task.py spec --task T-NNN` |
+| no test without a spec driver; no skipped test; no fake in the shipping tree | `check_orphan_tests.py` · `check_no_skips.py` · `check_no_fakes.py` (or the project's own ports of them) |
+| a slice that adds a deployable surface or a schema change ships a real deploy / migration | `check_deploy_real.py` · `check_migration_real.py`, and the smoke check after deploy |
+| `critical` only: the design note exists and a fresh-context review returned `PASS` | the brief's `design` and `review` rows, read by `check_task.py` |
+
+A run that reports skipped tests is not a clean run, and a tier that needs a deployed environment and was not run is reported as not run, never folded into a pass.
+
+The **system suite** — journey tests, architecture fitness functions, the contract suite and the evidence tests for quality targets — runs where the tier contract says, typically after work lands and before a release. A green run is the start: compare each measured result with its target (did p95 meet the bar, did recovery stay inside the objective) and report one row per requirement: id · measured · bar · met.
+
+Then set the brief's `status` row to `done`. Nothing else is recorded: status, coverage of criteria and the criterion-to-test trace are computed from the tree on demand (`check_task.py`, `--json`, `--trace`), so there is no ledger to keep in step with the code.
+
+**The review is independent or it is not a review.** For a `critical` task the conformance review runs in a fresh context (a subagent or a separate session) that did not write the code. Its findings come back to you as a short report; you fix them and it looks again, at most twice — a third disagreement goes to the human with both positions. The reviewer, not the implementer, sets `review | PASS` on the brief. For `routine` and `feature` work, review your own diff against the brief before claiming done: behaviour matches the criteria, boundaries intact, tests assert behaviour, nothing beyond the brief.
+
+## Working unattended
+
+Drive the gate to green yourself rather than handing back a half-finished task: run the whole gate, find the root cause of each failure, fix the code, run it again. Ordinary obstacles — a flaky command, a timeout, an empty result — are things to work through. Stop and escalate when the failure set has not shrunk for two rounds, when a human decision is genuinely needed (a visual or product call, a legal sign-off, a credential), or when the clean design cannot satisfy the criterion without crossing a boundary. Escalating means: append to `spec/_human-input.md` the task, the precise blocker, your recommended resolution, and exactly what the human must do; mark the brief `blocked — <why>`; continue with other eligible tasks.
+
+A few shortcuts make a gate pass without making the software right, and each one is the actual failure even when it buys a green run:
+- weakening or deleting a test, lowering a threshold, or adding a skip, so the gate stops seeing the defect — a test changes only when the behaviour it describes changed;
+- a fake in the shipping tree, or an e2e that steers around the path that is not ready;
+- crossing a module or layer boundary, or duplicating logic, to get a test green — if the clean design cannot do it, that is a design finding to raise;
+- disabling a hook, a fitness function or a gate.
+
+### A queue of tasks
+Asked to work through the build order without supervision, repeat the single-task loop over whatever is ready. It needs no separate method, only these points:
+
+- **Ready** means the brief's `phase` row reads `afk: eligible`, the tasks it depends on are done, and it is neither done nor blocked. Two things are checked before starting a task, because finding them mid-slice wastes the run: a `human-prereq` credential must read `provisioned` in `spec/_provisioning.md`, and a slice that changes a screen must have its prototype `frozen` or `waived`. Otherwise set the task `blocked — <why>` and take the next. `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task.py spec` prints the current state of every task.
+- **Order** follows the delivery mode (the table below): one task after another on `trunk`; under `pr`, tasks that touch different modules may run in parallel, one branch or worktree and one worker each.
+- **Between tasks**, confirm the default branch is healthy — the smoke check after a deploy, or the system suite after a wave merges — before building on it. Work stacked on a red branch has to be untangled later.
+- **For a `critical` task** built by one worker and reviewed by another, withhold one or two observable acceptance criteria from the implementer's copy of the brief; the reviewer, holding the full brief, tests them against the built slice. It shows whether the slice was built to the behaviour or only to the visible tests.
+- **When a credential gets provisioned**, set its row in `spec/_provisioning.md`, since the next ready set is read from that register.
+- **When nothing ready remains**, report what landed and how each was confirmed, what is blocked with your recommended default and what the human must do, and what is left.
+
+## Delivery
+
+| | `trunk` | `pr` |
+|---|---|---|
+| Where work lands | on the default branch; related slices may share one push | a short-lived branch per task and one pull request |
+| Verification | local, once: the tests the change touches while iterating, the project's gate before a push | the same local gate, then the full CI gate on the pull request |
+| CI | deploys the default branch and smokes it; every other job runs on dispatch | runs the full gate on the pull request, merges on green, deploys on merge |
+| Human window | the escalation queue and the `critical` review | the pull request, where the project's review policy requires one |
+| Unattended waves | tasks run one after another | tasks may run in parallel, one branch or worktree each |
+
+In either mode: commit only the task's own changes, in small atomic commits with messages that describe the change; never push to make CI check something a local run can show; after a deploy, the smoke check against the deployed environment is the authoritative signal that it shipped.
+
+## Reporting
+
+Write for a reader who has not seen your tool calls or the files you opened. Lead with what was done and what state it is in; then what you found that the reader should know, what remains, and what you need from them. Say plainly which checks ran and which did not. Use the task and criterion ids where they help the reader find things, with a few words saying what each is. A table suits a list of like items (criteria and their status, failures and their cause); connected reasoning reads better as a short paragraph.

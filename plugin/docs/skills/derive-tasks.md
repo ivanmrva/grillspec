@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Break a spec into minimal, vertically-sliced, build-ready tasks for a coding agent — each a complete reference manifest, phase-tagged and dependency-ordered, walking-skeleton first. Use when you need the spec turned into build-ready slices.
+Break a spec into small, vertically sliced task briefs a coding agent can build from — each self-contained, risk-tiered, phase-tagged and dependency-ordered, walking skeleton first. Use when the spec needs turning into build-ready work.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

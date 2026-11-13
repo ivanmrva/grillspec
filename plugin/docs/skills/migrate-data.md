@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Generate and run the schema/data migration a DATA-/AGG- change requires — forward + rollback, idempotent, online-safe, verified. Mandatory whenever the data model changes.
+Write and run a schema or data migration that touches existing data — forward and rollback, idempotent, online-safe, verified before production. Use for a backfill, a transform, a large-table change, a store move or a production load.
 
 ## What it needs (input)
 A task package and the code it touches.

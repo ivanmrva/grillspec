@@ -2,17 +2,22 @@
 
 A profile is a thin layer on a shared engine. **Declare only what VARIES for this area** — the engine
 (`grill-engine.md` / `derive-engine.md` / `exec-engine.md`) already owns everything universal: the
-interview/derive/build method, the `<!-- scope | excludes | format -->` file header, the tight
-no-walls-of-prose house style, ADR placement, and the rule that the output never names a skill or tool.
-**Never restate an engine rule, and never say the same thing twice** (the description, the rules, and the
-output table must not each re-list the same content — the output table is the single enumeration).
+interview/derive/build method, the `<!-- scope | excludes | format -->` file header, the house rules for
+writing, ADR placement, and the rule that the output names no skill or tool. State an engine rule in the
+engine only, and each area fact once: the output table is the single enumeration of what the area writes.
+
+Write a profile the way a brief for a capable colleague reads: what the area is for and who reads its
+output, the few rules that are specific to it with the reason beside each, and what a larger project adds.
+A rule without its reason gets applied rigidly; emphasis on every line reads as none; a long list of
+prohibitions describes failure better than success. Keep exact wording only where a tool parses it (file
+names, table columns, ID prefixes, cell vocabularies).
 
 ```
 ---
 name: grill-<id>
 description: >-
-  <ONE-LINE HOOK — what it captures + when to use it, at a glance (NOT a restatement of every output
-  file). Ends with "Loads the shared <grill|derive|exec> engine.">
+  <what it captures and when to use it, in plain words, under ~45 words — routing text, not a
+  restatement of every output file>
 disable-model-invocation: true
 argument-hint: <what to hand it>
 ---
@@ -26,10 +31,14 @@ method to **<Area>** — <one-line scope>.
                    "fill in the files". If the process is just the list of things to capture, omit it:
                    the Output tree below IS the coverage.
 
+## Depth by profile  ← what the area captures at each profile it is in scope for (`lite` · `standard` ·
+                   `regulated`), or one line saying it is optional and run only on request. The core
+                   first; what only a larger profile adds, marked as such.
+
 ## Rules         ← OPTIONAL. ONLY area-specific bars the engine doesn't carry — a gating trigger
                    ("GATED on real features to price"), a judgment rule ("authz is DEFAULT-DENY"), a
-                   caveat ("coarse & revisable — don't over-ask"). NOT the file header, NOT "tight/no
-                   prose", NOT output content restated as a rule.
+                   caveat ("coarse & revisable — don't over-ask"). NOT the file header, NOT house
+                   style, NOT output content restated as a rule.
 
 ## Output        Heading is just `## Output` (no path in it). A lead-in `Written under `<folder>/`:` then a
                    markdown TABLE — the single place the outputs are enumerated:
@@ -47,6 +56,5 @@ method to **<Area>** — <one-line scope>.
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/<engine>.md`   (+ any other loadable file, e.g. examples.md)
 ```
 
-Exec profiles (build/verify skills) keep their `## Process` steps and their `never pass on` / `verdict` /
-`Done` lines — those are area-specific, not engine duplicates — and their Output is code/records, not a
-spec artifact.
+Exec profiles (build/verify skills) keep their `## Process` steps and what is specific to their job —
+what they check, what they report — and their output is code and short reports, not a spec artifact.

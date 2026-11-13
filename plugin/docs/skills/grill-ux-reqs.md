@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the UX requirements — per-role journeys with their interaction states, information needs (the information architecture), and accessibility & i18n targets. Use when you need UX requirements, not the design system or visual design.
+Pin the UX requirements: the screen inventory, per-role journeys with their interaction states, and the accessibility and i18n targets. Use for a product with a UI when you need what each journey and screen must do, not the design system or visual design.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

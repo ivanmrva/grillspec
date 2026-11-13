@@ -1,54 +1,86 @@
 ---
 name: derive-infra-ops
 description: >-
-  Design topology, IaC, CI/CD, deploy/release strategy, environments, scaling/HA, DR/BCP, backup/restore, capacity and cost from the NFRs and constraints. Use when the NFRs and constraints exist and you need the deploy & operations architecture designed. Loads the shared derive engine.
+  Decide how the system is deployed and operated — environments and promotion path, DR tier, the config matrix, external prerequisites, the CI/CD pipeline; at the regulated profile also IaC, delivery metrics, scaling/DR and cost. Use when the NFRs and constraints exist.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---
 
 # derive-infra-ops
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md` first and follow it.** This skill applies that method to **Infrastructure, deploy & operations** — the application's deployment & operations architecture.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md` first and follow it.** This skill applies that method to **infrastructure, deploy & operations**: where the system runs, how a change reaches production, and what must exist before it can.
 
-## Method
-1. per availability/RTO/RPO NFR: a mechanism realising its **ratified `dr-tier`** (from the NFR row — a tier the upstream left blank is a gap to ratify there, never a silent pick here) with a named failover-runbook owner
-2. topology → environments (dev/stage/prod) → IaC → **the environment×configuration matrix**: every config key / env-var / secret the system needs, its per-environment value-source + where-stored/injected + owner, and the **cross-environment mapping** (which environments share a key vs. hold a distinct one — e.g. preview≡staging on most keys, prod distinct)
-3. CI/CD → progressive-delivery strategy: **feature flags** decouple deploy from release; each rollout strategy names its **promotion/abort signal** (tied to an observability burn-rate) + rollback
-4. set the **delivery-metric targets** the pipeline must hit + how each is instrumented (deployment frequency · change lead time · change-failure rate · failed-deployment recovery time)
-5. backup/DR → the **cost practice** (allocation/tagging · unit-cost · optimization levers · anomaly alerting + showback) incl. a carbon/efficiency line
-6. the day-2 operations plan (drills/patching/capacity/cost cadence)
+## Depth by profile
+How much is written follows the project's profile:
+
+| Profile | Mode | Written |
+|---|---|---|
+| `lite` | N/A | nothing here — the environments and promotion path are a row in `arch/solution-strategy.md`, the pipeline and config rules are in the conventions |
+| `standard` | decision mode | `topology.md`, `environments.md`, `prerequisites.md`, `cicd.md` |
+| `regulated` | full mode | those four plus `iac.md`, `delivery-metrics.md`, `scaling-dr.md`, `cost.md` |
+
+Decisions live in the spec; the description lives in the artifact that enforces it — here the workflow files and the infrastructure code — and once they exist they are the source of truth for pipeline and infrastructure detail. Decision mode therefore records only the environments and how a change is promoted through them, the DR and backup tier, the configuration each environment needs, and what a human has to provision; full mode also writes the operations design, because at `regulated` it is a deliverable other teams and auditors read.
+
+## Decision record
+
+### `topology.md`
+- **The environment set and promotion path.** Each environment with its purpose, and the order a change moves through them. This is a ratify-point: team schemes vary (no stage, several production regions, a UAT tier, ephemeral-only) and the spec cannot derive them. Propose a default that fits the product, for example `dev · stage · prod` plus per-change preview environments for a web product, and surface it as the engine describes.
+- **The hosting platform and residency region.** Both are organisation commitments (existing accounts, vendor contracts, residency law). Take them from the constraints; where the constraints are silent, surface a default as a ratify-point. The region is pinned per data class.
+- **The DR and backup tier per store.** It realises the `dr-tier` ratified on the availability/RTO/RPO NFR. A tier that NFR left blank is a gap to record against the NFR, not a pick to make here.
+
+### `environments.md`
+The environment × configuration matrix: every config key, env var and secret the system needs, with its purpose, whether it is a secret, and per environment its value source, where it is stored or injected and its owner. It shows which environments share a key and which hold a distinct one (for example preview ≡ staging on most keys, production distinct), and the per-environment platform settings (region · scale · flags). The key is the leading column, with one column per environment, because the build reconciles the keys the code reads against this matrix.
+
+### `prerequisites.md`
+The register of external dependencies a human must provision, one row each: name · where it is set (CI · platform · IaC backend) · the config key(s) it feeds (→ `environments.md`) · phase · owner · any residency or compliance constraint · how the value travels (captured from → stored in → set per environment).
+- Coverage: accounts with their billing and quotas · secret and credential names · OAuth/app registrations · DNS records · account-gated region choices.
+- Phase: `initial` (bring up local and dev) · `pre-launch` (production, before go-live) · `later` (rotation, scale, new regions).
+- Owner: `ops-admin` (accounts, billing, org policy) · `sys-admin` (DNS, network, secrets store, IaC backend) · `developer` (local env, app config).
+
+The register states what must exist and who owns it. It holds names and locations only: a secret's value is not written into the spec, and the click-by-click provisioning steps belong to the operate-layer runbook `12-operate/bootstrap.md`, which references this register.
+
+### `cicd.md`
+The pipeline is GitHub Actions (`.github/workflows/`). Keep the file short: the stages, the gate at each, and the promotion workflow. It describes the pipeline for the project's delivery mode — the `delivery` setting reported with the profile, `pr` when unset:
+
+| | `trunk` | `pr` |
+|---|---|---|
+| Verification | local — the project's one gate, run before a push | the same local gate, then the full gate on the pull request; merge on green |
+| Deploy | CI deploys the default branch to the first environment of the promotion path, then smokes it | on merge, CI deploys to the first environment of the promotion path, then runs the e2e/integration pipeline |
+| Other jobs (gate, integration, scans) | defined, dispatch-only | part of the pull-request gate |
+
+In both delivery modes `cicd.md` defines the end-to-end promotion workflow: the ordered hops across the ratified environments through to production and the gate at each hop (automatic, or a human go/no-go), with the rollout strategy (blue-green · canary · rolling) and its rollback. The build wires this workflow as written, so nothing about it is left to re-derive. An AI code-review integration is not part of the pipeline; review runs through the agent host's own review workflow when wanted.
 
 ## Rules
-- governing principles: **config-in-environment** (config from env, not baked into the artifact) + **immutable-infrastructure** (replace, never mutate, running instances)
-- **CI/CD is GitHub Actions** (`.github/workflows/`): **on MR** → build · full test suite · full conformance · gate checks incl. a **build-provenance/signing gate** (emit **SLSA** provenance) (green before merge); **on merge to `main`** → deploy the app to the **first environment of the ratified promotion path** (the path's leading env — `dev`, or a dynamic per-PR preview env, per the ratified environment set) then run the e2e/integration pipeline. **Define the END-TO-END promotion workflow explicitly** — the ordered hops across the ratified environments and the **gate at each hop** (auto-promote vs. human go/no-go, tied to the rollout strategy's promotion/abort signal), through to prod — so the build skills wire it rather than re-deriving it. The release/rollout step consumes the chosen **rollout strategy** (blue-green/canary/rolling + rollback). A host-native AI review integration is deliberately NOT wired into CI—run the current agent host's review workflow ad hoc
-- **continuous-ops (day-2) plan present** as *planned operational requirements* (not concrete prod tasks): DR-drill / test-restore cadence · patching/dependency-refresh cadence · capacity re-planning (the growth→infra loop) · cost-review cadence
-- **human-only prerequisites enumerated as a first-class REQUIREMENT REGISTER** — one row per external dependency: **name · where it's set (CI · platform · IaC backend) · the config key(s) it provisions (→ `environments.md`) · phase · audience/owner · any residency/compliance constraint — but NEVER the value itself** (a secret's value is never written to the spec). Coverage: accounts + billing/quotas · secret/credential names · OAuth/app registrations · DNS records · account-gated region/residency choices. This register is the **requirement** — *what* must exist and *who* owns it — consumed by the walking-skeleton and by deploy-release; the executable **click-by-click provisioning steps live downstream in the operate-layer `12-operate/bootstrap.md` runbook** (which references this register UPSTREAM), **NOT here**
-- **the register's axis taxonomies** — phase: `initial` (bring up local + dev) · `pre-launch` (production, before go-live) · `later` (day-2: rotation, scale, new regions); audience/owner: `ops-admin` (accounts/billing/org policy) · `sys-admin` (DNS/network/secrets store/IaC backend) · `developer` (local env, app config)
-- network carries **security zones/segmentation** (ingress WAF/LB · controlled egress · private/public); data-residency region pinned at infra per class
-- **the delivery-metric (DORA) targets are ratify-points** — org performance commitments, not merit picks: propose concrete numbers + a one-line why per metric, `status: unconfirmed` until the human agrees/overrides
-- **the cloud provider + residency region are ratify-points, not merit picks** — both are org commitments / one-way doors (existing accounts · vendor contracts · residency law); take them from the constraints, and where the constraints are silent **ratify a default — never silently assume one**
-- **the environment set (count + purpose) + promotion path are a ratify-point, never a silent default** — propose a profiled default (e.g. `dev · stage · prod`, plus ephemeral per-PR preview envs for a web/PLG product) WITH its promotion path, then **surface it for the human to confirm or override**; org/team schemes genuinely vary (no stage · multiple prod regions · a sandbox/UAT tier · ephemeral-only) and this is a team fact the spec can't derive. Record the ratified set + each environment's purpose in `topology.md`; an un-ratified default is an assumption to flag, not a settled fact
+Config comes from the environment and is not baked into the artifact, and a running instance is replaced, not mutated. One artifact then promotes unchanged through every environment.
+
+## Full mode
+At `regulated` the skill also decides and records the items below. In decision mode they are not raised.
+- **Deployment diagram** (in `topology.md`): compute · the network with its security zones (ingress WAF/load balancer · controlled egress · private/public) · stores.
+- **IaC** (`iac.md`): the infrastructure-as-code approach.
+- **Pipeline hardening** (in `cicd.md`): a build-provenance and signing gate (SLSA provenance), and progressive delivery — feature flags decouple deploy from release, and each rollout strategy names its promotion/abort signal, tied to an observability burn rate.
+- **Delivery metrics** (`delivery-metrics.md`): a target and its instrumentation for deployment frequency · change lead time · change-failure rate · failed-deployment recovery time. The targets are organisation commitments, so each is a ratify-point.
+- **Scaling and DR** (`scaling-dr.md`): scaling/HA rules · backup and restore · the RTO/RPO mechanism that realises each DR tier, with a named failover-runbook owner · the day-2 cadences (DR drill and test restore, patching and dependency refresh, capacity re-planning). These are planned operational requirements, not concrete production tasks.
+- **Cost** (`cost.md`): the cost practice — allocation/tagging model · unit cost (for example per tenant) · optimisation levers (right-sizing, commitments, spot) · anomaly alerting and showback · the review cadence · a carbon/efficiency line.
 
 ## Output
 Written under `solution/infra-ops/`:
 
-| File | Captures | Format |
-|---|---|---|
-| `topology.md` | deployment topology in Mermaid (compute · network with security zones/segmentation · stores) + environments (dev/stage/prod) | Mermaid |
-| `iac.md` | infrastructure-as-code approach | typed: IaC approach |
-| `cicd.md` | the app's CI/CD pipeline (GitHub Actions) stages: on-MR (build · tests · conformance · gates incl. SLSA provenance/signing) · on-merge-to-main (deploy the **leading env of the promotion path** → e2e/integration) · the **end-to-end promotion workflow** (ordered env hops + the gate at each: auto-promote vs. human go/no-go through to prod) · progressive delivery (flags decouple deploy/release; rollout promotion/abort signal ⇄ burn-rate) | typed: CI/CD stages + promotion workflow |
-| `delivery-metrics.md` | delivery-metric targets + instrumentation: deployment frequency · change lead time · change-failure rate · failed-deployment recovery time | typed: metric · target · instrumentation |
-| `scaling-dr.md` | scaling/HA + backup/restore + DR/BCP (RTO/RPO mechanism + DR tier per class + failover-runbook owner) + day-2 cadences (DR drills · patching · capacity re-planning) | typed: scaling rule · RTO/RPO mechanism · DR tier |
-| `cost.md` | cost *practice*: allocation/tagging model · unit-cost (e.g. per-tenant) · optimization levers (right-sizing/commitments/spot) · anomaly alerting + showback · carbon/efficiency (region carbon intensity, right-sizing as a lever) | typed: cost practice · line items |
-| `environments.md` | the environment×configuration matrix: each key/env-var/secret · purpose · secret? · per-environment {value-source · where-stored/injected · owner} · cross-environment mapping (shared vs distinct) · per-environment platform settings (region/residency · scale · flags) | matrix: key is leading column · one column per environment |
-| `prerequisites.md` | the external-dependency **requirement register** — accounts/billing/quotas · secret/credential names + where set · OAuth/app regs · DNS · region/residency choices. **Per dependency: name · where-set · the config key(s) it feeds (→ `environments.md`) · phase (initial/pre-launch/later) · audience/owner (ops-admin/sys-admin/developer) · residency/compliance constraint · capture→store→author-per-env — never the value, and never a console click-path** (the current-console steps are `bootstrap.md`, downstream) | table: one row per dependency; keyed by dependency name |
+| File | Mode | Captures | Format |
+|---|---|---|---|
+| `topology.md` | decision | the decision record above | table: environment · purpose · promotes to; table: store · DR tier · backup. Full mode adds a Mermaid diagram |
+| `environments.md` | decision | the decision record above | matrix: key is the leading column · one column per environment |
+| `prerequisites.md` | decision | the decision record above | table, one row per dependency, keyed by its name |
+| `cicd.md` | decision | the decision record above | typed: stages · gates · ordered hops |
+| `iac.md` | full | the IaC approach | typed fields |
+| `delivery-metrics.md` | full | delivery-metric targets and instrumentation | table: metric · target · instrumentation |
+| `scaling-dr.md` | full | scaling/HA · backup/restore · DR mechanism · day-2 cadences | typed: scaling rule · RTO/RPO mechanism · DR tier · owner |
+| `cost.md` | full | the cost practice | typed: practice · line items |
 
 ADRs → `adr/ADR-INFRA-NNN.md`
-*(DERIVED & regenerate-only — never hand-edited)*
-Consumes: the quality NFRs (availability/RTO/RPO, scale) + the constraints (residency, vendor commitments, budget) + the architecture's deployable units.
+Consumes: the quality NFRs (availability/RTO/RPO, scale) · the constraints (residency, vendor commitments, budget) · the architecture's deployable units.
 
 ## Excludes
-implementation code · SLO/alerting/runbook detail (→ the observability area) · coding rules + code hooks (→ the conventions area) · `spec/`+docs governance (`lint_spec.py`, the doc-site — a separate spec-governance concern, not this pipeline)
+implementation code · SLO/alerting/runbook detail (→ the observability area) · coding rules and code hooks (→ the conventions area) · governance of the spec and docs (the spec linter and the doc site are a separate concern from this pipeline)
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md`

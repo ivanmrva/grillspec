@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the entitlement model — access tiers, feature gating, usage limits and quotas, and degradation on a lapsed billing state — the access-control contract architecture enforces; the structural half of monetization.
+Pin the entitlement model: access tiers, the tier × capability grid, usage limits with their over-limit behaviour, and how access degrades when billing lapses. Use when the product has tiers or plans that the code must enforce.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

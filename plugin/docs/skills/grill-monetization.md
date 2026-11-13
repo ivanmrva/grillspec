@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the business model and pricing — model, packaging, plans priced against the entitlement tiers, billing model, unit economics, and customer-facing SLA/support commitments. Use once the entitlement tiers exist.
+Pin prices and plans: the business model in a line, the value metric, and each plan priced against an entitlement tier with the basis for its price. An optional commercial area; use only when the user asks for pricing work.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

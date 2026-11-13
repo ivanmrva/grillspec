@@ -61,7 +61,7 @@ python build/build.py plugins      # builds every entry in CLUSTERS (build.py)
 ```
 
 Default clusters (edit `CLUSTERS` in `build.py`): `grill-ddd`, `derive-tasks`,
-`implement-and-review` (= implement-task + run-tests + conformance-review).
+`implement-and-review` (= implement-task + conformance-review).
 
 ## Licensing
 

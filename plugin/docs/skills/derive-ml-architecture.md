@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Derive the ML/AI system design from the ML requirements — model serving, the evaluation harness, the training/feedback or prompt/retrieval pipeline, drift and quality monitoring, guardrails, and model/prompt versioning.
+Decide the ML/AI system design from the ML requirements — the model choice and serving path with its fallback, and the evaluation gate before promotion; at the regulated profile also the pipeline, monitoring, guardrails and model registry. Use when the product has an ML capability.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

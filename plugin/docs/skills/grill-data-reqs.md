@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Elicit the non-structural data requirements the logical model doesn't carry — classification, ownership, retention, residency, volume, integrity. Use when you need data governance, not storage design.
+Elicit how each class of data is governed, which the domain model does not say: classification, retention and deletion trigger, residency, tenancy and ownership. Use when you need data governance decisions, not storage design.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

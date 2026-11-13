@@ -1,30 +1,33 @@
 # grill-ux-reqs — worked example
 
-UX requirements for a freelancer invoicing app — the "send an invoice" journey, its interaction states, and accessibility (the **design system is a separate area**; journeys reference it by `DS-` id).
-> **Agent:** What does the freelancer see when a client's email bounces *after* they hit Send — a silent failure, or a recoverable error state? *(This is the rejection gap; an empty/loading/error trio is non-negotiable here.)*
-> **User:** Today it just looks sent. We'd want them told, with a "fix email & resend".
-> **Agent:** Sign-in: any one-time-code-from-memory or puzzle step? That fails accessible-authentication — a passkey or emailed magic-link clears it. *(I'd default to magic-link; ratify?)*
-> **User:** Ratify magic-link.
+Illustrative: it shows the shape of the output, not a list to fill. A freelancer invoicing app on the `standard` profile; the journey is "send an invoice".
 
-## Output — `journeys.md`
-**JRN-07 · Role: Freelancer — "Send an invoice" (UC-007)**
-1. Pick client → 2. Add line items → 3. Preview → 4. Send.
-- **empty:** no clients yet → "Add your first client" CTA.
-- **loading:** PDF render + send spinner on Send (renders the `DS-Button` loading state).
-- **success:** "Invoice INV-1042 sent to acme@…" + timeline entry.
-- **error:** delivery bounce → banner "Couldn't reach acme@… — fix email & resend" (`DS-Banner`, danger).
-- **permission-denied:** read-only collaborator → Send disabled with "Owner-only" tooltip.
+> **Agent:** What does the freelancer see when a client's email bounces after they hit Send — a silent failure, or an error they can recover from? *(This is the rejection gap the use-case leaves open.)*
+> **User:** It just looks sent. We want them told, with "fix email and resend".
+> **Agent:** Sign-in: is there a one-time code typed from memory, or a puzzle? That fails accessible authentication; a passkey or an emailed magic link clears it. *(I'd default to a magic link. Ratify?)*
+> **User:** Ratify the magic link.
 
 ## Output — `information-needs.md`
-- **Information architecture:** Clients · Invoices · Settings; Send lives under Invoices ▸ new; Help top-right on every screen.
-- Per-step needs: client contact + history → line items + tax → preview total → send status.
+| id | screen | purpose | role | journeys |
+|---|---|---|---|---|
+| SCR-11 | Client picker | choose who is billed; shows contact and history | Freelancer | JRN-07 |
+| SCR-12 | Invoice editor | line items and tax | Freelancer | JRN-07 |
+| SCR-13 | Preview and send | check the total, send, see delivery status | Freelancer | JRN-07 |
+
+Navigation: Clients · Invoices · Settings. Send sits under Invoices ▸ new. Help is top-right on every screen.
+
+## Output — `journeys.md`
+**JRN-07 · Freelancer · Send an invoice (UC-007)**
+1. Pick the client (SCR-11) → 2. Add line items (SCR-12) → 3. Preview (SCR-13) → 4. Send (SCR-13).
+- empty: no clients yet → "Add your first client" call to action.
+- loading: Send shows the `DS-Button` loading state while the PDF renders.
+- success: "Invoice sent to acme@…" and a timeline entry.
+- error: delivery bounce → `DS-Banner` (danger): "Couldn't reach acme@… — fix email and resend".
+- permission-denied: a read-only collaborator sees Send disabled with an "Owner only" tooltip.
 
 ## Output — `accessibility.md`
-- **Target:** the current WCAG, at AA. Bars cleared: accessible-auth (magic-link, no cognitive test) · consistent-help (Help top-right every screen) · dragging (line-item reorder also has ↑/↓ buttons).
-- **Inclusivity** (distinct from AA): plain-language amounts, one-handed reachable Send, legible in bright outdoor light.
-- **i18n/l10n:** EN/ES/DE; currency + date per client locale; RTL-ready via logical properties.
-- **Usability targets (UC-007):** effectiveness = task-completion ≥ 95% (unmoderated test) · efficiency = time-on-task ≤ 60 s + SEQ ≥ 6/7 · satisfaction = SUS ≥ 80.
+- target: the current WCAG at AA.
+- accessible authentication: magic link, no cognitive test · consistent help: top-right on every screen · dragging: line-item reorder also has ↑/↓ buttons.
+- inclusivity: plain-language amounts, Send reachable one-handed, legible in bright outdoor light.
 
-The components/tokens these screens render (`DS-Button`, `DS-Banner`, `intent/danger`, `focus.ring`) are specified in the **design-system** area — referenced here by id, never defined here; a missing component is a gap raised there.
-
-Recorded: every journey carries a stable `JRN-` id (so a task/test references it by id, not a heading anchor) and all five interaction states; three journey-level a11y bars cleared; inclusivity noted distinct from AA; usability framed effectiveness/efficiency/satisfaction with named instruments; the IA placed. Global UX only — the Send-screen pixel mockup belongs to the task slice, and the design system is its own area.
+The team runs no usability tests and ships in one locale, so the file sets no usability or i18n targets.

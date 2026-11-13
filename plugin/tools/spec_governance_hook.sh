@@ -6,8 +6,9 @@
 # src/+tests/, this governs spec/). It runs ONLY in this repo, on `git commit` — there is NOTHING global
 # about it (it is not a Claude Code hook and never fires on unrelated projects or the user's own config).
 #
-# It blocks a commit that (1) breaks spec consistency or (2) hand-edits a derived artifact. It no-ops
-# cleanly when there is no spec/ or the tools aren't vendored, so a stray install never interferes.
+# It blocks a commit that breaks spec consistency, binds a contract to an undefined id, claims a task done
+# without the tests that back it, or adds a test nothing in the spec drives. It no-ops cleanly when there
+# is no spec/ or the tools aren't vendored, so a stray install never interferes.
 #
 # Install (the walking-skeleton / derive-conventions does this):
 #   cp .grillspec/tools/spec_governance_hook.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
@@ -26,14 +27,7 @@ if ! python3 "$T/lint_spec.py" "$root/spec"; then
   exit 1
 fi
 
-# 2) derived artifacts are regenerate-only — blocks a hand-edit
-if [ -f "$T/guard_derived.py" ] && ! python3 "$T/guard_derived.py" >/dev/null 2>&1; then
-  python3 "$T/guard_derived.py" >&2
-  echo "spec-governance: a derived artifact was hand-edited — edit its upstream and re-run the derive skill (or --no-verify)." >&2
-  exit 1
-fi
-
-# 3) API/event contracts bind to the spec ID graph — blocks a contract referencing an undefined id.
+# 2) API/event contracts bind to the spec ID graph — blocks a contract referencing an undefined id.
 #    No-ops cleanly without contracts or PyYAML; output is shown only on failure (no per-commit chatter).
 #    (Contract STRUCTURE/style is the Spectral step in code-ci.yml; this is the cross-layer ID resolution.)
 if [ -f "$T/check_contracts.py" ]; then
@@ -44,19 +38,18 @@ if [ -f "$T/check_contracts.py" ]; then
   }
 fi
 
-# 4) per-task accountability — a task's verification record that CLAIMS done must back every obligation its
-#    own (frozen) spec references demand: tests-first traced, independent conformance VERDICT: PASS, no fakes,
-#    no dropped/under-bar obligation. An in-progress record never blocks; only an unbacked done-claim does.
-#    No-ops cleanly when there are no per-task records yet.
-if [ -f "$T/check_task_record.py" ]; then
-  tr_out=$(python3 "$T/check_task_record.py" "$root/spec" 2>&1) || {
+# 3) a task that claims done is backed by the tree — every acceptance criterion in its brief has an
+#    `@covers` test, every named UI state a `@state:` test, no unresolved gap, and a
+#    `critical` task its review. An in-progress task never blocks. No-ops cleanly with no task briefs.
+if [ -f "$T/check_task.py" ]; then
+  tr_out=$(python3 "$T/check_task.py" "$root/spec" 2>&1) || {
     echo "$tr_out" >&2
-    echo "spec-governance: a task is marked done without the evidence its obligations demand — fill the verification record (or --no-verify)." >&2
+    echo "spec-governance: a task is marked done but the tree does not back it — add the missing tests/review, or set its status back (or --no-verify)." >&2
     exit 1
   }
 fi
 
-# 5) reverse traceability — every behavioral test traces to a LIVE spec driver (@covers/@state). The
+# 4) reverse traceability — every behavioral test traces to a LIVE spec driver (@covers/@state). The
 #    drift tripwire: an ad-hoc mid-task instruction implemented straight into code shows up here as an
 #    orphan test (or a dangling @covers) — chat is spec input; the driving ID is minted in the spec first.
 #    No-ops cleanly without the tool or a test tree.

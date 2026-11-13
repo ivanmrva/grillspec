@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the go-to-market execution — ICP, channels with per-channel messaging, launch plan, partnerships — aligned to the product's chosen motion. Late, parallel and optional; not part of the core system spec.
+Plan the go-to-market execution: the ideal customer profile, channels with their messaging, the launch sequence and partnerships, aligned to the product's chosen motion. An optional commercial area; use only when the user asks for launch or channel planning.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

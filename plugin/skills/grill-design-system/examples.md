@@ -1,20 +1,25 @@
 # grill-design-system — worked example
 
-**Mode: provided.** A design-tool handoff bundle landed in the repo's `design-system/` zone (CSS custom properties + a partial `design-tokens.json`). Ingested, then verified against the checklist — a handoff is rarely complete, so it gets gap-filled, not trusted wholesale.
+Illustrative: it shows the shape of the output, not a list to fill. A design-tool handoff landed in the repo's `design-system/` zone: CSS custom properties and a partial `design-tokens.json`.
 
-> **Agent:** The tokens are present but **single-tier** (raw values, no semantic layer) and **light-only**; there's no focus-ring token, and the Button spec is missing its `loading` and `disabled` states. I restructured to three tiers (primitive → semantic → component), derived a dark theme as a pure semantic swap, added the focus-ring + minimum-hit-target sizing tokens, and completed the Button contract. The brand seed (logo, `#1F6FEB`, voice = "plain, calm") is yours — I kept it authoritative and had you ratify the derived ramps.
+> **Agent:** The tokens are single-tier (raw values, no semantic layer) and light-only. There is no focus-ring token, and Button has no `loading` or `disabled` state. I restructured them into three tiers, derived a dark theme as a semantic swap, added the focus-ring and minimum-target tokens, and completed the Button contract. The logo, the seed colour `#1F6FEB` and the voice ("plain, calm") are yours and unchanged. Do the derived ramps look right?
+> **User:** Yes. Make the danger red slightly less saturated.
 
-`design-system/design-system.md` (one component, abridged):
+## Output — `design-system.md` (one component)
 ```
-DS-Button  (component-tier token consumer)
-  anatomy: [icon?] label [icon?]        variants × sizes: {primary,secondary,ghost,danger} × {sm,md,lg}
-  states:  default · hover · focus · active · disabled · loading · empty(N/A) · error(N/A)
-  api:     variant, size, leadingIcon?, trailingIcon?, loading, disabled, onPress
-  a11y:    role=button · focus-visible ring = token focus.ring (3:1 vs adjacent) · hit-target ≥ size.target.min (24px)
-           contrast: text.on-intent / bg.intent.primary = 4.8:1  (≥ the WCAG-target ratio on the *actual* token pair)
-  tokens:  bg=color.bg.intent.{variant} · text=color.text.on-intent · radius=radius.control · motion=motion.press
-  do: one primary action per view.    don't: encode meaning in colour alone — pair with icon/text.
+DS-Button   component · generated from the provided handoff
+  anatomy:   [icon?] label [icon?]
+  variants:  {primary, secondary, ghost, danger} × {sm, md, lg}
+  states:    default · hover · focus · active · disabled · loading
+  api:       variant, size, leadingIcon?, trailingIcon?, loading, disabled, onPress
+  a11y:      role=button · focus ring = focus.ring (3:1 against adjacent colours)
+             hit target ≥ size.target.min (24 px)
+             contrast text.on-intent / bg.intent.primary = 4.8:1, measured on the token pair
+  tokens:    bg = color.bg.intent.{variant} · text = color.text.on-intent · radius = radius.control
+  do:        one primary action per view
+  don't:     carry meaning in colour alone; pair it with an icon or text
 ```
-The token **asset** stays under the repo-root `design-system/` zone (the DTCG JSON, transformed via Style Dictionary → CSS vars); this spec is its contract and points at it.
 
-DS- ids the UI prototype and the build consume: `DS-Button`, `DS-Input`, `DS-Banner` · semantic tokens `color.*`, `focus.ring`, `size.target.min`. A journey that uses these (nav, states, flow) is the **UX requirements'** concern, not this area's.
+The entry names tokens and leaves their values in the DTCG file under `design-system/`, which Style Dictionary transforms to CSS variables.
+
+Other areas cite `DS-Button`, `DS-Input` and `DS-Banner` by id. How a screen uses them is the UX requirements' concern.

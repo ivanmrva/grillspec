@@ -1,24 +1,34 @@
 # generate-ui-prototype — worked example
 
-A clickable, high-fidelity reference for **one UI slice** — the *customer-details* step of the "book a repair" journey — generated just-in-time for that slice, built from the **real design-system tokens & components**, every interaction state present, wired into the navigation the information architecture defines.
+Illustrative. One UI slice: the customer-details step of the "book a repair" journey. Only this slice's screen is prototyped; the app shell is its own slice, and the site structure already exists as the information architecture.
 
-> **Agent:** This slice builds the customer-details screen, so I prototyped just that screen — rendered from the actual component variants (no ad-hoc styling), every interaction state, wired into the IA's nav so it clicks through in context, cross-linked to its `UC-`/`DS-` IDs. No global gallery: the site structure is already the IA spec + the design system, and the app shell is its own slice. Kept + versioned — the reference the coding task builds against, not a throwaway spike.
+## `prototypes/ui/SCR-012-customer-details.html`
 
-**The slice's screen — `2-customer-details.html`**, all interaction states:
-- **empty** — blank form, primary CTA disabled
-- **loading** — saved-addresses skeleton while fetching
-- **success** — valid input, "Continue" enabled
-- **error** — invalid postcode, inline message + field highlight (uses the `Input/error` component variant + `color.feedback.danger` token)
-- **permission-denied** — read-only banner when the actor lacks `bookings:write`
+Rendered from the design system's own component variants and tokens, with every state the journey names:
 
-**Wired into the IA:** clicks in from *branch/slot* and out to *confirm & pay* — that nav comes from the UX-requirements information architecture, not a generated index gallery.
+| State | What the screen shows |
+|---|---|
+| empty | a blank form; the primary action is disabled |
+| loading | a skeleton for the saved addresses while they load |
+| success | valid input; "Continue" is enabled |
+| error | an invalid postcode: inline message and field highlight (the `Input/error` variant, the `color.feedback.danger` token) |
+| permission-denied | a read-only banner when the actor lacks `bookings:write` |
 
-**IDs this screen carries:** `JRN-07` (the book-a-repair journey it sits in) · `UC-BookRepair` (step 2 of the flow) · `DS-Input`, `DS-Button`, `DS-Banner` (the components instantiated).
+It is wired into the navigation: it opens from the branch-and-slot screen and continues to confirm-and-pay.
 
-`prototypes/ui/flows.md` (accretes as UI slices are built):
+IDs it carries: `SCR-012` (the screen) · `JRN-07` (book a repair) · `UC-BookRepair` (step 2) · `DS-Input`, `DS-Button`, `DS-Banner`.
 
-| journey (`JRN-`) | screens | UC- |
+## `prototypes/ui/flows.md`
+
+| journey | screen path | use-case |
 |---|---|---|
-| `JRN-07` Book a repair | branch/slot → **customer-details** → confirm-pay → confirmed | UC-BookRepair |
+| `JRN-07` Book a repair | SCR-011 branch and slot → SCR-012 customer details → SCR-013 confirm and pay → SCR-014 confirmed | UC-BookRepair |
 
-(self-contained HTML, click-through with no build step; **regenerated for this slice's screen** on any UX-requirement or design-system change — a pure projection, never hand-maintained. No spec changes.)
+## Review
+
+The reviewer asked for the postcode error to appear on blur instead of on submit. That is a behaviour of the journey, so it was changed in the UX requirement first and the screen rebuilt from it. After approval the task brief reads:
+
+| field | value |
+|---|---|
+| `ux` | JRN-07 · SCR-012 · states: empty · loading · success · error · permission-denied<br>prototype: `prototypes/ui/SCR-012-customer-details.html` |
+| `prototype-review` | frozen |

@@ -1,137 +1,199 @@
 # How it works
 
-A short guide to what this system is, how you drive it, and what each background tool does.
+What the system is, how you drive it, and what each background tool does.
 
 ## In one paragraph
 
-You describe what you want to build. The system **interviews you** — or **ingests documents you already have** — pressure-tests every answer, and writes a rigorous, cross-referenced **specification** under `spec/`. From that spec it **derives** what an agent needs to build: coding conventions, a task list, a test strategy, and a canonical `AGENTS.md` entry point (with an import-only `CLAUDE.md` adapter). Then it **drives the coding**, task by task, checking each change against the spec and the architecture. Deterministic tools enforce the structure; the hard thinking — *is this requirement right? is this document actually complete?* — is the model's job, done through a set of interview "lenses."
+You describe what you want to build. The system interviews you, or reads documents you already have and questions them the same way, and writes a cross-referenced specification under `spec/`. From that spec it derives what a coding agent needs: an architecture, coding conventions, a list of task briefs, and one agent guide (`AGENTS.md`). Then it drives the coding, task by task, test-first, and checks that each task is really done by reading the code and tests. Small tools check structure; the thinking — is this requirement right, is anything missing — is done by the model, through the interviews and the audits.
 
 ## The one thing to know
 
-You talk to a single skill: **`grill-spec-conductor`** (the conductor). It is the front door and the router. You never call the other skills by hand — the conductor reads the state of the spec and tells you the next sensible move. Start every session by invoking it in your active host: `/grillspec:grill-spec-conductor` in Claude Code or `$grillspec:grill-spec-conductor` in Codex.
+You talk to one skill, the conductor: `/grillspec:grill-spec-conductor` in Claude Code, `$grillspec:grill-spec-conductor` in Codex. It reads the state of the spec and offers the few sensible next moves. You never need to call the other skills yourself, though you can.
+
+## Lean by default
+
+An area, a file, a rule or a gate earns its place by having a reader: a later step, a tool, or a person who will act on it. What has no reader is not written. Two settings apply that principle to your project. The conductor asks for both in the first session and stores them in `.grillspec/project.json`.
+
+### Profile — how much spec the project carries
+
+| Profile | What is written | Choose it when |
+|---|---|---|
+| `lite` | problem, vision, constraints, domain model, use-cases with acceptance criteria, a few quality targets, a thin architecture, conventions, tasks | one person, or a product before launch |
+| `standard` | `lite` plus goals, system context, data, security, compliance, entitlements, integration; ML requirements for an AI product; design system and UX for a product with a UI; and a short decision record for each further solution area | the product handles personal data, money or paid tiers, or has an AI capability whose quality must be gated |
+| `regulated` | everything in `standard`, with the solution areas written out in full | the documents themselves are a deliverable: an auditor, a regulator or another team reads them |
+
+The conductor recommends the smallest profile that fits and says what would justify the next one. Raising the profile later is cheap; keeping unread spec consistent is not. Five areas are optional at every profile and run only when you ask: market, customer discovery, monetization, go-to-market and growth. They are strategy documents that no coding step reads.
+
+With no settings file, the tools assume `regulated`, so nothing is skipped by accident.
+
+### Delivery — how work lands
+
+| | `trunk` | `pr` |
+|---|---|---|
+| Where work lands | on the default branch; related slices may share a push | a short-lived branch and one pull request per task |
+| Verification | local: the affected tests while iterating, the project's one gate before a push | the same local gate, then the full gate in CI on the pull request |
+| CI | deploys the default branch and smokes it; every other job runs on dispatch | full gate on the pull request, merge on green, deploy on merge |
+| Unattended runs | tasks one after another | tasks in parallel, one branch each |
+
+`trunk` suits a solo project before production. `pr` suits a product with users or more than one contributor. Switching is a change to this setting and to the pipeline.
 
 ## The shape of it
 
 ```mermaid
 flowchart TB
-  I1["Greenfield interview"]
-  I2["Documents you already have<br/>(intake = grill the document)"]
-  C(["grill-spec-conductor<br/>the router — you talk only to this"])
+  I1["An idea — interview"]
+  I2["Documents or code you already have"]
+  C(["grill-spec-conductor<br/>the one skill you talk to"])
   I1 --> C
   I2 --> C
 
-  subgraph PIPE["spec/ — single source of truth — stages 01 to 12"]
+  subgraph SPEC["spec/ — what the product must do, and the decisions behind it"]
     direction TB
-    P1["01 Discovery"] --> P2["02 Product vision"] --> PF["03 Constraints<br/>+ System context"] --> P3["04 Domain / DDD"]
-    P3 --> P4["05–06 Requirements<br/>functional, quality, data, security,<br/>compliance, integration, ml"]
-    P4 --> P4a["07 Design system (DS-)"] --> P4b["08 UX<br/>journeys, IA, a11y"]
-    P4b --> P5["09 Solution<br/>architecture, api, observability, infra-ops"]
-    P5 --> P6["10 Delivery<br/>conventions, tasks, test-strategy"]
+    P1["01 Discovery"] --> P2["02 Product"] --> P3["03 Constraints · system context"] --> P4["04 Domain model"]
+    P4 --> P5["05–06 Use-cases, acceptance criteria, requirements"]
+    P5 --> P6["07–08 Design system · UX (UI products)"]
+    P6 --> P7["09 Solution: architecture + decision records"]
+    P7 --> P8["10 Delivery: conventions, task briefs"]
   end
-  C --> PIPE
+  C --> SPEC
 
-  P6 --> D["Derived — regenerate-only<br/>AGENTS.md (+ CLAUDE import), tasks (T-), conventions, two-tier tests"]
-  D --> B["Build loop<br/>implement-task → run-tests → conformance-review"]
-  AF["autorun / AFK<br/>drives the loop across the task queue"] --- B
-  B --> OPS["Operate<br/>observability, runbooks, day-2"]
+  P8 --> B["Build loop, per task<br/>failing test → code → the project's gate"]
+  B --> R["Before a release: audit-build"]
+  R --> O["Operate: deploy, migrate, incidents"]
 
-  G1["lint_spec.py"]
-  G2["guard_derived.py"]
-  G3["spec_status.py"]
-  G4["impact.py"]
-  subgraph GUARD["deterministic guardrails — structure, not meaning"]
-    direction LR
-    G1 ~~~ G2 ~~~ G3 ~~~ G4
-  end
-  PIPE -. "checked every session and on every PR" .-> GUARD
-
-  Q["open-questions, assumptions, resolutions"]
-  PIPE <-. "grill the gaps — model judgment" .-> Q
+  T["lint_spec.py · impact.py · check_task.py"]
+  SPEC -. "structure checked every session and every commit" .-> T
+  B -. "done is read from the code and tests" .-> T
 ```
-
-Solid arrows are the build flow. The two dotted backstops are the point of the whole system: deterministic guardrails that check **structure**, and the grilling lenses that resolve **meaning**.
 
 ## The pipeline, stage by stage
 
-Each stage takes the stage(s) before it as input and produces the artifacts the next stage depends on. The conductor routes; each stage is one — or a few — concrete skills.
+Each stage builds on the ones before it. "From" is the smallest profile that includes the skill.
 
-| Stage | Skill(s) | Takes in | Produces |
+| Stage | Skills | From | Produces |
 |---|---|---|---|
-| 01 Discovery | `grill-problem-validation` | the idea / the bet | problem, riskiest bets, assumptions, PMF plan |
-| 02 Product | `grill-product-vision` · `grill-customer-discovery` · `grill-market` · `grill-goals` | discovery | vision & phasing (MVP / near / deferred), **the GTM motion (PLG vs sales-led)**, personas, market, success metrics |
-| 03 Constraints | `grill-constraints` | the idea / existing docs | technical · organizational · regulatory bounds, assumptions, dependencies |
-| 03 System context | `grill-system-context` | product + constraints | external actors, neighbor systems, interfaces, the C4 System Context (L1) |
-| 04 Domain (DDD) | `grill-ddd` | vision + system context | aggregates, commands, events, invariants, ubiquitous language |
-| 05–06 Requirements | `derive-functional` · `grill-quality` · `grill-data-reqs` · `grill-security-reqs` · `grill-compliance` · `grill-integration-reqs` · `grill-entitlements` · `grill-ml-reqs` (AI) | domain | use-cases + acceptance criteria (`UC-`/`AC-`), quality bars (`NFR-`/`ASR-`), data (`DATA-`), security (`SEC-`), obligations (`OBL-`), integration, entitlements (`ENTL-`), ML behaviour/evals (`ML-`, AI) |
-| 07 Design system | `grill-design-system` | requirements | tokens (DTCG), components, a11y, brand, voice — the `DS-` contract over the design-system asset (its **own layer**) |
-| 08 UX | `grill-ux-reqs` | design-system + requirements | user journeys (`JRN-`), the information architecture's screen inventory (`SCR-`), a11y/i18n + usability targets — a **synthesis** of the design system and the requirements |
-| 11 Commercial | `grill-monetization` | entitlements + product vision | business model · pricing · plans · **prices the `ENTL-` tiers** · metering — **feeds 09 Solution** (entitlement enforcement, billing, metering become build work) |
-| 09 Solution | `derive-architecture` · `derive-data-architecture` · `derive-api-contracts` · `derive-security-architecture` · `derive-infra-ops` · `derive-observability` · `derive-test-strategy` · `derive-ml-architecture` (AI) | requirements | architecture incl. the **module map & seam contracts** + key sequences, API / event contracts (`API-`), observability (`SLO-`), deployment & ops, the two-tier test strategy, ML serving / eval / guardrails (AI) — *module internals are designed per-slice in Build, not here* |
-| 10 Delivery | `derive-conventions` · `derive-tasks` | solution | canonical `AGENTS.md` + `CLAUDE.md` import, the task list (`T-`), coding conventions |
-| Build | `implement-task` · `run-tests` · `conformance-review`  (· `autorun` drives it AFK; a **design-first** slice first runs `derive-impl-design` for its module internals; a ux-heavy slice already carries its **frozen UI prototype** from task finalization) | delivery | working code, one slice at a time: (design-first → module internals) → implement → test → conformance-review |
-| Build Docs | `generate-docs` · `generate-api-reference` | the spec (any change) | a self-contained docs site (HTML) — **continuous: rebuilt in CI on every spec change**, not a one-time slot |
-| Operate | `deploy-release` · `migrate-data` · `operate-incident` · `diagnose` | the running system | deploys, migrations, incident & diagnosis records, day-2 cadence |
+| 01 Discovery | `grill-problem-validation` | `lite` | the problem, the riskiest bets and how to test them |
+| 02 Product | `grill-product-vision` | `lite` | vision, scope, phasing (MVP, near, deferred), the go-to-market motion |
+| | `grill-goals` | `standard` | success metrics and kill-criteria |
+| | `grill-customer-discovery` · `grill-market` | optional | personas; competitors and sizing |
+| 03 Constraints | `grill-constraints` | `lite` | technical, organisational and regulatory bounds |
+| 03 System context | `grill-system-context` | `standard` | external actors, neighbouring systems, boundary interfaces (`IF-`) |
+| 04 Domain | `grill-ddd` | `lite` | bounded contexts, aggregates, commands, events, invariants, the shared vocabulary |
+| 05 Functional | `derive-functional` | `lite` | use-cases (`UC-`) and acceptance criteria (`AC-`) |
+| 06 Requirements | `grill-quality` | `lite` | quality targets (`NFR-`, `ASR-`) |
+| | `grill-data-reqs` · `grill-security-reqs` · `grill-compliance` · `grill-entitlements` · `grill-integration-reqs` | `standard` | data classes and retention (`DATA-`), threats and rules (`THR-`, `SEC-`), obligations (`OBL-`), access tiers (`ENTL-`), boundary qualities |
+| | `grill-ml-reqs` | `standard`, AI products | model behaviour and evaluation targets (`ML-`) |
+| 07 Design system | `grill-design-system` | `standard`, UI products | tokens, components, voice (`DS-`) |
+| 08 UX | `grill-ux-reqs` | `standard`, UI products | journeys (`JRN-`), the screen inventory (`SCR-`), accessibility targets |
+| 09 Solution | `derive-architecture` | `lite` | strategy, stack, the module map (`MOD-`), ADRs |
+| | `derive-data-architecture` · `derive-api-contracts` · `derive-security-architecture` · `derive-observability` · `derive-infra-ops` · `derive-test-strategy` · `derive-ml-architecture` | `standard` | one decision record each; the full design at `regulated` |
+| 10 Delivery | `derive-conventions` · `derive-tasks` | `lite` | coding conventions, `AGENTS.md`, the task briefs (`T-`) and their build order |
+| | `derive-impl-design` | any | a short design note, written just before a `critical` task |
+| 11 Commercial | `grill-monetization` · `grill-go-to-market` · `grill-growth` | optional | pricing and plans; channels and launch; experiments and analytics events |
+| Build | `implement-task` · `conformance-review` · `generate-ui-prototype` | any | working code, one vertical slice at a time |
+| Audit | `audit-spec` · `audit-build` | any | a report on the spec; a pre-release report on the build |
+| Operate | `deploy-release` · `migrate-data` | any | deploys and data migrations, with their records |
 
-**Parallel & cross-cutting:**
+At any stage, a question only running code can answer (is this feasible, does this flow work) is settled with a throwaway spike: the least code that answers it, after which the answer is recorded and the spike deleted.
 
-- **Go-to-market** (`grill-go-to-market`, 11-commercial) — channels · per-channel messaging · launch · partnerships: genuinely commercial *execution*. The build-shaping decision — the **motion** (PLG vs sales-led) — was lifted up into the **product vision** (02), where it feeds onboarding (UX), auth/SSO (security), and billing (monetization). A marketplace channel or a partnership can still surface an integration requirement.
-- **Growth** (`grill-growth`, 11-commercial) — post-launch activation/retention + experiments; the **`AEV-` analytics events it defines land in the emitting slices' `obs` dimension by id** (held to an emission assertion by the Verification Record's `obs` gate row), so instrumentation is built in, not bolted on.
-- **Spikes** (`prototype`) — runnable at **any stage** to settle one empirical unknown (feasibility · perf · a UX direction), then deleted; the answer lands as a bet, a requirement, or an ADR.
+## Decisions in the spec, descriptions in the code
+
+The seven solution areas after the architecture are where a spec most easily grows text nobody reads, so they follow one rule: the spec holds decisions, and the artifact that enforces a design describes it.
+
+A decision is something the code cannot tell you and that is costly to reverse: which datastore and how tenants are isolated, how an API is versioned, who authenticates users and how keys are held, which objectives page someone, the environments and the promotion path, the test tiers and their bars, what a model must pass before promotion. It is written once, as a short table or an ADR.
+
+A description is detailed design that an executable artifact states better: table definitions live in the schema and its migrations, endpoint shapes in the contract package, the control register in the authorization code and its tests, runbooks in the alert configuration, pipeline detail in the workflows.
+
+| Profile | The seven areas |
+|---|---|
+| `lite` | not written; their few decisions are rows in the architecture's solution strategy and the conventions |
+| `standard` | decision mode: each area writes only its decision record, for example the tier contract in `test/levels.md` or the environments in `infra-ops/environments.md` |
+| `regulated` | full mode: the complete design, because the document is itself something people outside the build read |
 
 ## Two ways in
 
-- **Greenfield** — the conductor interviews you area by area. Vague answers become measurable bars; every edge, error, and state is hunted down before an area is "done."
-- **You already have documents** — *intake is grilling, with the document as the interviewee.* The system files your content into the right places **and** runs the same interrogation. A document that parses cleanly is not "done": every coverage gap, vague assertion, ambiguous term, open branch, and contradiction is surfaced — **silence is an unanswered question; a confident sentence is an unvalidated assumption.** Each finding is **recorded in the artifact it belongs to** — resolved, or deferred there with the trigger that reopens it — and grilled like any interview answer. See `conductor-playbook.md` for the two intake modes (single doc-first start, and migrate mode for a whole pile of docs).
+- **From an idea.** The conductor interviews you area by area. A vague answer becomes a measurable bar, and edges, errors and states are worked out before an area is called consistent.
+- **From what you already have.** Documents are questioned, not filed: a document that reads cleanly can still be silent on a whole case, and a confident sentence can be an untested assumption. Each gap, vague claim and contradiction is recorded in the artifact it belongs to. Existing code is reverse-read into a partial spec, with every unknown recorded as a gap. In both cases, content with no reader — change history, status notes, prose that restates code — is left behind.
 
-## The background tools — what does what, and when
+## From scratch, and ongoing work
 
-| Tool | What it does | When it runs | Verdict |
-|---|---|---|---|
-| `lint_spec.py` | Formal structure, consistency, and coverage: valid file paths, defined IDs, resolving references, one definition per ID, per-area ID ownership, correlated & derived→driver IDs (`AC-`→`UC-`, `ASR-`→`NFR-`, `JRN-`→`UC-`, `SLO-`→`NFR-`, `ML-`→`UC-`), coverage hints, traceability currency, superseded-ADR-referenced-as-live, and blocked-task-without-a-human-ask | Every session, and on every pull request (`spec-governance.yml`) | Deterministic pass/fail — an `ERROR` blocks |
-| `guard_derived.py` | A pre-commit hook that **blocks hand-edits to generated files** (`solution/*`, `functional-spec/`, `delivery/conventions`+`tasks/`, canonical root `AGENTS.md`, import-only `CLAUDE.md`). To change one, you edit its upstream and re-derive | Pre-commit, and in CI | Blocks the commit |
-| `impact.py` | **Change propagation.** Given the IDs you changed — or `--since <gitref>` to self-detect from the git diff — it prints the minimal set of downstream artifacts and the impacted code to re-derive and re-test | Whenever you change the spec | Informational list |
-| `spec_status.py` | **Mechanical readiness rollup.** Element counts, the share of use-cases that carry an acceptance criterion, tasks (afk-eligible vs blocked), open questions, traceability presence, and a blockers verdict | Run anytime to gauge completeness | Informational only — it does **not** judge whether the content is right |
+The system is used in two different ways, and the second uses far less of it.
 
-A second family of tools enforces **accountability during build** — that code is actually built the way the spec demands, not just claimed to be:
+**From scratch**, the conductor walks the in-profile areas in order, then the build order task by task.
 
-| Tool | What it does | When it runs | Verdict |
-|---|---|---|---|
-| `check_task_record.py` | The per-task **Verification Record**: `--init` generates a task's obligation checklist from its *frozen* spec references (legacy field list or current two-column manifest; the bar can't be shrunk); the default check fails a task that *claims* done but left an obligation unmet, dropped one, **omitted any standard gate row** (`tests-first`/`tests:layers`/`coverage`/`mutation`/`fitness:*`/`spec-lint`/`deploy`/`traceability` — a silently-dropped artifact or check), has no independent `VERDICT: PASS` on disk, a task-declared `AC-` with no literal `@covers` tag in a failing-capable test source, a fabricated evidence path, or coverage below its bar; `--report` renders a readable, tool-vouched ✅ completion report | Task start (`--init`), at done, pre-merge | Blocks a done-claim that isn't backed |
-| `check_no_fakes.py` | A cross-language **tripwire** against non-production code in `src/`: a `Fake*/Stub*/Mock*/Dummy*` definition or a mocking-library import is an ERROR; an `unconfigured→fallback`/placeholder body is a WARN. The belt to the per-language no-fakes fitness function's suspenders | Code pre-commit + CI | ERROR blocks |
-| `check_deploy_real.py` | The deploy-side sibling of `check_no_fakes.py`: a **tripwire against a faked/skipped deploy** across the CI/deploy artifacts (GitHub/GitLab/Circle/Azure/Bitbucket/Drone/Cloud-Build/Jenkins configs · shell deploy scripts · Dockerfiles · `package.json`/`Makefile` deploy targets) — a `# TODO`/placeholder is an ERROR; a disabled (`if: false`) deploy or a deploy-intent artifact that invokes no recognized deploy command is a WARN. The static backstop for the early window before an e2e/smoke against the real deployed env can run (that behavioural run is the authoritative proof) | Code pre-commit + CI | ERROR blocks |
-| `check_migration_real.py` | A **tripwire against a faked/empty schema migration** (files under a migration home): a `-- TODO`/placeholder is an ERROR; a DDL-less `.sql`, an empty `operations = []`, or a `pass`-only migration is a WARN. Makes "the migration that exists actually migrates" mechanical, beside the conformance review's "a schema change has a migration at all" | Code pre-commit + CI | ERROR blocks |
-| `check_config_drift.py` | Reconciles the env vars the **code reads** against the **declared** `infra-ops/environments.md` matrix — a key the code reads but the matrix doesn't declare is the classic "missing env var in prod" outage, caught at commit instead. Config drift is cross-task by nature (keys accumulate across tasks), so it is also re-run at aggregate scope at attestation | Code pre-commit + CI · read by `audit-build` · PRR at first prod promotion | ERROR blocks |
-| `check_mock_budget.py` | A **tripwire against over-mocking** — reads the tier contract in `test/levels.md` and enforces each tier's `mock-ceiling`: a mock at a `none` tier (unit/contract/e2e) or a mock of a real dependency at a `boundary-only` (integration) tier is an ERROR. The complement to `check_no_fakes.py` (which never scans `tests/`): that catches fakes leaking *into* `src/`, this catches tests that fake *what they should exercise for real* | Code pre-commit + CI · read by `audit-build` | ERROR blocks |
-| `check_test_tiers.py` | Reconciles the **declared tier contract vs the actual test tree**: a tier the strategy declares but that has no suite is an ERROR; a test filed under a tier the contract never declares is a WARN. Also prints the per-tier distribution (the numbers `audit-build`'s pyramid-vs-declared judgment needs) | Code pre-commit + CI · read by `audit-build` | ERROR blocks |
-| `check_e2e_target.py` | A **tripwire against an "e2e" that runs on a local stack** — for tiers whose `target-env` is not `local`, a test hard-referencing `localhost`/`docker-compose`/`testcontainers` is an ERROR (integration mislabelled as e2e; it never exercises the deploy). The mechanical half of "the deploy is behaviourally proven" | Code pre-commit + CI · read by `audit-build` | ERROR blocks |
-| `check_no_skips.py` | A **tripwire against disabled/weakened tests** — a `skip`/`xfail`/`ignore` marker, a `.only`/`fit` suite-shrinker, or a CI/build file that swallows a red test run (`npm test || true`, gradle `ignoreFailures`) is an ERROR; a declared deferral (`it.todo`, `continue-on-error`) is a WARN, promoted to ERROR under `--strict` at release. The test-side complement of `check_no_fakes.py`: that catches a fake shipped in `src/`, this catches the green bought by not running the test at all — in this system an unready dependency keeps the test honestly red | Code pre-commit + CI · read by `audit-build` (`--strict`) | ERROR blocks |
-| `check_orphan_tests.py` | The **reverse direction of `@covers`** — a tripwire against DRIFT (code grown past the spec): a failing-capable test source carrying not one spec driver tag (`@covers <ID>` / `@state:<name>`) is an ERROR (behavior nothing in the spec demands — the signature of an ad-hoc chat instruction implemented directly), and a `@covers` ID that exists nowhere under `spec/` is an ERROR (a dangling tag). Also enforces the **naming grammar as the gates' visibility contract**: a file in a dedicated test tree that declares tests but matches no recognized test-file pattern is an ERROR — an off-grammar file silently escapes the tier/mock/skip/orphan gates entirely (`.feature` files are recognized by extension; co-located `src/` is never name-swept). Per-file granularity by design; the conformance review owns the per-case judgment. On an existing project its first run doubles as the **drift detector**: every finding is a behavior the spec never absorbed. Inline waiver `no-orphans: allow <reason>` / `.grillspec/no-orphans-allow.txt` for legitimately driver-free suites (fitness functions, generated harnesses) | Spec pre-commit + done-gate · read by `audit-build` | ERROR blocks |
-| `check_operate_records.py` | **Reconciles the `12-operate/` ledger against the spec** it enacted: a record referencing a spec ID (`T-`/`DATA-`/`NFR-`/…) that resolves nowhere is an ERROR, as is a deploy to an env off the declared promotion path; a deploy naming no `T-` or a migration citing no `DATA-` is a WARN. The only checker for the append-only operate layer, which `guard_derived.py`/`check_freshness.py` don't cover | On demand · read by `audit-build` | ERROR blocks |
-| `check_release_attestation.py` | The **opt-in release gate**: a `build-audit-report.md` must exist and read `BUILD ATTESTATION: ATTESTED` (not `NOT-ATTESTED`/`NOT-ATTESTABLE`, and not missing). Also checks it's a `--deep` pass (`--require-deep`) and **still covers HEAD** — a `commit:` stamp that HEAD has moved past is a STALE attestation and blocks (`--require-fresh` also blocks an unverifiable one). Makes the whole-build audit's verdict a hard gate, symmetric to how `check_task_record.py` gates the per-task conformance verdict — ships available, wired-on only if the team makes it a required release check | Release time (opt-in) | ERROR blocks the release |
-| `gate_exec.py` | The project-local **PreToolUse exec-gate** — the only enforcer that runs *at tool-call time*, where the per-task build **order** is visible (a commit-time check can't see it). Blocks a `src/**` edit until a real failing-test run was recorded for the active task (red-before-green; `--red` re-runs the command and refuses unless it fails — and refuses a red whose `--covers` spec IDs are absent or exist nowhere under `spec/`, so an ad-hoc behavior change must mint its driving ID in the spec before any code), blocks flipping a record to `status: done` until `check_task_record.py --assume-done` passes, and denies an edit that introduces a skip/xfail/`.only` into a test file or a mock-import/`Fake*` double into `src/` — that third gate is task-independent, so it covers setup/bootstrap work before any task branch exists. Armed at exec-session entry (the engine's step zero) and committed by the walking-skeleton (`install_exec_gates.py`, idempotent), project-local like the git pre-commit hook. Fail-open on internal error; no-ops outside an exec loop | **Tool-call time** (PreToolUse), live during the build loop | Blocks the edit (override: `GRILLSPEC_GATE_OFF=1`) |
+**Ongoing work** is the normal mode once a product exists. A change is sized by tier: a `routine` change goes straight to code with a failing test; a `feature` change amends the acceptance criteria and any rule it alters, gets one brief, and is built; a `critical` change adds a design note and an independent review. Only the areas a change reaches are opened, and most skills stay unused for long stretches — an interview skill runs when a change needs a fact the spec does not hold, not on a schedule.
 
-Together they close the loop the dev side needs (tests-first, no fakes, every obligation evidenced) and the ops side needs (the config the operator provisions against is complete), with a `preflight`/`doctor` command + `/healthz`·`/readyz` endpoints the conventions mandate so an operator can *verify* an environment meets the code's needs before serving traffic.
+A project that already has code is **adopted** once. One built without this system gets only what its code cannot tell a reader. One built with an earlier major version runs `migrate_project.py`, which carries task status into the briefs, removes the old ledger and locks, vendors the current tools, and lists what is left to prune.
 
-Behind the skills sit three shared engines: `grill-engine.md` (the interview discipline every `grill-*` skill loads), `derive-engine.md` (the generation discipline every `derive-*` skill loads), and `exec-engine.md` (the build/verify discipline every execution skill loads) — each also loading the two cross-engine references, `house-rules.md` (workspace fence · timeless artifacts · output discipline · ID mechanics) and `decision-classes.md` (the decide-vs-ask classifier), so every rule has exactly one authoritative statement. The walking-skeleton task and the derive-* skills **generate three GitHub Actions into your project**, ready to run: `spec-governance.yml` (the framework's `lint_spec.py` + `guard_derived.py` on PRs), `code-ci.yml` (the application's own build / test / conformance pipeline), and `docs-site.yml` (the generated documentation site). They are produced into your repo, not shipped as files in this plugin.
+## Changing the spec
 
-## Deterministic vs. model judgment — read this once
+Every file under `spec/` is an ordinary authored document that states what is true now. The skill that owns an area edits its files in place, making the smallest change in meaning and rewriting the affected passage so the file still reads as written in one pass. A problem found while coding is fixed in the area that owns the fact, in the same session as the code, so the two never disagree.
 
-The tools enforce **structure**. They cannot tell you whether a requirement is *correct*, whether a document is *actually complete*, or whether two sentences *mean* the same thing — that is model judgment, done by the grilling lenses. **A clean linter on a spec nobody interrogated means nothing.** Both layers are load-bearing: structure keeps the spec well-formed, the lenses keep it true.
+The spec's stable IDs form a reference graph. `impact.py` walks it: given the IDs that changed, it lists every spec file, task and test that depends on them, upstream first. That list is re-worked, and nothing else is. Git holds the history; the spec files do not narrate their own changes, and the linter enforces that.
+
+## Tasks, tiers and done
+
+A task is one brief, `spec/10-delivery/tasks/T-NNN.md`: a single table that says what the slice delivers, the acceptance criteria with their text, what it touches, the rules that bind it, and what it deliberately leaves out. An agent can build from the brief and the code without looking anything else up.
+
+Each brief carries a risk tier, and the tier decides how much process the work owes:
+
+| Tier | What it is | What it owes |
+|---|---|---|
+| `routine` | a bug fix, a copy or visual tweak, a refactor, a dependency bump | no brief: a failing test first, the fix, the project's gate |
+| `feature` | new behaviour inside an existing module | the brief, test-first, the gate |
+| `critical` | a new aggregate or context, a schema or data migration, an authentication, authorization, erasure or billing path, a model seam, any one-way door | the brief, a short design note before coding, the gate, and one review by a reviewer that did not write the code |
+
+Building is test-first, one behaviour at a time: a failing test, the smallest real code that passes it, then the next. Tests are tagged with what they prove — `@covers AC-101a` for an acceptance criterion, `@state:empty` for a UI state.
+
+Those tags are how done is decided. There is no completion record to fill in. `check_task.py` reads the tree and reports, for every task, which criteria have a covering test; a task marked `done` whose criteria are not all covered, or whose `critical` review is missing, fails the check. The only progress that is stored is the `status` row in the brief. Whether the tests pass, and the coverage and mutation bars, are enforced by the project's own gate through its test-runner configuration.
+
+Production code is real from the first line. A stub or a canned response makes tests pass against a system that does nothing, so test doubles live only under the test tree, and a dependency that is not available yet leaves its test failing until it is.
+
+## The tools
+
+All are small scripts with no dependencies beyond Python (one needs PyYAML). [SPEC-CHECKS.md](SPEC-CHECKS.md) lists every check they make.
+
+| Tool | Job | Runs |
+|---|---|---|
+| `project_config.py` | prints or sets the profile and delivery mode | first session; read by other tools |
+| `migrate_project.py` | brings a project built with an earlier major version onto the current layout | once, at adoption |
+| `lint_spec.py` | structure of the spec: paths, headers, IDs and references, coverage, task briefs, the profile, timeless wording | every conductor session; every commit |
+| `impact.py` | what depends on a changed ID | whenever the spec changes |
+| `spec_status.py` | counts and mechanical blockers; it does not judge content | on demand |
+| `check_contracts.py` | IDs in OpenAPI and AsyncAPI files resolve | every commit, where contracts exist |
+| `check_task.py` | task status, done-claims, and the criterion-to-test trace, from the tree | at done; every commit; on demand |
+| `gate_exec.py` | the edit hook: denies an edit that adds a skipped test or a fake in production code | as each edit is made |
+| nine `check_*.py` checkers | no fakes, no skipped tests, no tests without a spec driver, mock limits per tier, tiers present, e2e against a real environment, config declared, a real deploy, real migrations | in the project's gate and the release audit |
+
+Two hooks are installed into your repository, and none anywhere else. The git pre-commit hook runs the linter, the contract check, the done-claim check and the orphan-test check. The edit hook runs inside Claude Code and Codex. Both can be overridden in an emergency (`git commit --no-verify`, `GRILLSPEC_GATE_OFF=1`).
+
+Project gates start as a small core — module boundaries, no fakes, no skipped tests, config drift — and grow when an incident shows a rule was needed.
+
+## Tools check structure; people and the model check meaning
+
+The tools cannot tell you whether a requirement is correct, whether a document is complete, or whether two sentences mean the same thing. That is the work of the interviews, of `audit-spec` (the whole spec: contradictions, missing branches, content with no reader, whether an agent could build from it) and of `audit-build` (the whole build before a release). A clean linter run on a spec nobody questioned proves little; both layers are needed.
 
 ## Where things live
 
-- `spec/` — the specification, stage-numbered `01-discovery` … `12-operate`. The single source of truth.
-- `adr/` — every Architecture Decision Record, **one file per ADR**, named `ADR-<AREA>-NNN.md` (the area prefix stops two skills colliding); the conductor derives a global ADR index from it.
-- **No side-ledger files** — there is no `open-questions.md`, `assumptions.md`, or `resolutions.md`. An open point is resolved into its artifact, **deferred in the artifact** with the trigger that reopens it, or — if it's a deliberate choice — captured as an ADR. `glossary.md` and `actors.md` are **per-area deliverables**; the conductor reconciles a system-wide view at the spec root.
-- `_human-input.md` (spec root) — the **one operational queue**: the batched human-in-the-loop asks `autorun` parks for you to clear in a sitting. Maintained by the orchestration loop; it's a handoff queue, not a decision ledger.
-- `spec/12-operate/` — the **operations ledger**: append-only records of what actually happened to the running system, not derived from the spec and never regenerated. **First created during Build, by `implement-task` on the walking-skeleton task** (the first build task, typically `T-001`), which writes **`bootstrap.md`** — not a bare checklist but a phased, per-platform, per-environment **setup runbook** composed from the infra-ops design (`environments.md`, the config matrix · `prerequisites.md`, the per-platform provisioning steps · `runtime-contract.md`, what the artifact needs to run): Phase A initial (local + dev, the env-var worksheet), Phase B production/pre-launch and Phase C day-2 (filled by `deploy-release`, which also gates the first prod push behind a `production-readiness.md` review). Its unchecked items are what gate the walking skeleton's *true* done-state: the agent infers "bootstrap hasn't run" structurally (on a first run the file is an output it's about to create), and the external facts it lists — actual provisioning, branch-protection rules — live in third-party dashboards the agent can't observe, so it asks you to confirm rather than asserting. From then on the folder accumulates one record per real operational event: `deploy-<env>-<version>.md` (`deploy-release`), `incident-<id>.md` (`operate-incident`), `diagnosis-<id>.md` (`diagnose`), `migration-<DATA|AGG-id>.md` (`migrate-data`). The ADRs those skills emit (`ADR-REL-`, `ADR-INC-`, …) go to the shared `adr/` folder, not here.
-- `src/` + `tests/` — code, and nothing else.
-- **Regenerate-only** (never hand-edited; the guard blocks it): `solution/*`, `functional-spec/`, `delivery/conventions`+`tasks/`, canonical root `AGENTS.md`, and its import-only `CLAUDE.md` adapter.
+| Path | Holds |
+|---|---|
+| `spec/` | the specification, in numbered stage folders `01-discovery` … `12-operate` |
+| `spec/adr/` | every architecture decision record, one file each, named `ADR-<AREA>-NNN.md` |
+| `spec/_human-input.md` | the one queue of things only you can supply: values to confirm, blockers to clear |
+| `spec/_provisioning.md` | the credentials the build needs, and whether each is provisioned |
+| `spec/12-operate/` | dated records of what happened to the running system, and `bootstrap.md`, the setup runbook |
+| `AGENTS.md` · `CLAUDE.md` | the one agent guide; `CLAUDE.md` contains exactly `@AGENTS.md` |
+| `.grillspec/` | `project.json`, the vendored tools, hook configuration, waivers |
+| `src/` · `tests/` | code and tests, and nothing else |
 
-## Driving it — the loop
+There are no side ledgers. An open point is resolved in its artifact, or deferred there with the trigger that reopens it; a deliberate, costly-to-reverse choice becomes an ADR. Bets and risks sit beside what they affect, each with a status. Each area keeps its own glossary and actor list, and the conductor reconciles a system-wide view.
 
-1. Run the conductor. It reports where the spec stands and the next move.
-2. Answer its questions, or ratify the default it proposes. It records as it goes and **propagates** every change automatically.
-3. An unknown is **resolved into its artifact or deferred there** (with the trigger that reopens it); a risky guess is recorded as an **assumption with a status, beside what it supports** — or an ADR if load-bearing. Nothing is silently assumed, and there is no separate ledger file.
-4. When the spec is ready it derives conventions, tasks, and tests, then drives the build: `implement-task → run-tests → conformance-review`, one task at a time.
-5. **AFK / autorun** runs that loop across the whole task queue on its own, stopping only on a true human-in-the-loop trigger: a visual / UX call, a product or strategy decision, a legal sign-off, an external credential, or an irreducible preference fork.
+Behind the skills are three shared method files — `grill-engine.md` for interviews, `derive-engine.md` for derivations, `exec-engine.md` for building — plus `house-rules.md` (the rules every artifact follows) and `decision-classes.md` (what the system decides itself and what it asks you). Each rule is stated once there.
+
+## Driving it
+
+1. Run the conductor. It reports where the spec stands and recommends a next move.
+2. Answer its questions, or confirm the default it proposes. It decides what engineering merit settles and asks only for facts that you, your organisation or your platform hold.
+3. When the spec is ready for the profile, it derives conventions and tasks and drives the build, one task at a time.
+4. Asked to, it runs that loop across every ready task on its own and stops only where a person is needed: a visual or product decision, a legal sign-off, a credential. Those asks are collected in `spec/_human-input.md` so you can clear them in one sitting.
+5. Before a release, `audit-build` checks the whole build. At `lite` and `standard` that is a short check; at `regulated` it is the full attestation.

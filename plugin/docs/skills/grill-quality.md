@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Turn vague quality wishes into measurable NFR scenarios, walking a standard quality-attribute tree so no dimension is missed, and tag the architecturally-significant ones (ASRs). Use when you need measurable NFRs with the significant ones flagged.
+Turn vague quality wishes into measurable targets (NFRs): a number, where it is measured and how it is enforced, with the architecture-shaping ones tagged as ASRs. Use when the design needs performance, reliability, security-level or accessibility bars it can be held to.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

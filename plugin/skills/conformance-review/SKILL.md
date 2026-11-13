@@ -1,45 +1,90 @@
 ---
 name: conformance-review
 description: >-
-  The post-task review of generated code against OUR spec — run after each task, before the next. Lens A: conformance vs spec/architecture/contracts/security/NFR-evidence/traceability (blocking); Lens B: design health (advisory). Its VERDICT becomes the task's conformance gate row. Loads the shared exec engine.
+  Independent, fresh-context review of a task's code against the spec. Required for critical tasks; also on request or as a wider re-check. Lens A (blocking) — boundaries, contracts, data, security, NFR evidence, rendered UI. Lens B (advisory) — design health. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: the code and task to review against the spec
 ---
 
 # conformance-review
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill: **the post-task review of generated code against the spec**, run after each task, before the next. **(A) conformance** (blocking) · **(B) design health** (advisory). It is the per-task, build-time, self-certifying gate — the independent whole-build, release-time attestation is a separate audit. Distinct from, and complementary to, the host's native code-review workflow.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill is the independent review of built code against the spec. Lens A, conformance, decides the verdict. Lens B, design health, is advice.
 
-## Process
-1. **Set the scope.** `changed` (default, every task — the task's changed code + its blast radius: callers, callees, seams) or `full` (a wider on-demand re-check — the whole codebase, still incremental). The checks are identical; scope changes only which code they see. `full` is still this same self-certifying review — it is NOT the release audit (a self-certifying review cannot audit its own ledger).
-2. **Run Lens A — conformance (blocking).** Architecture first, the hardest check: dependency direction & acyclicity · each module's actual dependencies match its declared `role:` (domain / driving-port / driven-port / adapter / application-service), inward only · context-boundary integrity (cross-context only via a published contract/event) · layer isolation & ports/adapters (persistence behind a port, no ORM/DTO leak) · interface conformance (no public surface beyond the implementation design) · a structural-regression scan of this diff. For a cross-module/cross-context flow, **confirm the implementation follows the architecture's key sequences** (`arch/sequences.md`) — the golden path AND its failure/compensation branches. **Confirm every ASR fitness function `arch/quality.md` names exists as an executable rule** (named-but-never-authored = an unenforced ASR wearing a green gate row). **Confirm the shipped pipeline matches the ratified promotion hops + per-hop gates** (`infra-ops/cicd.md`) **and the runtime contract holds** (the `preflight` doctor command, health/readiness endpoints, and startup order `conventions/runtime-contract.md` declares actually exist in the artifact).
-   Then the spec, per referenced ID class — where **"evidenced" always means the behavior is exercised by a test, never that code exists**: contracts (`API-`) · data model + residency/retention (`DATA-`, incl. the retention/TTL/deletion triggers the slice owns) · security & entitlements (`SEC-`/`OBL-`/`ENTL-` — the deny / over-limit / lapsed-billing path invoked) · NFR/ASR with measured evidence · `obs` signals (`SLO-` telemetry + `AEV-` events emitted AND asserted) · any `ML-` capability's eval-harness result vs its bar.
-   **UI conformance is judged on the RENDERED surface, never by code-reading alone**: run the app, open every screen the slice touches, walk the journey's `SCR-` screen path from `prototypes/ui/flows.md` — compare against the frozen prototype (layout, microcopy, every named interaction state reachable and realised), confirm styling flows only through `DS-` tokens/components, walk the `a11y` cell's keyboard/focus path yourself, render at the DS breakpoints. A screen you never rendered is a screen you never reviewed; the `ux:states` / `a11y` / `ux:rendered` rows must carry real evidence. **A slice claiming `ux: N/A — reuses DS-… on SCR-NNN` still gets the rendered check on that screen** — the reuse classification exempts it from the prototype-review gate, not from being looked at; a composition/flow change hiding behind a reuse claim is a blocking mis-classification.
-   **Run the engine's mechanical tripwires** (`check_no_fakes.py` · `check_deploy_real.py` · `check_migration_real.py` · `check_no_skips.py` · `check_orphan_tests.py` · `check_contracts.py` — the OpenAPI/AsyncAPI ↔ spec-ID reconciliation, when the slice touches an `API-`/`EVT-` contract) **and add the semantic judgment they can't make**: a fake the pattern-scan missed; a deploy that is statically present but never behaviourally proven (the `deploy` row's evidence is the green e2e/smoke against the real deployed env — if the env can't run yet, the row is `blocked — <env> not provisioned`, never `PASS`); and — for the slice's e2e — **enumerate the spec paths it does NOT exercise**: each referenced `AC-`/flow branch the e2e leaves untouched needs a stated reason. An assumption-driven avoidance ("the broker might not be ready, so the test steers around it") is a blocking violation exactly like a skip; a justified omission (covered at a cheaper tier per the test strategy) is recorded and passes. Forcing the enumeration is the point — a weakened e2e survives "don't avoid paths" prose, but not an explicit not-exercised list.
-   **Confirm traceability in BOTH directions**: every referenced spec ID has implementing code + a passing test, and every behavior in the diff has a driving spec ID — `check_orphan_tests.py` covers the test tree; you add the code-side judgment for behavior no test pins at all. An undriven behavior is drift and blocking **even when the user asked for it in chat** (chat is spec input): route it spec-first, never wave it through.
-3. **Decide the verdict.** `VERDICT: PASS` only when Lens A is fully clean; else `VERDICT: FAIL — <blocking violations>` → fixed inside the boundaries. If the spec itself is wrong, raise a gap — never bend code around a bad spec, never edit the spec to match the code.
-4. **Run Lens B — design health (advisory).** Surface shallow modules that could become deep (the deletion test; the interface is the test surface; one adapter = a hypothetical seam, two = a real one). Note friction organically. Never blocks the verdict.
-5. **Record + reconcile the Verification Record.** Write the traceability matrix + the review report; a `PASS` here **is** the independent `VERDICT: PASS` the task's Verification Record cites for its `conformance` obligation. Then run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task_record.py spec --task T-NNN` — a red checker is a blocking `FAIL` regardless of the semantic review. Cheap design candidates: refactor now under green; larger ones become focused-change tasks.
+## When it runs, and who runs it
+| Trigger | Scope |
+|---|---|
+| a `critical` task, before it can be done (the engine's risk-tier table) | `changed` — the task's diff and its blast radius: callers, callees, the seams it touches |
+| any task, when the user or orchestrator asks | `changed` |
+| a wider re-check on request | `full` — the same checks over the whole codebase |
 
-## Rules
-- **Architecture conformance is first-class** — a failed-test re-run is exactly when shortcuts creep in, so check structure every run, not just behavior. The fitness functions enforce the deterministic part; this skill adds the semantic judgment they can't make.
-- **Never pass on (blocking → back to implementation):** any red row of the engine's done-gate table · a crossed context/layer boundary · a dependency cycle · a module whose real dependencies contradict its declared `role:` · persistence/ORM leaking across a layer · an interface widened beyond the implementation design · duplicated logic or a layer bypass introduced to pass a test · an e2e that avoids a referenced path on an assumption (an unexercised `AC-`/branch with no recorded justification) · a rendered screen that diverges from its frozen prototype (a missing/unreachable state · off-design-system styling · a broken keyboard path · a collapsing breakpoint — or a UI slice reviewed by code-reading with no rendered check at all) · behavior in the diff with no driving spec ID. **The waiver files are reviewed here** (`.grillspec/no-skips-allow.txt`, `no-orphans-allow.txt`, …): every entry needs a live, still-true reason.
-- **Verdict:** `VERDICT: PASS` only when Lens A is fully clean (every referenced ID traced to code + a passing test); else `VERDICT: FAIL — <violations>`. Lens B never blocks.
-- **Vs host-native code review** — native = generic correctness/security/regressions; this = spec-divergence + traceability + architecture-health. Borrow its disciplines: verify each finding against the actual code before flagging; tag every finding `blocking` · `important` · `nit` · `suggestion`.
-- **Lens B vocabulary** — module (interface + implementation) · interface (all a caller must know) · depth (much behavior behind a small interface; shallow = interface ≈ implementation in complexity) · information leakage (one design decision spread across N modules — a candidate to consolidate). Don't abstract before the second adapter; a rejected design candidate with a load-bearing reason becomes an ADR so future reviews don't re-suggest it.
-- **Held-out `AC-` (orchestrated runs)** — when the orchestrated build withheld a subset of the task's `AC-` from the implementer, you hold the full set: author fresh acceptance tests for the held-out `AC-` (or run the Tier-B journey tests that cover them) against the built slice. A held-out `AC-` that fails is a blocking `FAIL` (overfitting to the visible tests). N/A for a solo run with no orchestrator.
+The review is worth something only because it is independent, so it runs in a fresh context — a subagent or a separate session that did not write the code. Start from the brief, the design note it names, the diff and the code around it, not from the implementer's account of what was done.
+
+It complements the host's own code review. That one looks for general correctness and regressions; this one looks for divergence from the spec and for architectural erosion. Use the same discipline: check each finding against the actual code before reporting it, and tag it `blocking`, `important`, `nit` or `suggestion`.
+
+Review against the spec the project has. Its profile decides which areas exist; an area the profile leaves out is not a finding.
+
+## Lens A — conformance (blocking)
+Throughout, "evidenced" means a test exercises the behaviour. Code that looks right is not evidence.
+
+**Architecture.** Check it first and on every round. A re-run to green is when a shortcut across a boundary is most likely, and a passing test hides it.
+- Dependencies point inward and form no cycle, and each module's real dependencies match its declared `role:`.
+- One context reaches another only through a published contract or event.
+- Persistence sits behind a port; no ORM or DTO type crosses a layer.
+- A module exposes no public surface beyond what the architecture and the design note give it.
+- A cross-module flow follows the architecture's key sequences, including the failure and compensation branches.
+- Every fitness function the architecture names exists as an executable rule.
+- The shipped pipeline matches the ratified promotion path, and the runtime contract holds: the `preflight` command, the health and readiness endpoints, the startup order.
+
+**The rules the brief names**, by kind:
+
+| Kind | Confirm |
+|---|---|
+| contracts (`API-`, `EVT-`) | the implementation matches the published contract, as provider and as consumer; run `check_contracts.py` when the slice touches one |
+| data (`DATA-`) | the model, residency and retention of each class are honoured, and a retention, TTL or deletion trigger the slice owns is exercised |
+| security and entitlements (`SEC-`, `OBL-`, `ENTL-`) | a test invokes the deny path, the over-limit path or the lapsed-billing path |
+| quality (`NFR-`, `ASR-`) | measured evidence against the stated bar |
+| signals (`SLO-`, `AEV-`) | the telemetry and analytics events are emitted and asserted |
+| model capabilities (`ML-`) | the eval result meets its bar |
+
+**Rendered UI.** Judge a UI slice on the running app, because a screen read only as code has not been reviewed. Open every screen the slice touches and walk the journey's `SCR-` path from `prototypes/ui/flows.md`. Compare each screen with its prototype: layout, microcopy, and every named interaction state reachable and realised. Confirm styling comes only through `DS-` tokens and components, walk the keyboard and focus path from the `a11y` row yourself, and render at the design-system breakpoints. A slice whose `ux` row says it only reuses existing components still gets this look: the reuse claim spares it the prototype review, and a composition or flow change hiding behind it is a blocking finding.
+
+**Honest production code.** Run `check_no_fakes.py`, `check_no_skips.py`, `check_orphan_tests.py`, `check_deploy_real.py` and `check_migration_real.py`, then add the judgment a pattern scan cannot make:
+- a fake the scan missed, such as a canned response behind an unconfigured-dependency branch;
+- a deploy that is statically present but not behaviourally proven — the proof is a green smoke or e2e run against the real environment, and where that environment cannot run yet the task is `blocked`, not passed;
+- for the slice's e2e, the list of criteria and flow branches it does not exercise, each with its reason. Coverage at a cheaper tier, as the test strategy allows, is a valid reason. Steering around a path because a dependency might not be ready is not, and blocks like a skipped test. Writing the list out is what exposes a weakened e2e;
+- the waiver files (`.grillspec/no-skips-allow.txt`, `no-orphans-allow.txt` and their siblings): every entry still needs a reason that is true today.
+
+**Traceability, both directions.** Forward: every criterion in the brief has implementing code and a passing test — `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_task.py spec --trace` prints the criterion → test matrix, and `--task T-NNN` should show the missing review as its only open item once any held-out tests are in. Backward: every behaviour in the diff is demanded by a spec ID. `check_orphan_tests.py` covers the test tree; you judge code that no test pins. Behaviour the spec does not ask for is drift even when someone asked for it in chat, so it goes to the spec first and is not waved through.
+
+**Held-out criteria.** In an orchestrated run the orchestrator may have withheld one or two criteria from the implementer. You hold the full brief: write fresh acceptance tests for the held-out criteria, tagged `@covers`, or run the system tests that already cover them. A held-out criterion that fails means the slice was fitted to the visible tests, and blocks.
+
+## Verdict
+`VERDICT: PASS` when Lens A is clean. Otherwise `VERDICT: FAIL — <the blocking findings>`, and the implementer fixes them inside the boundaries. When the spec itself is wrong, report that as a gap for the area that owns it; the code is not bent around a bad spec, and the spec is not edited to match the code.
+
+On `PASS` for a `critical` task, set the brief's `review` row to `PASS`. That row is the one durable trace of the review and the only thing this skill writes under `spec/`; `check_task.py` reads it, which is why the reviewer sets it and the implementer does not. After a `FAIL` you look again once the fixes are in. Two rounds is the limit: a disagreement that survives them goes to the human with both positions, as the engine says.
+
+## Lens B — design health (advisory)
+After the verdict, name what would make the code easier to change. It does not affect the verdict.
+
+- A **module** is an interface plus an implementation; the **interface** is everything a caller must know. A module is **deep** when much behaviour sits behind a small interface and **shallow** when the interface is about as complex as the implementation. Shallow modules that could be deepened are the main candidates (the deletion test: would removing the module push its complexity into callers, or just remove a hop?).
+- **Information leakage** — one design decision spread across several modules — is a candidate to consolidate.
+- One adapter behind a port is a hypothetical seam; two make it real. Recommend an abstraction when the second one exists.
+
+Cheap candidates can be refactored under a green suite as part of the task; larger ones become their own task. Where a candidate is rejected for a reason that will keep holding, recommend recording it as an ADR so a later review does not raise it again.
 
 ## Output
-Written under `10-delivery/verification/` (the exec engine's bookend path — the checker resolves the record there):
+A findings report to the implementer or orchestrator; under `pr` delivery, post it on the pull-request thread as well. Nothing is written under `spec/` except the `review` row; acceptance tests for held-out criteria go into the test tree.
 
-| File / target | Captures | Format |
-|---|---|---|
-| `10-delivery/verification/traceability.md` | matrix: spec ID → T- → code/test path → pass | table, spec ID leading |
-| `10-delivery/verification/review-report.md` | blocking-violation list + the e2e **not-exercised list** (each untouched `AC-`/flow branch + its stated reason) + prioritized design-candidate list + the verdict | finding table (`blocking/important/nit/suggestion`) + `VERDICT:` line |
+| Part | Content |
+|---|---|
+| verdict | the `VERDICT:` line, then one or two sentences on the state of the slice |
+| findings | table: severity · where (`path:line`) · what diverges · the spec ID it diverges from |
+| e2e not-exercised list | each criterion or branch the e2e leaves out, with its reason |
+| held-out criteria | each one and its result, when the run withheld any |
+| checks | which tools and manual checks ran, and which could not |
+| design candidates | Lens B, in priority order |
 
-(+ ADRs → `adr/ADR-REV-NNN.md` — e.g. a rejected design-candidate with a load-bearing reason)
-(no code, no spec changes)
-Consumes: the produced code + the `T-NNN` package (or review set) + the referenced spec/arch IDs + the conventions + the domain model (glossary) + the area's ADRs.
+Reads: the built code, the brief and its design note, the spec passages and ADRs the brief points at, the conventions, the glossary.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`

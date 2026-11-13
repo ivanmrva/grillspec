@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Produce machine-readable API and event contracts — openapi.yaml and asyncapi.yaml at the latest stable standard, schemas and versioning — from the published language and integration requirements.
+Decide the API and event contract policy — the seam list, versioning and deprecation, error model, idempotency, pagination, event envelope and delivery — and at the regulated profile also author openapi.yaml and asyncapi.yaml. Use when the published language and integration requirements exist.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

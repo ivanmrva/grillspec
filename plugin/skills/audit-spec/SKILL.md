@@ -1,233 +1,166 @@
 ---
 name: audit-spec
 description: >-
-  Audit an EXISTING spec for completeness, consistency, contradictions, and whether a coding agent can build it without guessing — the judgment layer above the mechanical tools. Report-only by default; --fix remediates in-session, --loop converges to zero findings. Only --depth full declares code-gen readiness. Loads the shared exec engine.
+  Audit an existing spec for consistency, completeness against its project profile, leanness, and whether an agent can build from it without guessing — the judgment above the linter. Report-only by default; --fix remediates, --loop repeats until a pass finds nothing. Loads the shared exec engine.
 argument-hint: "[--depth consistency|full] [--scope all|<area>] [--fix] [--loop] — default: --depth full --scope all, report-only"
 ---
 
 # audit-spec
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill is the
-**whole-spec audit**: a cross-area verification that the spec is complete, consistent, and buildable —
-the **judgment layer above the deterministic tools**. The tools (`lint_spec.py`, `spec_status.py`,
-`guard_derived.py`, `impact.py`, and — when API contracts exist — `check_contracts.py`) decide everything
-mechanical; this skill makes only the calls a sound
-script cannot. **Do not re-do what the tools already do** — run them, trust their output, and spend your
-effort on meaning.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill is the whole-spec audit: one pass across every area that asks whether the spec is consistent, complete for its profile, no larger than it needs to be, and buildable. The tools decide everything mechanical. Run them, take their output as given, and spend your effort on what a script cannot judge: meaning.
 
-Two things stay separate throughout (the spec's two axes): **Axis 1 — is the spec consistent &
-complete-enough?** vs **Axis 2 — do the BETS hold?** A green spec next to a red bet is the point; never
-conflate them.
+Keep two questions apart in everything you report. Spec health: is the spec consistent and complete enough? Bet health: do the product's bets hold? A clean spec beside an untested bet is a normal and useful result, and merging the two hides it.
 
-## The two boundaries this skill lives between
-- **Below it — the linter.** Already enforces (don't repeat): closed-world & paths · file headers ·
-  placeholders · dangling links · stable-ID resolution · **upstream-only reference direction** ·
-  define-once · stage-purity · namespaced-ID ban · the downstream-coverage map (`CMD-→UC-→AC-→T-`,
-  `AGG-→DATA-`, `NFR-→ASR-/SLO-`, `OBL-→control`, `EVT-→consumer`, …) · `THR-→SEC-` · `INV-→AC-` (an invariant is asserted by an AC, or enforced structurally) ·
-  child→parent keying (`AC-`→`UC-`, `ASR-`→`NFR-`) · **derived→driver backref presence** (`JRN-`→`UC-`,
-  `SLO-`→`NFR-`, `ML-`→`UC-`, each cited co-located on the child's own definition; an impl-design
-  `<module>.md` names its `MOD-` + `T-`) · per-`T-` unresolved-gap (ERROR) · task-graph
-  acyclicity (the `depends-on` DAG, ERROR) · task→upstream traceability · **AC single-owner** (each in-scope `AC-` claimed by exactly one task) · NFR `enforced-by` · module `role:` ·
-  ADR status · **state-machine integrity (unreachable / dead-end / nondeterministic states)** ·
-  **authorization completeness (every command has a rule; no blank decision cell — ERROR)** · **un-ratified
-  `unconfirmed` values (WARN; ERROR once tasks exist)** · **bet-status/criticality vocabulary (WARN)** ·
-  **typed-field consistency (a `retention`/`residency`/`class`/`SLA`/`price`/`delivery-guarantee` stated
-  twice must agree; every `DATA-` carries class/retention/residency — WARN)** · **task-cell integrity (an
-  `afk:eligible` non-`N/A`-`ux` task's `prototype-review` review-cleared · a non-`N/A` `ux` cell structured —
-  cites its `JRN-` + states · `ux`↔`a11y` consistency · a reuse-claim anchored to its `SCR-`)** · and the INFO
-  heuristics for dev-trace language, skill/tool-name leaks, and adjective-without-a-bar. **Severity is the
-  contract: every ERROR → a `blocking` finding, verbatim; every WARN → an `important` candidate you confirm
-  or dismiss with a reason** (the coverage map is WARN-level except `THR-` uncovered — always ERROR — and
-  `OBL-`/`AC-` uncovered once their consuming stage exists). Your job starts where the linter's soundness ends.
-- **Beside it — the per-task code-conformance review.** That checks generated CODE against the spec, per task, after a
-  build. This checks the SPEC itself, whole, independent of any build. Complementary, not overlapping.
+The per-task conformance review checks code against the spec, one task at a time. This skill checks the spec itself, whole, whether or not anything has been built.
 
-## Modes (depth)
-| `--depth` | Runs | Max verdict it may issue |
+## Audit against the profile
+Read the project settings first: `python3 ${CLAUDE_PLUGIN_ROOT}/tools/project_config.py`. The `profile` records how much spec the project chose to carry, and the audit holds the spec to that choice, not to the largest one. With no settings file the tools assume `regulated`; say so in the report, because every "missing" finding then rests on an assumption the owner can correct in one line.
+
+| Profile | Areas in scope | The solution layer is |
 |---|---|---|
-| `consistency` | Phases 0–2 (mechanical baseline + the Class-3 judgment checks) — cheap, repeatable, gate/CI-friendly | `CONSISTENT (domain not assessed)` — **may not** declare readiness |
-| `full` (default) | adds Phase 3 (domain & usage completeness) + Phase 4 (bet/risk axis) | `CODE-GEN READY` / `NOT-READY` |
+| `lite` | problem validation · product vision · constraints · domain model · functional spec · quality · architecture · conventions · tasks | the architecture only; the few decisions the other solution areas would own are rows in `arch/solution-strategy.md` |
+| `standard` | `lite` plus goals · system context · data · security · compliance · entitlements · integration · ML requirements (AI products) · design system and UX (UI products) | the architecture plus seven decision records |
+| `regulated` | every area | the architecture plus the seven areas written in full |
 
-`--scope all` audits the whole spec; `--scope <area>` limits the read to one area + its reference
-neighbours (for a focused re-check after a change).
+- An empty area outside the profile is not a finding. An in-profile area that is empty, or inconsistent with its neighbours, is.
+- Market, customer discovery, monetization, go-to-market and growth are optional at every profile. They are not required; audit them for consistency only when they exist.
+- Below `regulated`, the seven solution areas (data, API contracts, security, observability, infrastructure and operations, test strategy, ML) are decision records. Judge whether each decision the build depends on has been made: the store and its tenancy, the seam list with its versioning and error policy, where authorization is enforced and how keys are held, the objectives that page someone, the environments and promotion path with the configuration each needs, the tier contract in `test/levels.md`, a model's fallback and the gate it must pass. A missing table design, OpenAPI document, control register or runbook is not a gap at these profiles, because the schema, the contract package, the policy code and the alert configuration state those better than a document can.
+- When the product has outgrown its profile — it handles personal data, money or paid tiers at `lite`, or its documents have become a deliverable for an auditor at `standard` — report that as one finding that recommends the larger profile, not as a list of missing areas.
 
-**Remediation modes** (report-only is the default; these are the sanctioned mutation modes):
+## What the tools already decide
+`lint_spec.py` settles structure and the ID graph. None of this is yours to re-derive:
+
+| Group | What the linter settles |
+|---|---|
+| structure | files only at allowed paths · file headers · placeholders · dangling links |
+| ID graph | every reference resolves · one definition per ID, in its owning area · references point upstream only |
+| coverage | each element has its downstream: a command its use-case, a use-case its criteria, a criterion exactly one owning task, a threat its control, an obligation its control, an NFR its evidence |
+| structured facts | state machines · authorization completeness · a typed fact stated twice agrees · every NFR names its enforcement |
+| tasks | no unresolved gap · acyclic dependencies · a risk tier · criteria text inline · UI slices carry their journey, states, accessibility cell and a reviewed prototype · credentials provisioned for unattended work |
+| ratification | a value still marked `unconfirmed` |
+| lean and timeless | edit-trace stamps, dates and edit-history phrasing · content in an area outside the profile · a full-mode file below `regulated` |
+
+Severity carries over unchanged. A linter ERROR is a `blocking` finding, quoted as the tool printed it. A WARN is an `important` candidate that you confirm or dismiss with a reason. An INFO is a candidate the linter flagged because it could not decide it, so the decision is yours.
+
+## Modes
+| `--depth` | Runs | Verdict it may issue |
+|---|---|---|
+| `consistency` | Phases 0–2: cheap and repeatable | at best `CONSISTENT (domain not assessed)` — it cannot declare readiness |
+| `full` (default) | adds Phase 3 (domain and usage completeness) and Phase 4 (code-gen readiness, bets) | `CODE-GEN READINESS: READY` or `NOT-READY` |
+
+`--scope all` audits the whole spec. `--scope <area>` reads one area and the areas it references or is referenced by, for a focused re-check after a change.
+
+Report-only is the default. Two modes edit the spec:
+
 | Mode | Does | Ends when |
 |---|---|---|
-| `--fix` | ONE audit pass, then remediate every finding at its correct fix-zone and **drain the propagation tail in-session** (the exit contract below) | findings fixed · impact set fully re-derived · mechanical baseline green |
-| `--loop` | repeat `--fix` passes at full depth with a **parallel read-only auditor fan-out** — load `remediation-loop.md` (sibling of this SKILL.md) and follow it | **K=2 consecutive dry batches** + a final clean full sweep + baseline green |
+| `--fix` | one audit pass, then fixes every finding in the area that owns it and works through the impact set in the same session | findings fixed · impact set worked through · mechanical baseline green |
+| `--loop` | repeats full-depth `--fix` passes with parallel read-only auditors — load `remediation-loop.md` (beside this file) and follow it | two consecutive rounds find nothing new, a final full sweep is clean, and the baseline is green |
 
-**The fix-mode exit contract (what "fixed" is allowed to mean).** After the last upstream edit: run
-`python3 ${CLAUDE_PLUGIN_ROOT}/tools/impact.py <changed-IDs…>` (or `--since <ref>`) → for **every derived
-artifact in the impact set**, re-run its owning derive step — explicitly including the terminal derived
-layer a partial propagation most often strands: `10-delivery/conventions|tasks|impl-design` and the
-root canonical `AGENTS.md` + import-only `CLAUDE.md`, not just `05`/`09` — → `python3 ${CLAUDE_PLUGIN_ROOT}/tools/guard_derived.py --record <re-derived
-paths>` + `…/check_freshness.py --record <all touched paths>` → re-run the Phase-0 baseline to green. **You
-may not report "fixed" or "clean" while the impact set of your own edits contains a derived artifact that
-was not re-derived** — a computed-but-unprocessed impact set is an unfinished fix, and saying otherwise is
-the false-success this contract exists to stop. (A re-derive you genuinely can't run — a missing upstream
-decision — is parked as an explicit stale hand-off in the report, never silently dropped.)
+**What "fixed" means.** A fix is finished when everything that depended on the changed fact agrees with it. After the last edit, run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/impact.py <changed-IDs…>` (or `--since <ref>` to collect the IDs from the git diff). It prints every spec file, task brief and test that references those IDs, upstream first. Re-read each one against the changed fact and edit the ones it invalidates. The task briefs and the conventions come last in that order and are the ones a partial pass leaves behind. The root `AGENTS.md` sits outside `spec/`, so the tool does not list it; re-read it whenever the conventions change. Then run the Phase 0 baseline again. Report "fixed" only when the impact set has been worked through and the baseline is green. An item you cannot settle because it needs a decision only the user holds is listed in the report as an open hand-off.
 
 ## Ground rules
-- **Source-of-truth fence (from the engine).** Audit the CURRENT working tree only — never git history,
-  never outside the project folder. A missing artifact is a FINDING, never something to reconstruct.
-- **Audit, don't mutate — unless in `--fix`/`--loop`.** Default is report-only. In the remediation modes,
-  every fix follows the routing below and the exit contract above; the fan-out auditors stay **read-only**
-  in every mode. Never bend the spec to match code, nor edit a derived artifact by hand to mask an
-  upstream gap.
-- **Severity on every finding:** `blocking` (breaks build-correctness or a hard invariant) · `important`
-  (a real gap/ambiguity that will force a wrong guess) · `nit` (style/scan) · `suggestion` (deepening).
-  Verdicts gate on `blocking` only.
-- **Verify before flagging.** Read the actual artifact; quote `file:line` or the stable ID. A finding you
-  can't ground is a guess — drop it.
-- **Remediation routing (the most common way to corrupt a spec is to fix it in the wrong place):** an
-  AUTHORED-zone defect (foundation, `04-domain/ddd`, `06-requirements/*`, `07-design-system`, `08-ux`,
-  `11-commercial/*`, glossary/actors/ADRs) is fixed in place; a DERIVED-zone defect (`09-solution/*`,
-  `05-functional-spec/`, `10-delivery/{conventions,tasks,impl-design}/`, root canonical `AGENTS.md` + import-only `CLAUDE.md`) is fixed by
-  editing its UPSTREAM and re-deriving — **never** by hand-editing the derived file. State the route in
-  the finding.
+- Audit the working tree as it is (the engine's source-of-truth rule). A missing artifact is a finding to report, not something to reconstruct.
+- In report-only mode, edit nothing under `spec/` and no code. The read-only auditors a loop spawns edit nothing in any mode.
+- Every finding carries a severity: `blocking` (the build would be wrong, or a hard invariant is broken) · `important` (a gap or ambiguity that forces a guess) · `nit` (style) · `suggestion` (a deepening). Verdicts gate on `blocking` alone.
+- Ground each finding before it enters the report: read the artifact and quote `file:line` or the stable ID. Drop what you cannot ground, because an ungrounded finding applied in `--fix` damages a correct spec.
+- A defect is fixed where the fact is owned. Every file under `spec/` is an authored document, edited in place under the rules of the skill for its area: the smallest change in meaning, re-authored so the file reads as written in one pass. When a downstream file is wrong because its upstream is wrong or silent, the fix goes upstream and the downstream follows through the impact set; patching only the downstream leaves the two disagreeing. When spec and code disagree, decide which is right before touching either, so the spec is not bent to match a bug. Name the owning area in each finding.
 
-## Phase 0 — mechanical baseline (run, attribute, don't duplicate)
-Run from the project root and record the raw counts:
-`python3 ${CLAUDE_PLUGIN_ROOT}/tools/lint_spec.py` · `…/spec_status.py` · `…/guard_derived.py` (or its
-check) · `…/impact.py` over any suspect IDs. **If `spec/09-solution/api` exists, also run
-`…/check_contracts.py`** — it binds the machine contracts (`openapi.yaml`/`asyncapi.yaml`) to the ID graph:
-every grillspec id a contract references (`x-grillspec-id` · `x-serves` · `SEC-` scopes · `x-data`) must
-resolve to a real definition (ERROR), and every REST op must carry its traceability hooks + a mutation
-security scope + an error response (WARN). It no-ops cleanly when PyYAML or the api folder is absent, so it
-is safe to always attempt. Also run **`…/check_freshness.py`** (advisory) — it lists every artifact, grilled
-OR derived, that cites an upstream definition which has CHANGED since the artifact was last reconciled
-(`.grillspec/freshness.lock`). It never gates; it hands you the precise, complete candidate set for the
-staleness judgment in Phase 2, so you no longer guess which IDs to spot-check. (No lock yet = a baseline gap
-to note, not an error.) Every ERROR → `blocking`; every WARN → a `important`
-candidate to confirm; every INFO heuristic → a candidate to judge (the linter flagged it precisely because
-it cannot decide it — that decision is yours).
+## Phase 0 — mechanical baseline
+Run these from the project root and record the raw counts.
 
-## Phase 1 — consistency judgment (what the linter can't decide soundly)
-The predicates here are about MEANING, so no script is sound on them. Walk each:
-- **Contradictions in prose** — the same number/policy/boundary stated twice that disagree (retention 30d
-  in data vs 90d in compliance); a term used two ways within one bounded context; an actor named
-  inconsistently across system-context, ddd, security, ux. The linter catches a *dangling* ID, never a
-  *conflicting fact*. `blocking`.
-- **Type-correctness within an allowed prefix** — an item filed as `NFR-` that is really an obligation
-  (`OBL-`), a "requirement" that is actually a domain rule. Stage-purity caught the folder; only judgment
-  catches the concept.
-- **Scope adherence** — content that violates its own `scope:`/`excludes:` header; in/out-of-scope kept
-  consistent across vision ↔ functional ↔ tasks (nothing built that's excluded, nothing required that's
-  excluded).
-- **Decision coherence** — every deliberate decision OR exclusion is an ADR (you can't detect an
-  *unrecorded* decision mechanically); no two ADRs contradict; no artifact contradicts a live ADR.
-- **Measurable-bar adequacy** — beyond the linter's adjective flag: is each requirement a real bar WITH a
-  named enforcement (test · gate/fitness-fn · lint · infra · review), or a number with no teeth?
-- **Adequacy ≠ presence** — the linter confirms a `THR-` has a linked `SEC-`; you judge whether the
-  control actually mitigates the threat. Same for `OBL-`→control, `NFR-`→evidence.
-- **House-style judgment** — the dev-trace/self-ref INFO candidates: is `new booking` legitimate domain
-  language or a narration of the document's own edits? Are additions integrated in place, or bolted on at
-  the end / duplicated in a parallel note beside content that already owns them?
+| Tool | Gives you |
+|---|---|
+| `python3 ${CLAUDE_PLUGIN_ROOT}/tools/lint_spec.py` | ERROR, WARN and INFO findings over `spec/` |
+| `…/spec_status.py` | the profile, element counts, use-cases with criteria, task status, mechanical blockers |
+| `…/check_contracts.py` | whether the IDs in the machine contracts resolve |
+| `…/impact.py <ID…>` | the files that depend on an ID you suspect |
 
-## Phase 2 — structural verdicts (read the tool output, decide the gates)
-- **Gate readiness** — architecture-readiness (requirements + design-system + ux carry no `UNRESOLVED`
-  gap) before `09-solution/*` is trusted; implementation-readiness before `10-delivery`; delivery-readiness
-  before code. Report each gate met / not-met with its blocking items. **Delivery-readiness explicitly requires
-  the deploy spine the tasks/build will reference to exist**: `infra-ops/topology.md` names the **ratified
-  environment set + promotion path**, `infra-ops/cicd.md` defines the **end-to-end promotion workflow** (ordered
-  hops + per-hop gate), and `test/levels.md` names the **e2e target environment** (the preview/e2e/staging env
-  e2e runs against) — a task that deploys to "the first env of the promotion path" or runs e2e "against the
-  deployed env" is dangling if these aren't pinned. Missing any is a delivery-readiness blocker.
-- **Artifact-staleness (grilled AND derived)** — does each artifact's content still follow from the CURRENT
-  upstream? `guard_derived.py` proves a derived file wasn't hand-edited; it cannot prove it was re-derived
-  after upstream moved, and it says nothing about a grilled artifact going stale. `check_freshness.py`
-  (Phase 0) closes that: it hands you every artifact whose CITED upstream definition has drifted — work that
-  candidate set, judging whether each drift is materially relevant (a renamed field that an NFR keys on vs a
-  typo fix). A derived claim that no longer follows from current upstream → `blocking`, routed to "re-run the
-  derive-* step"; a stale GRILLED artifact → `important`, routed to "re-grill the area against the corrected
-  upstream." Freshness is advisory, not a verdict — a drift you judge immaterial is dismissed with a note,
-  not a finding.
+`check_contracts.py` applies where `spec/09-solution/api` holds an OpenAPI or AsyncAPI file (normally the `regulated` profile). An ID a contract references that is defined nowhere is an ERROR; an operation without its traceability fields, a security scope on a mutation, or an error response is a WARN. It exits cleanly when there are no contracts or PyYAML is not installed, so it is safe to run always.
 
-## Phase 3 — domain & usage completeness  *(--depth full only — the part nothing mechanical can do)*
-You cannot find a MISSING requirement by checking that references resolve — a spec where every link
-resolves can still omit an entire category of real behavior. You find it only by building an independent
-model of the domain and diffing. Do it for real; this is the skill's reason to exist.
+If a tool is missing from this install (a standalone copy of the skill carries only some of them), report it as not run; do not approximate its result by hand.
 
-1. **Blind re-derivation, then diff (highest yield).** From discovery + vision + customers + market + your
-   own knowledge of THIS domain, and BEFORE leaning on the ddd, independently write down the real entities,
-   each entity's full lifecycle, the core business rules, the money/time/identity mechanics, the regulatory
-   realities, and the full actor roster with each actor's real goal. THEN diff against the spec. Every item
-   in your model with no home in the spec is a candidate missing branch. The spec can't show you its own
-   blind spots — this is how you see them.
-2. **Per-entity lifecycle reality.** For each entity, ask what states the BUSINESS needs — especially the
-   abnormal terminations products forget: cancel · refund · dispute/chargeback · expire · suspend ·
-   reactivate · merge · split · delete/right-to-erasure · archive · account-closure · fraud-hold. A missing
-   state is a domain gap, not a graph error.
-3. **Usage-side journeys.** Per persona × JTBD, walk the real journey through its unglamorous parts:
-   first-run/empty state · abandon-and-return · permission changed mid-action · mobile/offline/flaky ·
-   at-scale (1,000 at once) · undo · hit-a-limit · blocked-by-another-actor. At each step: "what does the
-   system do here?" — no answer = a gap.
-4. **Business-rule stress & interaction.** For each rule: its exceptions, its exact boundary, and — richest
-   of all — what happens when it COLLIDES with another rule (refund on a partially-shipped order; two
-   promotions stacking; cancellation during a migration; downgrade with usage already over the new limit).
-   Rule conflicts almost never surface as a broken reference.
-5. **Universal edge-generators** — apply each to the model: money (rounding · currency · negative/zero ·
-   tax · partial) · time (timezone · DST · ordering · retroactive change · expiry · clock skew) · identity
-   (duplicates · merges · renames · deletion of a referenced entity) · quantity (zero · one · max ·
-   fractional · oversell) · concurrency (two actors, one resource · lost update) · dependents (what happens
-   to children when a parent is removed). Each generator the model has no answer for is a gap.
-6. **Is the model RIGHT, not just consistent?** Do the bounded-context boundaries match how the business
-   segments the world? Are aggregate boundaries where the TRUE transactional invariants live? Is the
-   ubiquitous language the domain expert's actual words, or invented? A wrong-but-consistent model produces
-   correct code for the wrong thing — the most expensive failure.
+## Phase 1 — consistency judgment
+These questions are about meaning, so no script answers them soundly.
+- **Contradictions.** The same number, policy or boundary stated in two places that disagree (retention of 30 days in the data area, 90 days in compliance); a term used two ways inside one bounded context; an actor named differently across areas. The linter sees a dangling ID; it cannot see two resolving IDs that state conflicting facts. `blocking`.
+- **The right type.** An item filed as `NFR-` that is really an obligation (`OBL-`), or a "requirement" that is a domain rule. The linter checks the folder; you check the concept.
+- **Scope.** Content that breaks its own file header's `scope` or `excludes`; in-scope and out-of-scope kept consistent from the vision through the functional spec to the tasks, so nothing excluded is built and nothing required is excluded.
+- **Decisions.** Each deliberate, costly-to-reverse decision or exclusion has an ADR; no two ADRs contradict; no artifact contradicts a live ADR.
+- **Bars with teeth.** Each requirement is a measurable bar with a named enforcement that can actually fail (a test, a gate, a lint rule, an infrastructure setting, a review), not a number nothing checks.
+- **Adequacy, beyond presence.** The linter confirms that a `THR-` threat links to a `SEC-` control. You judge whether that control mitigates that threat. The same holds for an obligation and its control, and for an NFR and its evidence.
 
-**Know your limits — never rubber-stamp.** Where the domain is specialized and a claim can't be verified
-from first principles (clinical logic, financial/tax regulation, safety rules, niche mechanics), flag it
-`important: needs-domain-validation` and route it to a domain-expert review or a throwaway spike — do not
-confirm a rule you can't actually check. A confident "looks complete" on an un-modeled domain is the
-failure this phase exists to prevent.
+## Phase 2 — fit: leanness, readiness, drift
+**Leanness.** An area, a file, a rule or a gate earns its place by having a reader: a later step, a tool, or a person who will act on it. Content with no reader is a finding whose fix is to remove it, not to complete it. Look for:
+- the same fact stated in two areas — keep it in the area that owns it and reference the ID elsewhere, with a few words saying what the ID is;
+- a full-mode artifact below `regulated` (a table-by-table schema, a hand-written OpenAPI document, a control register, a runbook) that restates what code states;
+- a table cell holding a paragraph — either the item needs its own short section, or most of the cell has no reader;
+- narrative about how the document changed: dates, resolved-on stamps, "previously", "this round";
+- a rule, gate or fitness function that nothing enforces and nobody would miss, or a catalogue written up front for concerns the product does not have.
 
-## Phase 4 — code-gen readiness & the bet axis  *(--depth full only)*
-- **Per buildable slice (`T-`):** would the coding agent have everything and guess NOTHING? All
-  referenced IDs resolve and are settled (no `UNRESOLVED` it needs — `blocking` if not); its scoped inputs
-  exist (boundary contracts + architecture seam + declared `role:` + conventions + relevant glossary; a UI
-  slice has its `DS-` contract + its `JRN-` journey reference (+ the interaction-states it realises) + the kept prototype, and its `prototype-review` gate is settled — for an `afk: eligible` non-`N/A`-`ux` slice that means the prototype is **frozen (human-reviewed at finalization)** or explicitly `prototype-review: waived — <why>` (an unreviewed / JIT-generated screen riding an `eligible` slice, or an open HITL `visual/UX decision` escalation, is `blocking`); auto-AFK of this gate is legitimate only where `ux` is `N/A` (headless / reuses-DS); a UI slice also pins a non-`N/A` `a11y` cell, and an `obs`/`ml`-bearing spec reaches the slices through those dimensions — a cross-cutting obligation minted upstream but reaching no task's dimension cell is `important` (it will be silently dropped at build time)); the test strategy MANUFACTURES the slice's edges;
-  every decision the code needs is in the spec or an ADR. Zero load-bearing ambiguity. **Any non-`N/A`
-  `human-prereq` on the slice is resolved — its credential marked `provisioned` in the `_provisioning.md`
-  register — or explicitly waived** — a slice that can't be built without an unmet human action is not ready
-  (`blocking`); a bare free-prose ‘arrives via T-001’ with no `provisioned` register row does not count as resolved.
-- **Ratify axis — un-ratified user-owned values.** A user-owned VALUE the engines require to be ratified
-  (NFR/SLA/SLO numbers · retention/residency · jurisdiction/regimes · pricing & tier limits · environments &
-  git workflow · cloud/region/datastore/IdP commitments · a11y level · DR tier · cost ceiling · test-rigor
-  thresholds · accepted-risk · authorization allow-rules · the MVP cut) that is still an `unconfirmed`
-  proposed-default — i.e. a default the human never confirmed — is **not a settled requirement**. Flag every
-  load-bearing one `important` (a CRITICAL-path one — an NFR a slice builds to, a price, a residency footprint —
-  is `blocking`), routed to "surface for ratification." A green spec built on silently-picked user values is
-  exactly the failure this catches; a complete schema is never proof the numbers are the user's.
-- **Bet axis (Axis 2, kept separate):** every bet carries a validation status; every CRITICAL bet is
-  Validated or Accepted-risk (an Invalidated critical bet is a high-priority open point); kill-criteria are
-  present and measurable; every risk has category · probability · impact · owner · mitigation · status;
-  every tech-debt item has a paydown trigger.
+The linter's timeless-artifact and profile checks (its checks 40 and 41) flag the mechanical half of this list; confirm those and find the rest by reading. Rate a leanness finding `important` when the duplicate can drift into a contradiction or the excess hides a decision a reader needs, otherwise `nit`. Report these under their own heading so that "remove" is not mistaken for "complete".
+
+**Readiness gates.** Report each gate as met or not met, with what blocks it. Count only in-profile areas.
+
+| Gate | Met when |
+|---|---|
+| desirability (soft) | the riskiest desirability bets are named, each with a test plan |
+| architecture-readiness | the in-profile foundation and requirement areas (design system and UX for a UI product) are consistent and hold no unresolved gap, so the solution layer can be trusted |
+| implementation-readiness | the in-profile solution areas are consistent and hold the decisions the conventions and tasks build on, including the module map |
+| delivery-readiness | conventions exist; every in-scope use-case is covered by a task and every criterion owned by exactly one; the tasks can name what they deploy to and test against |
+
+What the tasks deploy to and test against is the environments and promotion path, the test tiers with their bars, and the e2e target environment. At `standard` and above those decisions live in `infra-ops/topology.md`, `infra-ops/environments.md`, `infra-ops/cicd.md` and `test/levels.md`. At `lite` they are rows in `arch/solution-strategy.md` and the conventions. A task that deploys to "the first environment of the promotion path" when no promotion path is recorded is a delivery-readiness blocker.
+
+**Drift.** Does each artifact still follow from its current upstream? No tool decides this. When the audit follows a known change, `impact.py --since <ref>` lists the files to re-read. Otherwise check the places where one area quotes or projects another: the use-cases against the domain model, the criterion text quoted in each task brief against the functional spec, the conventions and `AGENTS.md` against the architecture and the stack. A downstream statement that does not follow from its current upstream is `blocking` when a task builds on it and `important` otherwise. A difference you judge immaterial (a typo fix upstream) is dismissed with a note.
+
+## Phase 3 — domain and usage completeness *(`--depth full` only)*
+A spec in which every reference resolves can still omit a whole category of real behaviour, and no reference check finds something that is missing. You find it by building your own model of the domain and comparing. This phase is the reason the skill exists; do it for real.
+
+Start with the blind model, before reading the domain area closely, because reading it first anchors you to its blind spots. From discovery, the vision and your own knowledge of this domain, write down the real entities, each entity's full lifecycle, the core business rules, the money, time and identity mechanics, the regulatory facts, and every actor with their real goal. Then compare with the spec. Each item in your model with no home in the spec is a candidate missing branch.
+
+Then apply the lenses that fit the product. A product that handles no money has no rounding edge to find.
+- **Lifecycle.** For each entity, the states the business needs, especially the abnormal endings products forget: cancel · refund · dispute · expire · suspend · reactivate · merge · split · delete or erase · archive · account closure · fraud hold.
+- **Journeys.** For each persona and job, the unglamorous steps: first run and empty state · abandon and return · permission changed mid-action · offline or flaky · many at once · undo · hitting a limit · blocked by another actor. At each step ask what the system does. No answer is a gap.
+- **Rule collisions.** For each rule, its exceptions and exact boundary, and what happens when it meets another rule: a refund on a partly shipped order, two promotions stacking, a downgrade with usage already over the new limit.
+- **Edge generators.** Money (rounding, currency, zero and negative, tax, partial) · time (time zone, DST, ordering, retroactive change, expiry, clock skew) · identity (duplicates, merges, renames, deletion of something referenced) · quantity (zero, one, maximum, fractional, oversell) · concurrency (two actors on one resource, lost update) · dependents (what happens to children when the parent goes).
+- **Is the model right, not only consistent?** Do the bounded contexts match how the business divides its world? Do the aggregate boundaries sit where the real transactional invariants are? Is the language the domain expert's own? A consistent model of the wrong thing yields correct code for the wrong product, which is the most expensive failure.
+
+Where the domain is specialised and you cannot check a claim from first principles (clinical logic, tax or financial regulation, safety rules), mark it `important: needs-domain-validation` and route it to a domain expert or a throwaway spike. Confirming a rule you cannot check is worse than flagging it.
+
+## Phase 4 — code-gen readiness and bets *(`--depth full` only)*
+**Each task brief.** Could an agent build the slice from the brief and the code alone? The linter checks the form. You judge the content:
+- the criteria the brief quotes still match the functional spec, and together they deliver the outcome the brief states;
+- `touches` names real modules and seams from the architecture;
+- `rules` carries every cross-cutting obligation that binds the slice: an authorization rule, an entitlement limit, a retention trigger, a quality target, an emitted signal. An obligation defined upstream that reaches no brief's `rules` cell will not be built, so it is `important`;
+- the tier matches the risk. A slice with a schema or data migration, an authentication, authorization, erasure or billing path, a model seam or another one-way door is `critical`, and a `critical` brief names its design note and carries a `review` row. A brief tiered below its risk is `important`, because the lighter tier skips the design note and the independent review that risk calls for;
+- a UI slice marked eligible for unattended work has a prototype a human reviewed, or a recorded waiver;
+- every human prerequisite is provisioned in `spec/_provisioning.md` or the task is marked blocked. A slice that cannot be built without an unmet human action is `blocking`;
+- every decision the code needs is in the spec or an ADR.
+
+**Unratified values.** Some values belong to the user or organisation: quality and SLA numbers, retention and residency, jurisdiction, prices and tier limits, the environment set, vendor and region commitments, the accessibility level, test-rigor bars, authorization allow-rules, the MVP cut. One still marked `unconfirmed` is a default the human has not seen, so it is not a settled requirement. Flag each one a slice builds on: `blocking` on a critical path (a number a slice is built to, a price, a residency footprint), otherwise `important`, routed to "surface for ratification". Consider only the values the product actually has.
+
+**Bets (kept separate from spec health).** Every bet has a validation status. Every critical bet is Validated or Accepted-risk; an Invalidated critical bet is a high-priority open point. Kill-criteria exist and are measurable. Each recorded risk has an owner and a mitigation.
 
 ## Output
-Write **`spec-audit-report.md` at the PROJECT ROOT** (a sibling of `spec/`, like `GRILLSPEC-FEEDBACK.md` —
-it is meta-commentary, not timeless project documentation, so it never goes inside the closed-world `spec/`).
-Print a summary to the session. **Session summary = ordered fix-chains, never authored/derived buckets** — a single fix often spans both zones, so print each finding as a **dependency-ordered chain** — `<symptom location> → <upstream edit> → <re-derive step(s)> → <re-grill/verify>` — sequenced so every edit precedes the re-derivations that depend on it (fix upstream first; re-derive a hinge like 05 before re-grilling the authored areas that read it); the fix-zone is set by who *writes* the file, propagation by the reference graph. The report contains:
+Write `spec-audit-report.md` at the project root, beside `spec/`. It is a transient session report about the spec, not part of the spec, so it stays out of `spec/` and is git-ignored. Print a summary to the session.
+
+In the summary and in "Top fixes", give each fix as a chain in dependency order: where the symptom shows → the edit in the owning area → the files `impact.py` says depend on it → how to verify. Order the chains so that an upstream edit comes before the work that depends on it.
 
 | Section | Contents |
 |---|---|
-| Verdict header | per-gate go/no-go (desirability · architecture-readiness · implementation-readiness · delivery-readiness) + overall **CODE-GEN READINESS: READY / NOT-READY** (or `CONSISTENT (domain not assessed)` in `consistency` mode) + the blocking count + a **`depth:`** marker and a **`commit: <HEAD sha>`** stamp of the tree audited — the whole-build audit reads both to decide whether this report still evidences its spec-clean precondition (a report whose commit HEAD has moved past is stale) |
-| Findings | table sorted blocking → important → nit → suggestion: `severity · area · location (file:line / ID) · rule violated · finding · remediation route` |
-| Coverage gaps | the missing branches from Phase 3, each concrete: "X exists but Y is missing" |
-| Contradictions | each with both conflicting locations quoted |
-| Stale-derived | derived artifacts that no longer follow from upstream + the re-derive step |
-| Bet/risk snapshot | Axis 2, visibly separate from spec health |
-| Top fixes | the must-fix-before-codegen items as dependency-ordered fix-chains (`symptom → upstream edit → re-derive → re-grill`), upstream edits before the re-derives that consume them — not authored/derived buckets |
+| Verdict header | `CODE-GEN READINESS: READY` or `NOT-READY` (or `CONSISTENT (domain not assessed)`) · the blocking count · each readiness gate · `profile:` · `depth:` · `commit: <HEAD sha>` of the tree audited, so a reader can tell whether the report still covers the current spec |
+| Findings | sorted `blocking` → `important` → `nit` → `suggestion`: severity · area · location · what is wrong · where the fix goes |
+| Contradictions | each with both locations quoted |
+| Missing branches | from Phase 3, each concrete: "X exists but Y is missing" |
+| To remove | the leanness findings |
+| Drift | statements that do not follow from their current upstream |
+| Bets | bet health, visibly apart from spec health |
+| Top fixes | the must-fix-before-build chains, in dependency order |
 
-In `--fix`/`--loop`: the same report plus `audit-fixes-log.md` (cumulative per-pass fix log + findings-per-round trend) and `human-decisions-needed.md` (parked ratification items) at the project root — all three are meta-commentary siblings of `spec/`, transient and git-ignored, and the loop deletes `spec-audit-report.md` after each pass it fully remediates.
+In `--fix` and `--loop` the same report is joined by `audit-fixes-log.md` (the fixes applied per pass and the findings-per-round trend) and `human-decisions-needed.md` (items parked for the user). All three sit at the project root, are transient and git-ignored, and the loop deletes `spec-audit-report.md` after each pass it has fully remediated.
 
-Report-only mode: no code, no `spec/` edits. **Never claim "complete" on an un-re-validated artifact** — re-run the
-invariants across the content yourself; "looks complete" is never "is consistent." A defect in THIS SYSTEM
-(an unsatisfiable rule, a wrong check) is routed via `${CLAUDE_PLUGIN_ROOT}/tools/plugin_feedback.py`, never
-into the audit report.
+Before you call an area clean, check its invariants against the content yourself; a file that looks complete has not thereby been checked. A defect in this system itself (a check that is wrong, a rule that cannot be satisfied) goes to `${CLAUDE_PLUGIN_ROOT}/tools/plugin_feedback.py`, not into the audit report.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`
-- The `--loop` protocol: `remediation-loop.md` (sibling of this file — load it only in loop mode)
+- The `--loop` protocol: `remediation-loop.md` (beside this file; load it only in loop mode)
 - Worked example: `examples.md`

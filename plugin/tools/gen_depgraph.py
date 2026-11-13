@@ -39,8 +39,21 @@ def load_linter_tables():
     return types, owner
 
 
+def load_linter_profiles():
+    """lint_spec.py's folder -> smallest-profile table and its full-mode folder set (the linter is what
+    honours the profile at runtime, so this graph and that table must agree)."""
+    src = LINT.read_text()
+    area = ast.literal_eval(re.search(r"^AREA_PROFILE\s*=\s*(\{.*?\})", src, re.S | re.M).group(1))
+    full = ast.literal_eval(re.search(r"^FULL_MODE_FILES\s*=\s*(\{.*?\})", src, re.S | re.M).group(1))
+    return area, set(full)
+
+
+PROFILE_VALUES = ("lite", "standard", "regulated", "optional", "any")
+
+
 def validate(data, types, owner):
     errs = []
+    lint_area, lint_full = load_linter_profiles()
     areas = data["areas"]
     stages = data["stages"]
     keys = set(areas)
@@ -58,6 +71,15 @@ def validate(data, types, owner):
                 errs.append(f"{a}: produces_id '{p}' is unknown to lint_spec.py TYPES")
             elif p in owner and not m["folder"].startswith(owner[p]):
                 errs.append(f"{a}: claims to produce '{p}-' but lint_spec.py owns it under '{owner[p]}/' (folder='{m['folder']}')")
+        prof = m.get("profile")
+        if prof not in PROFILE_VALUES:
+            errs.append(f"{a}: profile '{prof}' is not one of {PROFILE_VALUES}")
+        elif m["folder"] in lint_area and lint_area[m["folder"]] != prof:
+            errs.append(f"{a}: profile '{prof}' disagrees with lint_spec.py AREA_PROFILE['{m['folder']}'] = '{lint_area[m['folder']]}'")
+        elif prof != "any" and m["folder"] not in lint_area:
+            errs.append(f"{a}: profile '{prof}' but lint_spec.py AREA_PROFILE has no entry for '{m['folder']}'")
+        if ("full_mode_at" in m) != (m["folder"] in lint_full):
+            errs.append(f"{a}: `full_mode_at` and lint_spec.py FULL_MODE_FILES disagree on whether '{m['folder']}' has a decision mode")
         if m["kind"] in ("elicit", "derive", "model"):
             if not (ROOT / "skills" / m["skill"] / "SKILL.md").exists():
                 errs.append(f"{a}: skill '{m['skill']}' has no skills/{m['skill']}/SKILL.md")
@@ -87,19 +109,20 @@ def render(data):
     out.append("<!-- scope: the system's static skill-dependency graph | excludes: a project's runtime ID-reference graph (that is impact.py) | format: generated -->")
     out.append("# Dependency graph — what each area consumes & produces\n")
     out.append("**Generated from `grill-shared/dependencies.json` by `tools/gen_depgraph.py` — do not hand-edit.**")
-    out.append("The conductor reads the JSON to know, before running an area's skill, which upstream artifacts/IDs to gather and hand it. `Consumes` = the upstream areas it builds from; `Produces` = the stable-ID prefixes it mints.\n")
+    out.append("The conductor reads the JSON to know, before running an area's skill, which upstream artifacts/IDs to gather and hand it. `Consumes` = the upstream areas it builds from; `Produces` = the stable-ID prefixes it mints. `Profile` = the smallest project profile (lite < standard < regulated) the area belongs to — `optional` areas run only on request, `any` is profile-independent, and `standard*` marks a solution area that records decisions only until the project is `regulated`.\n")
 
     # table grouped by stage
     cur = None
-    out.append("| Area | Skill | Kind | Consumes (upstream) | Produces (IDs) |")
-    out.append("|---|---|---|---|---|")
+    out.append("| Area | Skill | Kind | Profile | Consumes (upstream) | Produces (IDs) |")
+    out.append("|---|---|---|---|---|---|")
     for a, m in ordered:
         if m["stage"] != cur:
             cur = m["stage"]
-            out.append(f"| **{STAGE_LABEL[cur]}** | | | | |")
+            out.append(f"| **{STAGE_LABEL[cur]}** | | | | | |")
         cons = ", ".join(m["consumes"]) or "—"
         prod = ", ".join(p + "-" for p in m["produces_ids"]) or "—"
-        out.append(f"| `{a}` | {m['skill']} | {m['kind']} | {cons} | {prod} |")
+        prof = m["profile"] + ("*" if "full_mode_at" in m else "")
+        out.append(f"| `{a}` | {m['skill']} | {m['kind']} | {prof} | {cons} | {prod} |")
 
     # mermaid DAG
     out.append("\n## Diagram\n")

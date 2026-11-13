@@ -1,45 +1,51 @@
 ---
 name: derive-security-architecture
 description: >-
-  Design authn/authz mechanisms, encryption, secrets and identity from the security requirements. Use when the security requirements exist and you need authn/authz, encryption and secrets mechanisms designed. Loads the shared derive engine.
+  Decide the security mechanisms — identity provider, authorization model and enforcement points, session and token design, key management and secrets — and at the regulated profile also the control register and supply chain. Use when the security requirements exist.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---
 
 # derive-security-architecture
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md` first and follow it.** This skill applies that method to **Security architecture** — authn/authz, encryption, secrets and identity.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md` first and follow it.** This skill applies that method to the **security architecture**: authentication, authorization, encryption, secrets and identity.
 
-## Method
-1. threat model — enumerate threats as a **per-element grid over the data-flow's trust boundaries → mitigating control** (each crossing × threat category → control; abuse cases → security tests)
-2. per authz rule + asset: the mechanism (enforcement point + ownership/tenant predicate)
-3. encryption (at rest/in transit + key management) → secrets management
-4. control mapping (OWASP Top-10 / ASVS level), extended to a national catalog (e.g. NIST CSF / 800-53) when the compliance area flags a jurisdiction
+## Depth by profile
+How much is written follows the project's profile:
 
-## Rules
-- every trust-boundary crossing × threat category maps to a control; every authz rule realised with its **enforcement point + ownership predicate**
-- a **zero-trust** posture is stated: per-request default-deny · least-privilege · assume-breach · no implicit trust in network location
-- token design conforms to **OAuth + OIDC (current best practice)** (PKCE · authorization-code flow · no implicit or resource-owner-password grants)
-- supply-chain targets a **build-provenance level (SLSA)** + signed-artifact attestation alongside SBOM/SCA
-- session/secrets/supply-chain/anti-automation/tenancy all addressed
-- controls mapped to OWASP/ASVS
+| Profile | Mode | Written |
+|---|---|---|
+| `lite` | N/A | nothing here — the sign-in and key-management choices are rows in `arch/solution-strategy.md`, the rest is in the conventions |
+| `standard` | decision mode | `authn-authz.md`, `crypto-secrets.md` |
+| `regulated` | full mode | those two plus `controls.md`, `supply-chain.md` |
+
+Decisions live in the spec; the description lives in the artifact that enforces it — here the authorization policy in code and the deny-path tests that exercise it — and once code exists they are the source of truth for the rule-by-rule control register. Decision mode therefore records only who authenticates users, where each authorization rule is enforced, how sessions and tokens work, and how keys and secrets are held; full mode also writes the register, because at `regulated` it is a deliverable auditors read.
+
+## Decision record
+`authn-authz.md`:
+- the identity provider — a vendor one-way door, so a ratify-point: propose a provider with a one-line reason and surface it as the engine describes;
+- the authorization model (RBAC/ABAC) and, for every `SEC-` authorization rule, its enforcement point and its ownership or tenant predicate. Authorization is default-deny: a request no rule allows is refused at the enforcement point;
+- session and token design — lifetime · refresh · revocation · storage · CSRF — and the limits on sign-in abuse (lockout, rate limit). Where the product uses OAuth or OIDC it follows current best practice: authorization-code flow with PKCE, no implicit or resource-owner-password grant.
+
+`crypto-secrets.md`:
+- encryption at rest and in transit, with key management (KMS · rotation · envelope encryption);
+- secrets handling — where secrets are stored, how they rotate, and that none lives in code or the repository.
 
 ## Output
-Written under `solution/security/`:
+Written under `solution/security/`. The rows marked `full` are written only at `regulated`; in decision mode their content is not raised.
 
-| File | Captures | Format |
-|---|---|---|
-| `controls.md` | threat grid (trust-boundary crossing × category → control) + zero-trust posture (per-request default-deny · least-privilege · assume-breach · no network-location trust) — per control: mechanism · maps-to(SEC-) (abuse cases → security tests) | grid + per control: mechanism · maps-to(SEC-) |
-| `authn-authz.md` | authn + identity/IdP (**the IdP is a vendor one-way-door ratify-point — propose a recommended provider + one-line why for the human to agree/override, never silently picked**); authorization model (RBAC/ABAC + enforcement points + ownership/tenant predicate); token design conforming to **OAuth + OIDC (current best practice)** (PKCE · authorization-code · no implicit/password grants · lifetime · refresh · revocation · storage · CSRF) | prose |
-| `crypto-secrets.md` | encryption at rest/in transit + key management (KMS/rotation/envelope); secrets management (vault · rotation · no-secrets-in-code) | typed fields |
-| `supply-chain.md` | supply-chain — **build-provenance level (SLSA)** + signed-artifact attestation · SCA · SBOM · pinned deps · anti-automation (lockout/rate-limit) · multi-tenancy isolation · control mappings (OWASP Top-10 / ASVS, + national catalog e.g. NIST CSF/800-53 when jurisdiction flagged) | prose |
+| File | Mode | Captures | Format |
+|---|---|---|---|
+| `authn-authz.md` | decision | the decision record above | enforcement table keyed on `SEC-`: rule · enforcement point · predicate; short prose for the rest |
+| `crypto-secrets.md` | decision | the decision record above | typed fields |
+| `controls.md` | full | the threat grid: each trust-boundary crossing of the data flow × threat category → the mitigating control (an abuse case becomes a security test) · the zero-trust posture: per-request default-deny, least privilege, assume-breach, no trust from network location | grid, then per control: mechanism · maps-to (`SEC-`) |
+| `supply-chain.md` | full | SBOM and dependency scanning · pinned dependencies · the build-provenance level (SLSA) with signed-artifact attestation · anti-automation · multi-tenancy isolation · control mappings (OWASP Top-10 and an ASVS level; a national catalog such as NIST CSF or 800-53 when the compliance area flags a jurisdiction) | short sections |
 
 ADRs → `adr/ADR-SEC-NNN.md`
-*(DERIVED & regenerate-only — never hand-edited)*
-Consumes: the security requirements (`SEC-` rules + trust boundaries + authz matrix) + the data-flow/architecture they sit on.
+Consumes: the security requirements (`SEC-` rules, trust boundaries, the authorization matrix) and the data flow and architecture they sit on.
 
 ## Excludes
-implementation code
+implementation code · in decision mode, the per-rule control register (the authorization policy and its deny-path tests state it)
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md`

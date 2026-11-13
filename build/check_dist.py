@@ -50,10 +50,10 @@ except (KeyError, IndexError, TypeError):
 
 standalone = sorted((DIST / "skills").glob("*/SKILL.md"))
 bundled = sorted((plugin / "skills").glob("*/SKILL.md"))
-if len(standalone) != 46:
-    fail(f"standalone skill count is {len(standalone)}, expected 46 workers")
-if len(bundled) != 47:
-    fail(f"marketplace skill count is {len(bundled)}, expected conductor + 46 workers")
+if len(standalone) != 39:
+    fail(f"standalone skill count is {len(standalone)}, expected 39 workers")
+if len(bundled) != 40:
+    fail(f"marketplace skill count is {len(bundled)}, expected conductor + 39 workers")
 
 portable_roots = [DIST / "skills", plugin]
 portable_roots.extend(p for p in (DIST / "plugins").glob("*") if p.is_dir())
@@ -145,15 +145,15 @@ for path in installers:
         if required not in text:
             fail(f"{path.relative_to(ROOT)}: shared hook/tool invariant missing {required!r}")
 
-guards = list(DIST.rglob("guard_derived.py"))
-if not guards:
-    fail("release contains no guard_derived.py")
-for path in guards:
+linters = list(DIST.rglob("lint_spec.py"))
+if not linters:
+    fail("release contains no lint_spec.py")
+for path in linters:
     text = path.read_text(encoding="utf-8")
-    if 'LOCK = os.path.join(".grillspec", "derived.lock")' not in text:
-        fail(f"{path.relative_to(ROOT)}: derived lock is not under .grillspec")
-    if 'CLAUDE_IMPORT = "@AGENTS.md\\n"' not in text:
+    if 'CLAUDE_IMPORT = "@AGENTS.md"' not in text:
         fail(f"{path.relative_to(ROOT)}: import-only CLAUDE.md invariant is absent")
+    if '".grillspec" / "project.json"' not in text:
+        fail(f"{path.relative_to(ROOT)}: project settings are not read from .grillspec/project.json")
 
 derive_guides = list(DIST.rglob("skills/derive-conventions/SKILL.md"))
 if not derive_guides:

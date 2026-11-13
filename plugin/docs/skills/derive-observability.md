@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Derive the observability design — SLOs/SLIs, telemetry, alerting, dashboards, runbooks — the basis for operating a real system. Use when the NFRs and architecture exist and you need operations designed.
+Decide the service-level objectives — each SLO with its SLI, objective and whether it pages — and at the regulated profile also the telemetry plan, alerting and runbooks. Use when the NFRs and architecture exist and the running system needs its operating targets.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

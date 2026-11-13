@@ -1,13 +1,27 @@
 # grill-go-to-market — worked example
 
-Launching a self-serve API analytics tool, motion already set to product-led:
-> **Agent:** Your ACV lands around $9k, but you've listed an outbound SDR team as the primary channel — at that ACV the CAC won't clear payback. I'd make **developer content + docs** primary and keep SDRs for expansion only. Who's the ICP — the developer or their VP?
+Illustrative: it shows the shape of the output, not a list to fill. A self-serve API analytics tool with a product-led motion; the user is planning launch spend.
+
+> **Agent:** Your ACV lands around $9k, but you list an outbound SDR team as the primary channel. At that ACV the acquisition cost will not pay back. I'd make developer content and docs primary and keep SDRs for expansion. Who is the ideal customer — the developer or their VP?
 > **User:** The developer adopts it; the VP approves the upgrade.
 
-Recorded:
-- `channels.md` — ICP: backend developer at a 20–200-eng SaaS company, champion = the dev, economic buyer = Eng VP. **Primary: developer content + docs SEO** (CAC ~$140, payback 2 mo, fits $9k ACV). **Secondary: open-source SDK** (CAC ~$90, payback 1.5 mo). **Tertiary: conference talks** (CAC ~$1.1k, payback 4 mo — flagged borderline at this ACV, capped at 15% of spend). SDR outbound dropped from primary: $6k blended CAC fails the ACV-band check.
-- `launch.md` — **Soft** (trigger: 50 design-partner installs; channel: private Slack; gate: <2% error rate). **Limited** (trigger: NPS ≥ 30; channels: Show HN + newsletter; enablement: quickstart + 3 sample repos; gate: docs coverage 100%). **GA** (trigger: 500 WAU; channels: paid search + lifecycle email; gate: status page + on-call live).
-- `partnerships.md` — Vercel (tech, marketplace listing → co-distribution, PLG-fit). Datadog (co-sell, shared dashboards → VP buyer reach, hybrid-fit). PostHog (channel, integration directory → top-of-funnel, PLG-fit).
-- PQL → sales hand-off: account hits **3 active projects AND 1M tracked events in 14 days** → routed to AE for the VP upgrade conversation.
+## Output — `channels.md`
+Ideal customer: a backend developer at a 20–200-engineer SaaS company; the engineering VP is the economic buyer.
 
-ADR: `adr/ADR-GTM-001.md` — demoted SDR outbound on ACV-band grounds.
+| channel | message | expected CAC | payback | ACV-band fit |
+|---|---|---|---|---|
+| developer content + docs SEO (primary) | "see every API call in five minutes" | ~$140 | 2 months | fits |
+| conference talks | case studies | ~$1.1k | 4 months | borderline; capped at 15% of spend |
+
+SDR outbound is not a channel: a blended CAC of about $6k fails the check against a $9k ACV (ADR-GTM-001).
+
+## Output — `launch.md`
+| tier | trigger | channels | readiness gate |
+|---|---|---|---|
+| soft | 50 design-partner installs | private Slack | error rate < 2% |
+| limited | NPS ≥ 30 | Show HN + newsletter | docs cover every endpoint |
+| GA | 500 weekly active users | paid search + lifecycle email | status page and on-call live |
+
+PQL → sales hand-off: an account with 3 active projects and 1M tracked events in 14 days is routed to sales.
+
+No partners yet, so `partnerships.md` was not written.

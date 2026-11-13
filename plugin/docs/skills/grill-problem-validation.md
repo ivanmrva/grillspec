@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the problem worth solving and score the riskiest bets — problem hypothesis, desirability/viability/feasibility bets scored criticality × uncertainty, value-proposition fit, and a PMF definition with the cheapest test per assumption. Runs first and never closes.
+Pin the problem worth solving and the risky bets behind it: the problem hypothesis, then each desirability, viability and feasibility bet with its criticality, status and cheapest test. Use at the start of a product and whenever new evidence changes a bet.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

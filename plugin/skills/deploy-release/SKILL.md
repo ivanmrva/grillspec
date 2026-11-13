@@ -1,42 +1,64 @@
 ---
 name: deploy-release
 description: >-
-  Promote a built increment through environments with an explicit rollout/rollback strategy and smoke-verify in the target. Use when a merged increment needs promoting to an environment. Loads the shared exec engine.
+  Promote a built increment along the project's promotion path — preflight, deploy through the pipeline, smoke-check, watch, roll back on breach — and prepare the production go/no-go for the human. Use when landed work needs to reach an environment. Loads the shared exec engine.
 disable-model-invocation: true
 argument-hint: a built increment to deploy
 ---
 
 # deploy-release
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill: **deploy & release to real environments**.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md` first and follow it.** This skill moves a built increment through real environments and confirms it is running there. It operates the pipeline the project already has; it changes no code and no spec.
+
+## How a deploy happens
+The promotion path — which environments exist, their order, and the gate at each hop — is the project's ratified decision, in `09-solution/infra-ops/topology.md` and `cicd.md` (on a `lite` project, in the solution strategy and the conventions). Follow it as written.
+
+The first hop follows the project's `delivery` setting (the engine's Delivery table): under `trunk` a push to the default branch deploys and is smoke-checked; under `pr` the merge of a green pull request does. Either way the smoke check against the deployed environment is the signal that it shipped.
+
+Later hops follow the gates in `cicd.md`. A hop marked automatic proceeds when its gate is green. Promotion to production is the human's decision: prepare the evidence, state your recommendation, and wait for an explicit go — unless the owner has ratified an auto-promote policy for that hop. The default to propose is automatic promotion between pre-production environments and a human go for production.
 
 ## Process
-1. **Verify release provenance first** — run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_release_attestation.py` (the build attestation is fresh — its `commit:` stamp matches HEAD — and deep enough for the target); then check the artifact's build-provenance level / attestation digest. Reject an unattested, stale, or digest-mismatched artifact.
-2. Promote as a **declarative, continuously-reconciled** change (desired revision → reconciler converges the environment); record the reconciled revision rather than hand-applying steps. Strategy: blue-green / canary / rolling.
-3. For canary/progressive rollout, gate promotion on a **metric gate** — explicit queries · thresholds · auto-promote/abort — not a prose "healthy signals" judgment.
-4. Keep deploy decoupled from release via feature flags — ship dark, enable separately.
-5. **Run `preflight` in the target environment before serving traffic** (required env vars present · dependencies reachable/authenticating · migrations applied · readiness `/readyz` green) — a failed preflight aborts the promotion; never deploy past a red preflight. Then post-deploy smoke checks + watch the relevant `SLO-`/alerts during rollout; roll back on breach per the defined procedure.
-6. Never hand-deploy outside the IaC/CD path. The deploy artifact is real or the promotion doesn't happen (the engine's production-only bar; `check_deploy_real.py`). An unreachable target environment (unprovisioned account, missing credential/DNS) is a blocking prerequisite to escalate (`_human-input.md` + `bootstrap.md` Phase B/C) — never silently skip it or report a deploy that didn't run.
-7. **Extend the setup runbook for this environment** — promoting to a *new* environment (esp. the first production push) fills `12-operate/bootstrap.md` Phases B/C by **composing the upstream requirement register (`infra-ops/prerequisites.md`) + config matrix (`infra-ops/environments.md`) into current-console, step-by-step actions**: this environment's distinct config keys, the prod-only prerequisites (DNS · certs · scale/residency · prod credentials), the go-live checklist, and day-2 (rotation/scale/new-env). `bootstrap.md` is the **single home of the click-by-click** (the register upstream states *what*/*who*; the runbook is *how*) — it stays a complete, current step-by-step an operator can follow without guessing, never a value, always where-to-set-it.
+1. **Identify the increment and the target.** The commit or version, the tasks it contains, and the target environment on the promotion path. Where the pipeline has a provenance or signing gate (a `regulated` project's pipeline hardening), confirm the artifact's attestation matches before promoting it.
+2. **Run `preflight` in the target before it takes traffic.** Required configuration present, dependencies reachable and authenticating, migrations applied, the readiness endpoint green. A red preflight stops the promotion: the environment is not what the artifact needs.
+3. **Deploy through the pipeline.** The pipeline is the description of how the system gets deployed; a hand-applied change leaves the environment in a state nothing describes and the next deploy may undo. `check_deploy_real.py` is the static check that the pipeline really deploys.
+4. **Check and watch.** Run the smoke checks, then watch the objectives and alerts the change could affect (`SLO-`) through the rollout. On a breach, roll back by the procedure `cicd.md` defines and report what happened.
+5. **Where the rollout is progressive, let the metric gate decide.** A canary is promoted or aborted by the queries and thresholds the pipeline names, not by a reading of a dashboard. Feature flags keep deploy and release separate: ship dark, enable as its own step.
+6. **Record what a later reader needs** (Output).
 
-## Rules
-- The release-readiness checklist is advisory for **pre-prod** environments — ship to dev/stage freely, an unmet item is a known risk. **A PRODUCTION promotion is a human go/no-go**, not auto-proceed: the metric gate decides canary *health*, but the business *go* to prod requires an **explicit human go — unless a once-ratified auto-promote policy exists** (recommended default to ratify: auto-promote dev→stage; require a human go for stage→prod). This is the deploy analogue of the data migration's owner-ratified cutover. **Never pass on (prod or not):** a missing rollback path · SLOs/alerts not in place · smoke checks failing · an artifact with no verified provenance.
-- **The FIRST production promotion passes a Production-Readiness Review (PRR) — a real gate, not a vibe.** A consolidated checklist that mostly *references* existing artifacts and adds the "verified/rehearsed, not just planned" bar: security review passed (no open blocking `SEC-`) · **rollback rehearsed** (not only designed) · **backups proven restorable** (a test-restore was run, not assumed) · DR mechanism exercised to its tier · SLOs + alerts confirmed **receiving data** in prod · `preflight` green · **`check_config_drift.py` clean** (the matrix matches what the code reads) · cost guardrails/anomaly alerts on · the day-2 runbooks exist. An unmet PRR item is **blocking for go-live**, surfaced for the human go/no-go — not silently shipped. **The PRR outcome is recorded in the deploy record's checklist-outcome field** (item × verified/unmet), so the gate leaves an auditable artifact (`check_operate_records.py` reconciles deploy records) instead of a vibe.
+An environment that cannot be reached — an account not provisioned, a missing credential or DNS record — is a blocker to escalate through `spec/_human-input.md`, with the provisioning steps in `12-operate/bootstrap.md`. Report the deploy as not run; a deploy that did not happen is never described as done.
+
+## Before the first production promotion: the readiness review
+The first promotion to production passes a production-readiness review. It mostly points at evidence that already exists and adds one bar: verified, not only planned. Include the items the product actually has:
+
+| Item | Verified means |
+|---|---|
+| system-suite results | the latest run's measured results against their bars (from the system-suite run), for this increment |
+| security | no open blocking finding against a `SEC-` rule |
+| rollback | rehearsed in a pre-production environment, not only designed |
+| backups and recovery | a test restore was run; the recovery mechanism was exercised to its tier |
+| observability | objectives and alerts are receiving data in production |
+| configuration | `preflight` green, and `check_config_drift.py` clean (the configuration matrix matches what the code reads) |
+| cost | guardrails and anomaly alerts are on, where the project set them |
+| operations | the day-2 steps exist in `bootstrap.md` |
+
+An unverified item blocks go-live and is put to the human with the go/no-go; it is not shipped silently. In pre-production environments the same list is advisory: ship freely there and report an unmet item as a known risk.
+
+In any environment, do not promote without a rollback path, with the smoke checks failing, or — where the project defines objectives — before their alerts exist.
+
+## A new environment: extend the setup runbook
+Promoting to an environment for the first time, production above all, fills in phases B and C of `12-operate/bootstrap.md` (the walking skeleton wrote phase A). Compose the prerequisites register and the configuration matrix (`infra-ops/prerequisites.md`, `environments.md`) into steps an operator can follow in the current consoles without guessing: this environment's distinct configuration keys, the production-only prerequisites (DNS, certificates, scale and residency, production credentials), the go-live checklist, and the day-2 steps (rotation, scaling, another environment). The register says what must exist and who owns it; the runbook is the only place that says how. It states where each value is set and never the value.
 
 ## Output
-Written under `12-operate/`:
+Written under `12-operate/`. These are dated operations records; write one when someone will read it, and keep it to what they need.
 
-| File / target | Captures | Format |
+| File | When | Captures |
 |---|---|---|
-| `deploy-<env>-<version>.md` | deploy record: what · env · version · provenance (level / attestation digest) · reconciled revision · rollout strategy + metric-gate verdict · **change-failed? (Y/N)** · **intervention (hotfix/rollback/forward)** · **recovery-time** · checklist outcome | — |
-| `bootstrap.md` (extend) | Phases B/C of the setup runbook for this environment — the **single click-by-click home**, composing the `prerequisites.md` register + `environments.md` matrix into current-console steps: prod-only prerequisites · this env's distinct config · go-live checklist · day-2 (rotation/scale/new-env) | followed step-by-step; never a value |
-| `production-readiness.md` (first prod promotion) | the PRR gate: each item · referenced artifact/evidence · verified? (rehearsed/test-restored, not just planned) · go/no-go verdict | checklist: item · evidence · status |
+| `deploy-<env>-<version>.md` | a production promotion, and any deploy that failed or was rolled back. Routine pre-production deploys are recorded by the pipeline's own history. | what was deployed · environment · version · the tasks it contains · rollout strategy and gate result · who gave the go · outcome. On a `regulated` project also provenance, and `change-failed` · `intervention` · `recovery-time`, which feed its delivery metrics. |
+| `production-readiness.md` | the first production promotion | the review above: item · evidence · verified? · and the go/no-go |
+| `bootstrap.md` (extend) | a new environment | phases B and C of the setup runbook |
+| `adr/ADR-REL-NNN.md` | a costly-to-reverse release decision | ADR |
 
-(the change-failed? / intervention / recovery-time fields feed a change-failure-rate + recovery-time rollup across deploys)
-
-ADRs → `adr/ADR-REL-NNN.md`
-(no spec/code changes — operates the running system)
-Consumes: the merged increment + `09-solution/infra-ops/` (environments + release/rollback strategy) + `09-solution/observability/` (`SLO-`, alerts) + the release-readiness checklist + **the latest Tier-B release verdict (`10-delivery/verification/test-run.md`) — a promotion with no persisted, met release verdict for the increment is promoting unverified**.
+Reads: the landed increment, the promotion path and rollback procedure, the objectives and alerts, and the latest system-suite results.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/exec-engine.md`

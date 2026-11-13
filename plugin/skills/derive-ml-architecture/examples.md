@@ -1,24 +1,30 @@
 # derive-ml-architecture — worked example
 
-**Upstream (settled):** `ML-002` "draft a reply to a customer support email"; target: ≥85% drafts need no edit, p95 < 4 s; generative + customer-facing.
+Illustrative: it shows the shape, not required content.
 
-Approach chosen on merit: **prompt + retrieval** over a hosted model (no labelled fine-tune set yet; knowledge changes weekly so retrieval beats baking it in).
+Upstream: `ML-002` "draft a reply to a customer support email"; target: at least 85% of drafts need no edit, p95 under 4 s; generative and customer-facing.
 
-Serving (`serving.md`):
-- model: hosted LLM behind an internal `DraftReply` contract · **sync** request/response · p95 budget 4 s
-- fallback: on timeout/eval-fail → return retrieved KB snippets + "agent to write manually" (never a hard dependency on one model)
+## Decision mode (`standard`)
 
-Eval gate — **evals gate promotion like tests gate code** (`eval-harness.md`):
-- offline set: 200 labelled tickets → metric `edit-free rate` (LLM-judge + human spot-check); **promote only if ≥85%** and no regression vs current prompt
-- online: 5% canary, auto-rollback if thumbs-down rate > 8%
+`serving.md` — ML-002:
+- approach: prompt + retrieval over a hosted model — no labelled set to fine-tune on, and the knowledge base changes weekly
+- serving: sync request/response behind an internal `DraftReply` contract; p95 budget 4 s
+- fallback: on timeout or a failed output check, return the retrieved knowledge-base snippets and let the agent write manually
+- guardrails: retrieved content is quoted, not obeyed; drafts containing another customer's data are blocked
 
-Guardrails — input **and** output, mandatory for generative (`guardrails.md`):
+`eval-harness.md` — ML-002:
+- offline: 200 labelled tickets → edit-free rate (LLM judge with human spot-check)
+- gate: promote only at ≥ 85% and no regression against the current prompt
+- online: 5% canary; automatic rollback above an 8% thumbs-down rate
+
+Whether ticket text may be sent to a hosted model is parked as a ratify-point (status: unconfirmed).
+
+## Full mode (`regulated`) adds
+
+A row in `guardrails.md`:
 
 | Direction | Control | Mechanism |
 |---|---|---|
-| input | prompt-injection defence | strip/quote retrieved content; instruction-hierarchy system prompt |
-| output | PII + safety filter | block drafts containing other customers' data; toxicity classifier → escalate to human |
+| output | PII and safety filter | block drafts with other customers' data; toxicity classifier → escalate to a human |
 
-Versioning (`model-registry.md`): prompt + model-id + retrieval-index hash are one pinned, provenance-tracked artifact `draft-reply@2026.06.1`; rollback = repoint the alias.
-
-Recorded: prompt+retrieval choice, sync serving with a degraded fallback, the ≥85% eval gate + canary for `ML-002`, input/output guardrails, the versioned/rollback-able artifact.
+`model-registry.md` pins prompt, model id and retrieval-index hash as one versioned artifact; rollback repoints the alias.

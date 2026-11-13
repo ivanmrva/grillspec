@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Design authn/authz mechanisms, encryption, secrets and identity from the security requirements. Use when the security requirements exist and you need authn/authz, encryption and secrets mechanisms designed.
+Decide the security mechanisms — identity provider, authorization model and enforcement points, session and token design, key management and secrets — and at the regulated profile also the control register and supply chain. Use when the security requirements exist.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

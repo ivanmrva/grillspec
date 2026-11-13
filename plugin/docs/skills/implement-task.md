@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Implement one prepared task as a minimal, tested vertical slice — tests first, within architecture boundaries, code in the source tree. Use when you have a prepared task (T-NNN) to build.
+Build one task as a minimal, tested vertical slice — tests first, inside the architecture's boundaries, code in the source tree. Use for a task brief (T-NNN), or a routine change that has none.
 
 ## What it needs (input)
 A task package and the code it touches.

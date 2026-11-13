@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Define what success means — a north-star metric with its input-metric tree, supporting success metrics, guardrail/counter-metrics, and pre-committed KILL-CRITERIA ('if not X by Y, we stop').
+Define what success means: a north-star metric with the levers that move it, supporting metrics and guardrails, and pre-committed kill-criteria ("if not X by Y, we stop"). Use when the product needs measurable goals and a stop rule.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.
