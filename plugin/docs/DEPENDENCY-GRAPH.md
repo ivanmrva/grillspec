@@ -48,17 +48,13 @@ The conductor reads the JSON to know, before running an area's skill, which upst
 | `implement-task` | implement-task | exec | any | derive-tasks, derive-architecture, derive-conventions, derive-impl-design | — |
 | **8 · Operate** | | | | | |
 | `deploy-release` | deploy-release | exec | any | derive-infra-ops, derive-observability | — |
-| `diagnose` | diagnose | exec | any | — | — |
 | `migrate-data` | migrate-data | exec | any | data-reqs, derive-data-architecture | — |
-| `operate-incident` | operate-incident | exec | any | derive-observability, derive-infra-ops | — |
 | **post-launch · Commercial** | | | | | |
 | `go-to-market` | grill-go-to-market | elicit | optional | product-vision | — |
 | `growth` | grill-growth | elicit | optional | goals, compliance, data-reqs | EXP- |
 | `monetization` | grill-monetization | elicit | optional | entitlements, product-vision, goals | — |
 | **Any stage** | | | | | |
-| `generate-docs` | generate-docs | publish | any | derive-functional, derive-api-contracts | — |
 | `generate-ui-prototype` | generate-ui-prototype | publish | any | ux-reqs, design-system, derive-functional | — |
-| `prototype` | prototype | validate | any | — | — |
 
 ## Diagram
 
@@ -115,9 +111,7 @@ flowchart TD
   end
   subgraph stage_8_operate["8 · Operate"]
     deploy_release["deploy-release"]
-    diagnose["diagnose"]
     migrate_data["migrate-data"]
-    operate_incident["operate-incident"]
   end
   subgraph stage_9_commercial["post-launch · Commercial"]
     go_to_market["go-to-market"]
@@ -125,9 +119,7 @@ flowchart TD
     monetization["monetization"]
   end
   subgraph stage_any["Any stage"]
-    generate_docs["generate-docs"]
     generate_ui_prototype["generate-ui-prototype"]
-    prototype["prototype"]
   end
   product_vision --> customer_discovery
   product_vision --> goals
@@ -224,8 +216,6 @@ flowchart TD
   derive_observability --> deploy_release
   data_reqs --> migrate_data
   derive_data_architecture --> migrate_data
-  derive_observability --> operate_incident
-  derive_infra_ops --> operate_incident
   product_vision --> go_to_market
   goals --> growth
   compliance --> growth
@@ -233,8 +223,6 @@ flowchart TD
   entitlements --> monetization
   product_vision --> monetization
   goals --> monetization
-  derive_functional --> generate_docs
-  derive_api_contracts --> generate_docs
   ux_reqs --> generate_ui_prototype
   design_system --> generate_ui_prototype
   derive_functional --> generate_ui_prototype

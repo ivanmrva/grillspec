@@ -252,7 +252,7 @@ _WORKFLOW_MD = """## The workflow (end to end)
 6. **Execution** - per task: `implement-task`, plus `conformance-review` in a fresh
    context for `critical` tasks. Asked to, it works the whole ready queue unattended. Code lives in the project source
    tree, never in the spec; done is checked against the tree by `check_task.py`.
-7. **Operate & maintain** - `deploy-release`, `migrate-data`, `operate-incident`, `diagnose`;
+7. **Operate & maintain** - `deploy-release`, `migrate-data`; incidents and hard bugs follow the engine;
    learnings feed back to discovery.
 
 Market, customer discovery, monetization, go-to-market and growth are optional and run only on request.

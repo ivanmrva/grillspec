@@ -2,7 +2,7 @@
 
 A plugin for Claude Code and Codex that helps you build software from a specification you can trust. It interviews you about what you want to build (or questions the documents you already have), writes down what the product must do and the decisions that are costly to reverse, breaks the work into tasks an agent can build one at a time, and then drives the coding test-first, checking each task against the code and tests. It keeps the spec as small as the project needs: a solo, pre-launch product gets a thin one.
 
-One conductor skill routes the work across 43 focused skills. Small tools check the spec's structure and whether a task that claims to be done really is.
+One conductor skill routes the work across 39 focused skills. Small tools check the spec's structure and whether a task that claims to be done really is.
 
 This directory is the authoring source. Release users install the bundle generated in `dist/marketplace/`.
 

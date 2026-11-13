@@ -86,7 +86,7 @@ The limit on autonomy is the spec, not the coding. A brief whose criteria carry 
 
 **Release and operate**
 - Run `audit-build` before a release. In `trunk` delivery this is also when the CI jobs that do not run on every push (security scan, accessibility, visual baseline, mutation) are run once.
-- `generate-docs` builds the documentation site from the spec; rebuild it when the spec changes.
+- `gen_docsite.py` renders the spec as a static site when someone outside the team needs to read it.
 - After a deploy, the smoke check against the deployed environment is the signal that it shipped.
 
 ## Models and cost

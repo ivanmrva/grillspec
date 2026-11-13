@@ -87,7 +87,7 @@ spec/
 │   ├── monetization/       grill-monetization            plans · prices                                    opt
 │   ├── go-to-market/       grill-go-to-market            channels · launch                                 opt
 │   └── growth/             grill-growth                  experiments (EXP-) · analytics events (AEV-)      opt
-└── 12-operate/             deploy-release · migrate-data · operate-incident · diagnose      dated operations records + bootstrap.md
+└── 12-operate/             deploy-release · migrate-data      dated operations records (deploys, migrations, incidents) + bootstrap.md
 ```
 
 Below `regulated`, a solution area other than the architecture is a **decision record**: what code cannot tell a reader and what is costly to reverse. The description — table definitions, endpoint shapes, control lists, pipeline detail — lives in the artifact that enforces it, and once code exists that artifact is its source of truth (`derive-engine.md`).

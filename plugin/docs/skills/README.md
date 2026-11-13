@@ -59,10 +59,6 @@ One guide per skill. Each is generated from the skill itself, so it always refle
 | [`audit-spec`](audit-spec.md) | audit-spec | `—` |
 | [`conformance-review`](conformance-review.md) | conformance-review | `—` |
 | [`deploy-release`](deploy-release.md) | deploy-release | `—` |
-| [`diagnose`](diagnose.md) | diagnose | `—` |
-| [`generate-docs`](generate-docs.md) | generate-docs | `—` |
 | [`generate-ui-prototype`](generate-ui-prototype.md) | generate-ui-prototype | `—` |
 | [`implement-task`](implement-task.md) | implement-task | `—` |
 | [`migrate-data`](migrate-data.md) | migrate-data | `—` |
-| [`operate-incident`](operate-incident.md) | operate-incident | `—` |
-| [`prototype`](prototype.md) | prototype | `—` |

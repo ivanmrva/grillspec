@@ -30,7 +30,7 @@ The prototype is rendered from the UX requirements and the design system, so a c
 - One slice's screens at a time. There is no global gallery to build: the overall structure is already the information architecture (navigation, layout, menus) and the design system.
 - The app shell — navigation and layout — is itself a slice, usually the walking skeleton, and its screen is prototyped the same way.
 - Self-contained HTML that opens without a build step (assets from a CDN are fine).
-- Not production code, not the design-system definition, not the UX requirements, and not an exploratory spike (`prototype` is the disposable kind).
+- Not production code, not the design-system definition, not the UX requirements, and not an exploratory spike (a throwaway that answers one question and is deleted).
 
 ## Output
 Written under `prototypes/ui/` at the repo root, outside `spec/`:

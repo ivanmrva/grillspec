@@ -41,6 +41,10 @@ When the spec is wrong, contradictory or silent for this slice:
 
 A request that arrives in chat mid-task is handled the same way: a behaviour change becomes an acceptance criterion in the spec and a test before it becomes code; new scope becomes a new brief; a rename or pure refactor just proceeds.
 
+Two situations need a different first move than writing a test:
+- **A bug that resists.** Before forming theories, build a fast, deterministic pass/fail signal for it — a failing test at the right seam, a scripted request, a bisection — and shrink it to the smallest case that still fails. A fix made without a reproduced signal is a guess. The fix itself is a `routine` change, and the signal stays behind as its regression test.
+- **An unknown only running code can settle** (will this state model hold, is this approach fast enough, does this flow work). Answer it with a throwaway spike under `prototypes/<question>/`: the least code that answers that one question, with no tests or structure. Record the answer where that kind of fact lives — the owning spec area, the task's design note, or an ADR — and delete the spike; it is not promoted into the source tree.
+
 ## Test-first, one behaviour at a time
 
 Build one thin vertical slice at a time, end to end (entrypoint → application → domain → persistence). Within it:

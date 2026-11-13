@@ -92,10 +92,9 @@ Each stage builds on the ones before it. "From" is the smallest profile that inc
 | 11 Commercial | `grill-monetization` · `grill-go-to-market` · `grill-growth` | optional | pricing and plans; channels and launch; experiments and analytics events |
 | Build | `implement-task` · `conformance-review` · `generate-ui-prototype` | any | working code, one vertical slice at a time |
 | Audit | `audit-spec` · `audit-build` | any | a report on the spec; a pre-release report on the build |
-| Publish | `generate-docs` | any | a documentation site built from the spec |
-| Operate | `deploy-release` · `migrate-data` · `operate-incident` · `diagnose` | any | deploys, migrations, incident and diagnosis records |
+| Operate | `deploy-release` · `migrate-data` | any | deploys and data migrations, with their records |
 
-`prototype` can run at any stage to answer one empirical question (is this feasible, does this flow work), after which the prototype is thrown away and the answer goes into the spec.
+At any stage, a question only running code can answer (is this feasible, does this flow work) is settled with a throwaway spike: the least code that answers it, after which the answer is recorded and the spike deleted.
 
 ## Decisions in the spec, descriptions in the code
 

@@ -566,52 +566,6 @@
       "method": "exec",
       "profile": "any"
     },
-    "operate-incident": {
-      "stage": "8-operate",
-      "skill": "operate-incident",
-      "folder": "12-operate",
-      "kind": "exec",
-      "consumes": [
-        "derive-observability",
-        "derive-infra-ops"
-      ],
-      "produces_ids": [],
-      "method": "exec",
-      "profile": "any"
-    },
-    "diagnose": {
-      "stage": "8-operate",
-      "skill": "diagnose",
-      "folder": "12-operate",
-      "kind": "exec",
-      "consumes": [],
-      "produces_ids": [],
-      "method": "exec",
-      "profile": "any"
-    },
-    "prototype": {
-      "stage": "any",
-      "skill": "prototype",
-      "folder": "prototypes/",
-      "kind": "validate",
-      "consumes": [],
-      "produces_ids": [],
-      "method": "exec",
-      "profile": "any"
-    },
-    "generate-docs": {
-      "stage": "any",
-      "skill": "generate-docs",
-      "folder": "docs-site/",
-      "kind": "publish",
-      "consumes": [
-        "derive-functional",
-        "derive-api-contracts"
-      ],
-      "produces_ids": [],
-      "method": "exec",
-      "profile": "any"
-    },
     "generate-ui-prototype": {
       "stage": "any",
       "skill": "generate-ui-prototype",

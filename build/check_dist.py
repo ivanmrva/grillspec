@@ -50,10 +50,10 @@ except (KeyError, IndexError, TypeError):
 
 standalone = sorted((DIST / "skills").glob("*/SKILL.md"))
 bundled = sorted((plugin / "skills").glob("*/SKILL.md"))
-if len(standalone) != 43:
-    fail(f"standalone skill count is {len(standalone)}, expected 43 workers")
-if len(bundled) != 44:
-    fail(f"marketplace skill count is {len(bundled)}, expected conductor + 43 workers")
+if len(standalone) != 39:
+    fail(f"standalone skill count is {len(standalone)}, expected 39 workers")
+if len(bundled) != 40:
+    fail(f"marketplace skill count is {len(bundled)}, expected conductor + 39 workers")
 
 portable_roots = [DIST / "skills", plugin]
 portable_roots.extend(p for p in (DIST / "plugins").glob("*") if p.is_dir())

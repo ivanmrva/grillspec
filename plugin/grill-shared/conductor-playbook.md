@@ -50,7 +50,7 @@ Edge cases are found in four places, each with its own mechanism:
 3. Behavioural edges — test design: boundary values, equivalence classes, properties. A failing property with no rule behind it raises a gap upstream.
 4. The rest — production, fed back as new gaps and bets.
 
-No artifact is final while it carries an `UNRESOLVED` gap, and no task is coded past a gap it needs; the task brief is the last point before code where a carried gap is forced to a decision. An unknown that asking cannot settle — does this state model hold, is this approach feasible, does this flow work — is answered by a throwaway spike (`prototype`); its verdict lands in the artifact, a bet status, or an ADR.
+No artifact is final while it carries an `UNRESOLVED` gap, and no task is coded past a gap it needs; the task brief is the last point before code where a carried gap is forced to a decision. An unknown that asking cannot settle — does this state model hold, is this approach feasible, does this flow work — is answered by a throwaway spike (the exec engine says how); its verdict lands in the artifact, a bet status, or an ADR.
 
 ## Changing already-built work
 When the impact set includes a task that is done:
@@ -69,5 +69,5 @@ If the slice is not yet built, regenerate and continue; if it is built, follow "
 Delivery does not end when code lands.
 - **Deploy and release** (`deploy-release`) — promote a built increment along the project's promotion path with a rollback path, and verify it with the smoke check in the target environment.
 - **Data migration** (`migrate-data`) — owed whenever a change alters stored data; a schema change with no migration is a data-loss bug.
-- **Incidents** (`operate-incident`) — work the incident, then capture what it taught as a gap or a bet in the owning area, and as a new gate when a rule would have prevented it. This is how production feeds discovery.
+- **Incidents** — restore service first and understand it second. Keep a dated record under `12-operate/` when someone will read it later (a production incident, a fault likely to recur). Then capture what it taught as a gap or a bet in the owning area, and as a new gate when a rule would have prevented it. This is how production feeds discovery.
 - **Maintenance** — dependency and security patching, deprecations, debt paydown: each is a focused change, usually `routine`.

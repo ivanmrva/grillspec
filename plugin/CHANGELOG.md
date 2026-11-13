@@ -67,13 +67,17 @@ reader who has not seen the conversation.
   brief, removes the ledger, the locks and dangling host links, vendors the current tools, and lists
   the linter's findings by check. Finished briefs are exempt from the tier and self-contained-brief
   checks.
-- **Three skills merged away (44 skills, down from 47).** `run-tests` repeated the last step of
+- **Seven skills merged away (40 skills, down from 47).** `run-tests` repeated the last step of
   `implement-task`; its judgments about test level and what a test must assert now live in the exec
   engine, and the system-suite run belongs to `audit-build` and `deploy-release`.
   `generate-api-reference` is a section of `generate-docs`.
   `autorun` restated the exec engine: working a queue unattended is the single-task loop repeated,
   so its few specific rules (what counts as ready, ordering by delivery mode, held-out criteria on
   reviewed tasks) are a short section of the engine.
+  `diagnose` and `prototype` described what a current model does unprompted; the two rules worth
+  keeping (reproduce a hard bug before theorising; answer an empirical unknown with a throwaway spike
+  and delete it) are in the exec engine. `operate-incident` is a paragraph of the playbook.
+  `generate-docs` is replaced by a pointer to `gen_docsite.py`, which renders the spec as a site.
 - **Skill instructions rewritten** against Anthropic's prompt-audit guidance: prohibitions kept only
   where the failure is real and stated with its reason, emphasis reserved for terms and IDs, long
   accreted bullets split into a rule and its reason, each skill's depth stated per profile, and output

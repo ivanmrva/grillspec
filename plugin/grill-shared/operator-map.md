@@ -26,9 +26,9 @@ Recommend the smallest profile that fits and say what would justify the next one
 ## The flow
 Square brackets mark what `standard` adds to `lite`.
 
-`problem-validation` → `product-vision` → `constraints` [`goals` · `system-context`] → `ddd` → `derive-functional` → `quality` [`data-reqs` · `security-reqs` · `compliance` · `entitlements` · `integration-reqs` · `ml-reqs` for an AI product] [`design-system` → `ux-reqs` for a UI product] → *architecture-readiness* → `derive-architecture` [the seven further solution areas] → *implementation-readiness* → `derive-conventions` → `derive-tasks` → *delivery-readiness* → per task: `implement-task` (→ `conformance-review` for a `critical` task), or every ready task unattended (the exec engine's queue rules) → before a release: `audit-build` → `deploy-release` → operate (`migrate-data` · `operate-incident` · `diagnose`).
+`problem-validation` → `product-vision` → `constraints` [`goals` · `system-context`] → `ddd` → `derive-functional` → `quality` [`data-reqs` · `security-reqs` · `compliance` · `entitlements` · `integration-reqs` · `ml-reqs` for an AI product] [`design-system` → `ux-reqs` for a UI product] → *architecture-readiness* → `derive-architecture` [the seven further solution areas] → *implementation-readiness* → `derive-conventions` → `derive-tasks` → *delivery-readiness* → per task: `implement-task` (→ `conformance-review` for a `critical` task), or every ready task unattended (the exec engine's queue rules) → before a release: `audit-build` → `deploy-release` → operate (`migrate-data` when stored data changes).
 
-Available at any point: `prototype` (answer one empirical question), `audit-spec`, `generate-docs`.
+Available at any point: `audit-spec`.
 
 The three gates in italics are readiness signals, not locks, and count only in-profile areas. They tell the user when downstream work can be trusted; a skill run early still produces an ordinary artifact that later changes will update.
 
@@ -55,10 +55,8 @@ A skill runs when its situation arises. Most are never loaded in a given week, a
 | `derive-impl-design` · `conformance-review` | for each `critical` task | for each `critical` change |
 | `implement-task` | every task; also the whole ready queue, unattended | every change |
 | `generate-ui-prototype` | each new screen | each new or reshaped screen |
-| `prototype` · `diagnose` | when an unknown needs running code; when a bug resists | the same |
-| `migrate-data` · `deploy-release` · `operate-incident` | when a slice changes stored data; at each promotion; when production breaks | the same |
+| `migrate-data` · `deploy-release` | when a slice changes stored data; at each promotion | the same |
 | `audit-spec` · `audit-build` | before the build starts; before a release | after adoption or when the spec has drifted; before a release |
-| `generate-docs` | when someone outside the team needs a documentation site | the same |
 
 ## Tasks, tiers and done
 A task is one brief, `spec/10-delivery/tasks/T-NNN.md`: a `field | value` table an agent can build from without chasing IDs, because its acceptance criteria carry their text.
