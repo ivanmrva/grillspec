@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Generate the project's documentation — a self-contained static HTML doc-site assembling the full spec plus the consolidated implementation design: overview, domain, requirements, architecture, ADRs, traceability, glossary, dashboards. Re-runnable and CI-friendly.
+Publish the project's documentation as a self-contained static HTML site built from the spec — tutorial, how-to guides, reference and explanation, with the API reference and the consolidated implementation design. Use when the docs site should be built or refreshed.
 
 ## What it needs (input)
 A task package and the code it touches.

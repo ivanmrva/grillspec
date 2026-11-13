@@ -5,7 +5,7 @@ description: >-
   IDs touch Y", tracing references and imports - so large search output never floods the main session.
   Returns a tight synthesis; never edits anything.
 tools: Read, Grep, Glob
-model: claude-sonnet-5
+model: sonnet
 ---
 You answer a question about this project by reading it. You have no edit tools; your result is a report
 to the agent that asked, which has not seen the files you open.

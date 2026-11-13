@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Run a task's suite and gate on it — suite green, every acceptance criterion exercised at the right level, coverage met. Use when a task's code is written and you need to verify it.
+Run a task's tests and the project's gate and report whether the slice is proven — every acceptance criterion exercised at the right level, bars met. Use when a task's code is written, or for the system suite before a release.
 
 ## What it needs (input)
 A task package and the code it touches.

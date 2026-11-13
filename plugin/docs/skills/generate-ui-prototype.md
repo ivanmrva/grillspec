@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Generate a clickable HTML prototype of a UI slice's screens from the real design-system tokens and components, every interaction state included — produced and frozen at task finalization as the coding task's visual reference.
+Build a clickable HTML prototype of a UI slice's screens from the real design-system tokens and components, every interaction state included — the visual reference the coding task builds against, reviewed by a human before the build.
 
 ## What it needs (input)
 A task package and the code it touches.

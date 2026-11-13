@@ -22,7 +22,7 @@ SHARED_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/grill-shared/")
 TOOL_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/tools/")
 DOC_PREFIX = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/docs/")
 PORTABLE_TOOLS = (
-    "check_orphan_tests.py", "check_task.py", "gate_exec.py",
+    "check_contracts.py", "check_orphan_tests.py", "check_task.py", "gate_exec.py",
     "impact.py", "install_exec_gates.py", "lint_spec.py",
     "plugin_feedback.py", "project_config.py", "tier_contract.py",
 )

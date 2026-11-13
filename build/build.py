@@ -64,7 +64,7 @@ DOC_PREFIX    = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/docs/")
 # referenced by the skill profiles and shared engines. At 160 KB total, bundling the set into a
 # skill that needs tooling is smaller and safer than maintaining a fragile Python-import resolver.
 PORTABLE_TOOLS = (
-    "check_orphan_tests.py", "check_task.py", "gate_exec.py",
+    "check_contracts.py", "check_orphan_tests.py", "check_task.py", "gate_exec.py",
     "impact.py", "install_exec_gates.py", "lint_spec.py",
     "plugin_feedback.py", "project_config.py", "tier_contract.py",
 )
@@ -233,23 +233,30 @@ Source lives under `plugin/` - skills in `plugin/skills/`, the three method engi
 artifact. Add or remove cluster plugins via the `CLUSTERS` dict in `build/build.py`.
 """
 
-_WORKFLOW_MD = """## The workflow (full system, end to end)
+_WORKFLOW_MD = """## The workflow (end to end)
 
-1. **Discovery & foundation** - `grill-problem-validation`, `grill-product-vision`, and the other
-   `grill-*` skills interview you into vision, customers, market, goals, and context.
+0. **Settings** - the conductor asks two things once and writes `.grillspec/project.json`: the
+   **profile** (`lite`, `standard`, `regulated` - how much spec the project carries) and the
+   **delivery mode** (`trunk` or `pr` - how work lands). It recommends the smallest profile that fits.
+1. **Discovery & foundation** - `grill-problem-validation`, `grill-product-vision`, `grill-constraints`
+   and, from `standard`, goals and system context capture what only you know.
 2. **Domain model** - `grill-ddd` builds the Domain-Driven Design model (the hub).
-3. **Requirements** - `derive-functional` projects use-cases/acceptance from the model; the `grill-*`
-   requirement skills add quality, data, integration, security, UX, and compliance.
-4. **Architecture-readiness gate -> solution** - the `derive-*` skills generate architecture, data,
-   API, security, infra/ops, observability, test strategy, and per-module design from the spec.
-5. **Delivery prep** - `derive-conventions` + `derive-tasks` produce the build runway and an acyclic
-   task DAG (walking-skeleton first).
-6. **Execution loop** - per task: `implement-task` -> `run-tests` -> `conformance-review` (or
-   `autorun` for the whole queue). Code lives in the project source tree, never in the spec.
+3. **Requirements** - `derive-functional` projects use-cases and acceptance criteria from the model;
+   the requirement skills the profile includes add quality, data, integration, security, compliance,
+   entitlements, ML and UX.
+4. **Solution** - `derive-architecture` sets strategy, stack and the module map. From `standard` the
+   other solution skills record the decisions code cannot state; their full descriptive output is for
+   `regulated` projects.
+5. **Delivery prep** - `derive-conventions` + `derive-tasks` produce the gate, the agent guide and
+   short task briefs, each with a risk tier (walking skeleton first).
+6. **Execution** - per task: `implement-task` -> `run-tests`, plus `conformance-review` in a fresh
+   context for `critical` tasks (or `autorun` for the whole queue). Code lives in the project source
+   tree, never in the spec; done is checked against the tree by `check_task.py`.
 7. **Operate & maintain** - `deploy-release`, `migrate-data`, `operate-incident`, `diagnose`;
    learnings feed back to discovery.
 
-The conductor enforces the ordering and the readiness gates; any skill can also be run directly.
+Market, customer discovery, monetization, go-to-market and growth are optional and run only on request.
+The conductor keeps the ordering and the readiness gates; any skill can also be run directly.
 """
 
 def master_guide(names):
@@ -257,8 +264,8 @@ def master_guide(names):
 
 Spec-driven engineering for Claude Code and Codex: interview an idea (or existing docs) into a complete
 Domain-Driven Design spec, derive the architecture and task breakdown from it, then run the build
-loop. One conductor orchestrates {len(names)} worker skills; deterministic tools keep the spec
-consistent. Apache-2.0 (system) / MIT (public skills).
+loop. One conductor orchestrates {len(names)} worker skills; a project profile keeps the spec as small
+as the product needs, and deterministic tools keep the spec and the build honest. Apache-2.0 (system) / MIT (public skills).
 
 This guide covers **how to generate** every artifact and **how to use** each one.
 

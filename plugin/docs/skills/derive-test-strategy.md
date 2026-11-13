@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Derive the two-tier test architecture — levels, coverage, traceability — and make testing an active edge-case discovery engine, not just verification. Use when the spec exists and you need the test strategy defined.
+Decide the test strategy — the tier contract: what each tier covers, runs real, may mock, where it runs, and its coverage and mutation bars; at the regulated profile also traceability, edge discovery, NFR evidence and test data. Use when the spec and architecture exist.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

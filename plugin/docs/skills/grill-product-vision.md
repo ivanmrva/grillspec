@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Define the product in plain language — value proposition, one-line positioning with differentiation, coarse scope with explicit non-goals, MVP/near/deferred phasing, and the go-to- market motion (PLG vs sales-led), the early fork that shapes onboarding, billing and auth.
+Define the product in plain language: the value proposition, a coarse scope with explicit non-goals, MVP/near/deferred phasing, and the go-to-market motion (self-serve or sales-led) that shapes onboarding, billing and auth. Use when starting a product or re-cutting its scope.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

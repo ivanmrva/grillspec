@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Build the threat model — assets, trust boundaries, threat actors, the authorization policy (actors × commands, default-deny), and audit/privacy obligations. Use when you need the threat model, not the mechanisms.
+Set the security and privacy requirements: the authorization policy (who may run which command, default-deny), the product-specific threats with a control or accepted risk each, and the audit obligations. Use when you need the rules and the threat model, not the mechanisms.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

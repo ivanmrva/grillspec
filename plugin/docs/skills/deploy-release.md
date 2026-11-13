@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Promote a built increment through environments with an explicit rollout/rollback strategy and smoke-verify in the target. Use when a merged increment needs promoting to an environment.
+Promote a built increment along the project's promotion path — preflight, deploy through the pipeline, smoke-check, watch, roll back on breach — and prepare the production go/no-go for the human. Use when landed work needs to reach an environment.
 
 ## What it needs (input)
 A task package and the code it touches.

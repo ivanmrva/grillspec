@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the requirements for an AI/ML capability — what the model must do and how well, evaluation criteria, training/feedback data, confidence and fallback bars, human-in-the-loop points, and responsible-AI obligations. Use when the product embeds ML/LLM behaviour.
+Pin the requirements for an AI/ML capability: what the model must do and how well, the eval that gates activation, the confidence threshold with its fallback, and where a human reviews. Use when the product embeds ML or LLM behaviour.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

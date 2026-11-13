@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-The whole-build audit — the independent, release-time attestation that the BUILD followed the spec's declared process: the evidence ledger really ran, cross-task emergent properties hold, the operate ledger reconciles. Distrusts per-task self-reports by design; report-only, no fix mode — fixes route to the task machinery, then a fresh re-audit.
+Check the whole build against the spec before a release, from the tree: done-claims hold, every acceptance criterion still has a real test, nothing faked or skipped ships. Short at the lite and standard profiles, exhaustive at regulated. Report-only.
 
 ## What it needs (input)
 A task package and the code it touches.

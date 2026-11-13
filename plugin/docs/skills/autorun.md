@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Autonomous AFK driver for the coding phase — runs the per-task implement → done-gate → conformance loop across the task DAG in parallel, self-correcting to green, merging on green, parking true HITL blockers.
+Unattended driver for the coding phase — works the build order one task at a time (or in parallel waves under pr delivery), drives each task to a green gate, lands it, and parks what needs a human.
 
 ## What it needs (input)
 A task package and the code it touches.

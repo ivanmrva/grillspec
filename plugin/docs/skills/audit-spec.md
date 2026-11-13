@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Audit an EXISTING spec for completeness, consistency, contradictions, and whether a coding agent can build it without guessing — the judgment layer above the mechanical tools. Report-only by default; --fix remediates in-session, --loop converges to zero findings. Only --depth full declares code-gen readiness.
+Audit an existing spec for consistency, completeness against its project profile, leanness, and whether an agent can build from it without guessing — the judgment above the linter. Report-only by default; --fix remediates, --loop repeats until a pass finds nothing.
 
 ## What it needs (input)
 A task package and the code it touches.

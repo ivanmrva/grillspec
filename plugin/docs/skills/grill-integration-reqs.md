@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Per external boundary, specify each exchange — direction, interaction style, volumes, latency, SLA, delivery guarantee with idempotency/ordering/retry/DLQ/replay, failure and degradation behaviour, reconciliation, auth. Use once the boundary roster exists.
+Specify what each external seam must guarantee: direction, interaction style, volumes, SLA, delivery guarantee with idempotency, ordering and retry, failure behaviour and reconciliation. Use once the boundary interfaces are listed and a seam carries money, a delivery guarantee or a quota.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

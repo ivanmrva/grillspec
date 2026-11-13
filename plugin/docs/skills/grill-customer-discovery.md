@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin who the product is for — target market and segments, personas with the B2B decision-making unit, and the jobs-to-be-done behind each; flags which personas are system users, seeding the shared actor roster.
+Pin who the product is for: the target segments, behavioural personas with the B2B buying roles, and the job-to-be-done behind each. An optional strategy area; use only when the user asks for segment or persona work.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

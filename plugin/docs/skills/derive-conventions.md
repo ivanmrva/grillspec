@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Derive the coding agent's standards and runway from the architecture — style, boundary rules as fitness checks, workflow, build/run/test/lint commands, Definition of Done — generating canonical root AGENTS.md plus an import-only CLAUDE.md adapter.
+Derive the coding agent's standards and runway from the architecture — style, boundary rules as enforceable checks, the delivery workflow, the one gate command, the definition of done — and write the root AGENTS.md agent guide with its import-only CLAUDE.md adapter.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

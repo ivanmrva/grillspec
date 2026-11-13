@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Derive the solution architecture from the settled spec — style, C4 decomposition, tech stack, contexts→services, cross-cutting concerns, the module map and seam contracts, and the key sequences.
+Derive the solution architecture from the settled spec — the load-bearing decisions, the tech stack and the module map with its seam contracts; above the lite profile also C4, services, quality tactics and key sequences. Use when the domain model and requirements exist.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

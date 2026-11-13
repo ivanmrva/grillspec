@@ -145,6 +145,9 @@ def main():
     check("installer vendored check_orphan_tests.py + its tier_contract.py helper",
           (fresh / ".grillspec" / "tools" / "check_orphan_tests.py").is_file()
           and (fresh / ".grillspec" / "tools" / "tier_contract.py").is_file())
+    check("installer vendored the spec pre-commit hook and the checks it runs",
+          all((fresh / ".grillspec" / "tools" / f).is_file()
+              for f in ("lint_spec.py", "check_contracts.py", "project_config.py", "spec_governance_hook.sh")))
     check("Claude hook targets shared gate",
           any(h.get("command") == 'python3 "$CLAUDE_PROJECT_DIR/.grillspec/tools/gate_exec.py" --hook'
               for b in blocks for h in b.get("hooks", [])))

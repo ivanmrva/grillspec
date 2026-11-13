@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Build a throwaway prototype to answer ONE open question empirically — a runnable terminal app for state/logic, or toggleable UI variations for design. Use when running code settles it better than discussing.
+Build a throwaway prototype to answer one open question empirically — a runnable terminal app for state or logic, or toggleable UI variations for design. Use when running code settles it better than discussing.
 
 ## What it needs (input)
 A task package and the code it touches.

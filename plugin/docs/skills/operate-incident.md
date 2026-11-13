@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Triage a production incident via runbooks, mitigate, and capture every learning as a new assumption or gap that propagates upstream. Use during or just after an incident.
+Work a production incident — triage, restore service by the runbook, keep the timeline, find the root cause, and turn what was learned into a fix and a spec change. Use during or just after an incident.
 
 ## What it needs (input)
 A task package and the code it touches.

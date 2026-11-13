@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-The post-task review of generated code against OUR spec — run after each task, before the next. Lens A: conformance vs spec/architecture/contracts/security/NFR-evidence/traceability (blocking); Lens B: design health (advisory). Its VERDICT becomes the task's conformance gate row.
+Independent, fresh-context review of a task's code against the spec. Required for critical tasks; also on request or as a wider re-check. Lens A (blocking) — boundaries, contracts, data, security, NFR evidence, rendered UI. Lens B (advisory) — design health.
 
 ## What it needs (input)
 A task package and the code it touches.

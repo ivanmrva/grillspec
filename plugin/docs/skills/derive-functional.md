@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Project the domain model into use-cases (commands × actors × flows) and testable acceptance criteria (invariants/rules/specs/policies). Use when the domain model exists and you need use-cases plus acceptance criteria projected from it.
+Project the domain model into use-cases and testable Given/When/Then acceptance criteria — the acceptance layer that tasks and tests key on. Use when the domain model exists and the functional spec is missing or behind it.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

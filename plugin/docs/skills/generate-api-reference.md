@@ -5,7 +5,7 @@
 *Build / verify skill — it does work in your repo (no interview).*
 
 ## What it does
-Generate API reference docs from the API-/EVT- contracts — endpoints, schemas, auth, errors, examples — as static HTML. Embedded in the doc-site or standalone.
+Publish API reference docs as static HTML from the API and event contracts — endpoints, schemas, auth, errors, examples, deprecations. Use when the API reference should be built or refreshed, on its own or inside the docs site.
 
 ## What it needs (input)
 A task package and the code it touches.

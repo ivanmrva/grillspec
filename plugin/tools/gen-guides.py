@@ -24,19 +24,20 @@ CONDUCTOR_BLURB = """# Spec conductor — user guide
 {desc}
 
 ## When to use it
-When you want the full system to drive end to end. It picks the next area, **hands each worker its input and its exact target slot** in the `spec/` tree, then reads each worker's output to reconcile cross-area views, runs the linter + derived-guard, checks cross-area consistency, and propagates changes downstream. Use a worker skill directly instead when you only want one artifact.
+When you want the full system to drive end to end. It picks the next area, **hands each worker its input and its exact target slot** in the `spec/` tree, then reads each worker's output to reconcile cross-area views, runs the linter, checks cross-area consistency, and propagates a change to what depends on it. Use a worker skill directly instead when you only want one artifact.
 
 ## What it needs
-A working repo. On start it runs the linter, scans the tree, and offers a **menu of next actions** (recommended next area, resume, fix cross-area issues, test the riskiest assumption, …). It never starts an area you didn't pick.
+A working repo. On the first session it asks for the project's profile and delivery mode and recommends the smallest profile that fits. On start it runs the linter, scans the tree, and offers a **menu of next actions** (recommended next area, resume, fix cross-area issues, test the riskiest assumption, …). It never starts an area you didn't pick.
 
 ## How to run it
 Use `/grillspec:grill-spec-conductor` in Claude Code or `$grillspec:grill-spec-conductor` in Codex, then choose from the menu — or state your goal and let it route.
 
 ## How to tell it did its job  *(verification)*
 - It never silently starts an area you didn't choose.
-- The linter (`lint_spec.py`) is green; the derived-guard blocks hand-edits to generated artifacts.
-- The three gates (architecture-, implementation-, delivery-readiness) are respected, not skipped.
-- The `spec/` tree stays stage-pure (one leaf folder per skill) and cross-area references resolve.
+- The linter (`lint_spec.py`) is green, including the profile and timeless checks.
+- It recommends the smallest next step and offers optional areas only when asked.
+- The readiness gates (architecture, implementation, delivery) are respected and count only in-profile areas.
+- The `spec/` tree stays one leaf folder per skill and cross-area references resolve.
 """
 
 def catalog(rows):

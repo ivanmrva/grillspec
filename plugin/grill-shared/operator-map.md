@@ -1,117 +1,83 @@
 # Operator map — how to drive this system (one page)
 
-## Start here (the 60-second version)
-You drive this from Codex or Claude Code by invoking the **`grill-spec-conductor`** — it scans state and tells
-you the few sensible next moves. You don't memorise the skills; the conductor routes. Loop:
-**(1)** open a session → ask the conductor "what's next?"; **(2)** it hands you one area/skill; **(3)**
-answer its questions or let it derive; **(4)** it auto-propagates and updates the dashboards; repeat.
-Small project? say so — it offers the **lite path**. Just changing one thing? that's **focused-change**.
-Want to see an artifact early? just run its skill (gates don't block — see below). Everything you
-produce is normal git content; consistency is kept by the linter + propagation.
+## Start here
+The user drives everything through `grill-spec-conductor`. It reads the state of the spec and offers the few sensible next moves; nobody has to memorise the skills. The loop: open a session and ask the conductor what is next → it names one area or task → the user answers its questions, or it derives → it carries the change to whatever depends on it. Any skill can also be run directly, for example to see an artifact early.
 
-## The standard flow (greenfield)
-`discovery` → `product-vision` → (`market` · `customer-discovery` · `goals` · `constraints` · `system-context`) → `ddd` (the hub)
-→ `derive-functional` → requirements (`quality` · `data-reqs` · `integration-reqs` · `security-reqs` ·
-`compliance` · `entitlements` · `ml-reqs`) → `design-system` (L3) → `ux` (L4) →
-[`commercial` · `gtm` · `growth` when ready] → **[architecture-readiness]**
-→ solution (`derive-architecture` · `-data` · `-api` · `-security` · `-infra-ops` · `-observability` ·
-`-test` · `-impl`) → **[implementation-readiness]** → delivery prep (`derive-conventions` →
-`derive-tasks`) → **[delivery-readiness]** → per task: `implement-task` → `run-tests` → `conformance-review` (or **`autorun`** for the whole AFK-eligible set, autonomously — see `WORKING.md`)
-→ (branch → MR → CI → merge → deploy dev → e2e pipeline) → **(release: run `audit-build --deep` for the independent whole-build attestation + the release gate `check_release_attestation --require-deep --require-fresh`, then your call — consult the readiness checklist)** → operate
-(`deploy-release` · `migrate-data` · `operate-incident` → `diagnose`) + maintain (focused changes).
-Always available: **`prototype`** (answer one empirical question) · **`generate-docs`** (publish the project site).
+One principle sizes everything: an area, a file, a rule or a gate earns its place by having a reader — a later step, a tool, or a person who will act on it. What has no reader is not written.
 
-## Entry modes (you choose)
-- **greenfield** (full walk) · **focused-change** (fast path: enter at the one artifact that changes,
-  auto-propagate over the minimal subgraph) · **brownfield-import** (reverse-derive from existing code)
-  · **lite path** (tiny product: `discovery` + `product-vision` + `ddd` + a merged `quality`/`constraints`
-  note + minimal `09-solution/arch`; everything else N-A until warranted).
+## Project settings
+Two settings in `.grillspec/project.json`, asked once by the conductor and read by the tools that scale with them (print them with `python3 ${CLAUDE_PLUGIN_ROOT}/tools/project_config.py`). With no file the tools assume `regulated` and `pr`.
 
-## Gates are readiness signals, not locks
-Skills are independently invocable — run any derive/exec skill whenever you want (including early, to
-preview output). What you produce is a normal git artifact; if its upstream later changes, the usual
-propagation + linter keep it consistent. No special status, no extra steps.
+| `profile` | Spec the project carries | For |
+|---|---|---|
+| `lite` | problem · vision · constraints · domain · functional spec · quality · architecture · conventions · tasks | a solo or pre-launch product |
+| `standard` | `lite` plus goals · system context · data · security · compliance · entitlements · integration · ML (AI products) · design system and UX (UI products); each further solution area as a short decision record | personal data, money, paid tiers, or an AI capability whose quality must be gated |
+| `regulated` | every area, the solution areas written in full | the documents are themselves a deliverable (an auditor, a regulator, another team) |
 
-## Which record does a fact belong in? (route here — when unsure, it's an open question)
-| The fact | Record |
-|---|---|
-| a settled choice (+ who set it: user / default) | **the artifact** (+ an ADR in `adr/` for the *why* if load-bearing) |
-| not settled yet / blocking | **the artifact** — resolve now, or a **Deferred** point with its trigger |
-| a bet that could be wrong (desirability/viability/feasibility) | **inline in the artifact**, with a validation status |
-| something that could go wrong, to mitigate | **inline in the artifact** |
-| a change that happened (what / when / impact) | **git history** (the changelog) |
-| a domain/product term | **`glossary.md`** · an actor/role | **`actors.md`** |
-| in-scope content | **the artifact that owns it** (no catch-all file) |
-| a HITL ask or human prerequisite (credential · visual ratify · sign-off) | the task's **`blocked`** status / the **bootstrap checklist** |
-Five state records, five *distinct questions* — they deliberately don't merge (merging loses the
-DVF/validation, provenance, or audit machinery each carries). The load is a *routing* problem, not an
-overlap problem: when in doubt it's an **open question**, and the conductor re-routes on its next pass.
+Recommend the smallest profile that fits and say what would justify the next one. Raising it later is cheap; carrying spec nobody reads is not. Market, customer discovery, monetization, go-to-market and growth are optional at every profile and run only when the user asks.
 
-## Parallel agent sessions (you, across multiple Codex or Claude Code sessions)
-- **One area per session** (the engine enforces one focus). **Prefer a branch per session/area.**
-- The shared `adr/` folder is **one file per ADR**, so parallel sessions never collide there; every other artifact is owned by exactly one skill — **re-read before writing** so you build on current content.
-- Real conflicts resolve at **git merge**; the **conductor recomputes the true state** on its next run
-  after a merge (the records are caches, the repo is the source of truth).
-
-## Two governance domains, kept separate (even when co-located in one repo)
-The repo holds two different things; govern them separately (scope hooks by path):
-
-**A. Application / code** (`src/`, `tests/`)
-- *Instructions:* `derive-conventions` + canonical `AGENTS.md` with an import-only `CLAUDE.md` adapter (how every coding agent writes code).
-- *Code pre-commit hooks:* format · lint · type · secret-scan · fast tests · **code fitness functions**
-  (boundary/dependency rules) on the changed scope.
-- *App CI/CD pipeline (`infra-ops`) = **GitHub Actions***: `.github/workflows/code-ci.yml` on PR
-  (format/lint/type · fitness functions · unit/integration/contract tests · secret-scan · CodeQL ·
-  optional Layer-2 `conformance-review`) → on merge: dev-deploy → e2e/integration pipeline.
-
-**B. Specification / documentation** (`spec/`, the doc-site) — framework-level, ships with the system
-- *Instructions:* the skills/engines.
-- *Spec governance (GitHub Actions, ships ready-to-run):* `.github/workflows/spec-governance.yml` runs **`lint_spec.py`** + **`guard_derived.py`** on every PR touching the spec. (Also a pre-commit hook locally.)
-- *Derived artifacts are regenerate-only:* everything under `09-solution/`, `05-functional-spec/`, `10-delivery/conventions/`, `10-delivery/tasks/`, root canonical `AGENTS.md`, and its import-only `CLAUDE.md` adapter changes **only** by re-running its derive-* skill (which records its hash). The guard fails any derived file edited by hand; change the **upstream** and re-derive instead.
-- *Publish:* **`generate-docs`** + **`generate-api-reference`** build the doc-site; `.github/workflows/docs-site.yml` deploys it to Pages on push to main.
-- *Propagation-miss backup (see below).*
-
-`lint_spec.py` is **not** a coding convention; the doc-site deploy is **not** app infra. Keep them out of
-`derive-conventions`/`infra-ops`.
-
-## Stale code is prevented by propagation, not by a status flag
-When you change a spec ID (say `AC-101`) that's already built, **propagation flows it to every dependent
-(architecture, other UCs, …) and emits a focused-change task to update the code** (`derive-tasks`). That
-*pending task* is the enforcement — the change creates the work to fix the code, so nothing built against
-the old version ships silently. **Backup only:** CI runs `impact.py --since <last-release>`, lists every
-changed ID and its dependents, and flags any dependent code/task that wasn't updated — catching a
-propagation *miss*. This is a safety net under spec-governance, secondary to propagation; not a parallel
-system. The analogous net for *spec artifacts* (grilled and derived alike) is `check_freshness.py`: it
-records each artifact's cited-upstream hashes (`.grillspec/freshness.lock`, written beside `derived.lock` when
-an area is reconciled) and, at audit time, lists any artifact whose cited definition has since drifted. Also
-advisory, also secondary to propagation — it tells the auditor where a re-grill/re-derive may have been
-missed; it never gates a commit (that would be the status flag this section rejects).
-
-## Verification map — who checks what, and how it composes (no overlap)
-Several surfaces verify the work; they're complementary, not redundant:
-
-| Surface | What it verifies | When | Mechanical? |
+| `delivery` | Work lands | Verification | CI |
 |---|---|---|---|
-| **`run-tests`** | the slice's own suite is green; every `AC-` exercised | each task | runs |
-| **code fitness functions** (pre-commit hook + CI) | boundary/dependency rules, contract shapes | every commit | runs — this **is** conformance-review's mechanical subset, automated |
-| **`conformance-review`** | code vs **our spec** (`UC-`/`AC-`/`API-`/`SEC-`/`NFR-` + traceability) **+ design-health** — the per-task, build-time, **self-certifying** gate | each task (`changed`) / wider on demand (`full`) | partly — judgment + the fitness functions above |
-| **`audit-build`** | the **whole build** vs the spec's **process** — the **independent, release-time attestation** that the per-task gates were genuinely run + backed (ledger integrity), cross-task coverage survives, the suite shape matches the declared distribution, and `12-operate/` records reconcile. Distrusts the accumulated verdicts; reuses conformance-review's checks at aggregate scope | on demand / **before a release** · after fixes land, a FRESH `--deep` re-audit (the release gate rejects a stale attestation) | partly — `check_task_record.py` + `check_mock_budget.py`/`check_test_tiers.py`/`check_e2e_target.py`/`check_operate_records.py` baseline + judgment |
-| **`audit-spec`** | the **spec itself** — consistency · contradictions · domain/branch completeness · code-gen readiness (the judgment above `lint_spec.py`'s mechanical baseline) | on demand / before a build or release · `--fix` remediates + drains the impact set (10-delivery included) · `--loop` converges to zero findings | partly — `lint_spec.py` + `check_contracts.py` baseline + judgment |
-| host-native **code review** | generic correctness · security · regressions | **ad hoc** (NOT in the pipeline; use the review workflow available in the current agent host) | runs |
-| **Tier-B suite** (journey / fitness / NFR) | cross-feature journeys, architectural characteristics, NFR evidence | CI / post-merge pipeline | runs |
-| **release-readiness checklist** | everything above is satisfied before *you* ship | when you choose to release | advisory |
+| `trunk` | on the default branch | local: the project's one gate before a push | deploys and smokes; other jobs on dispatch |
+| `pr` | a branch and pull request per task | the local gate, then the full gate on the pull request | full gate, merge on green, deploy on merge |
 
-Key relationships: **`conformance-review`'s blocking checks ARE the fitness functions the hook/CI run
-automatically** — the skill adds what needs judgment (does behaviour match the `AC-`, is the design
-deepening). And **`conformance-review` ≠ host-native code review**: ours owns spec-conformance +
-traceability (the native one has no spec); the native one owns generic bug/security hunting (ours
-doesn't), and is **run ad hoc, not wired into CI**. And **`conformance-review` ≠ `audit-build`** — the
-same two-axes split as spec-side: judge the **spec** (`audit-spec`) or the **build** (`conformance-review` /
-`audit-build`); one **task** (`conformance-review`) or the **whole** of it (`audit-build`). QA vs external
-audit: `conformance-review` is the inline, per-task, **self-certifying** gate (its verdict *is* the
-`conformance` gate row); `audit-build` is the independent, whole-build, release-time attestation that
-**distrusts** those verdicts and audits the ledger itself — a skill that certifies the build must not also
-be the one that audits it. Use `conformance-review` when finishing a task; use `audit-build` before a
-release or wave close. The automated layers all run as **GitHub Actions**
-(`.github/workflows/`): `spec-governance.yml` (lint + derived-guard), `code-ci.yml` (Layer 1 + optional
-Layer-2 conformance-review), `docs-site.yml` (Pages deploy).
+`trunk` suits a solo, pre-production project; `pr` a product with users or more than one contributor.
+
+## The flow
+Square brackets mark what `standard` adds to `lite`.
+
+`problem-validation` → `product-vision` → `constraints` [`goals` · `system-context`] → `ddd` → `derive-functional` → `quality` [`data-reqs` · `security-reqs` · `compliance` · `entitlements` · `integration-reqs` · `ml-reqs` for an AI product] [`design-system` → `ux-reqs` for a UI product] → *architecture-readiness* → `derive-architecture` [the seven further solution areas] → *implementation-readiness* → `derive-conventions` → `derive-tasks` → *delivery-readiness* → per task: `implement-task` → `run-tests` (→ `conformance-review` for a `critical` task), or `autorun` across the build order → before a release: `audit-build` → `deploy-release` → operate (`migrate-data` · `operate-incident` · `diagnose`).
+
+Available at any point: `prototype` (answer one empirical question), `audit-spec`, `generate-docs`.
+
+The three gates in italics are readiness signals, not locks, and count only in-profile areas. They tell the user when downstream work can be trusted; a skill run early still produces an ordinary artifact that later changes will update.
+
+## Ways in
+- **Greenfield** — from an idea: settle the two settings, then walk the in-profile areas in order.
+- **Focused change** — the normal mode for ongoing work: enter at the artifact that changes and re-work only what depends on it.
+- **Brownfield** — existing code or documents: reverse-derive a partial spec from what is there, record unknowns as gaps, confirm it, then continue as focused changes. Documents are grilled like interview answers, not filed.
+
+## Tasks, tiers and done
+A task is one brief, `spec/10-delivery/tasks/T-NNN.md`: a `field | value` table an agent can build from without chasing IDs, because its acceptance criteria carry their text.
+
+| Tier | What it is | What it owes |
+|---|---|---|
+| `routine` | a fix, tweak, refactor or dependency bump with no new behaviour | no brief: a failing test first, the fix, the gate |
+| `feature` | new behaviour inside an existing module | the brief, test-first, the gate |
+| `critical` | a new aggregate or context, a migration, an authorization, erasure or billing path, a model seam, any one-way door | the brief, a short design note, the gate, one fresh-context conformance review |
+
+Done is read from the tree, not from a record. `check_task.py` computes each task's status and checks a done-claim: every criterion in the brief has a `@covers` test, every named UI state a `@state:` test, no unresolved gap, dependencies done, and for a `critical` task `review | PASS`, written by the reviewer. The only stored progress is the brief's `status` row.
+
+## Where a fact belongs
+| The fact | Where it goes |
+|---|---|
+| a settled choice | the artifact that owns it, plus an ADR in `adr/` when it is costly to reverse |
+| not settled yet | the same artifact, as an open point or deferred with the trigger that reopens it |
+| a bet or a risk | inline in the artifact, with its status |
+| a domain term · an actor | the area's `glossary.md` · `actors.md` |
+| something only a human can supply | `spec/_human-input.md`; a credential in `spec/_provisioning.md`; the task marked `blocked` |
+| what changed, and when | git history |
+
+When unsure, record it as an open point in the artifact it concerns; the conductor re-routes it on its next pass.
+
+## Changing something already specified or built
+Every file under `spec/` is an authored document that states what is true now. The skill that owns an area edits it in place: the smallest change in meaning, re-authored so the file reads as written in one pass. A problem found while coding is fixed in the area that owns the fact, in the same session as the code.
+
+The reference graph carries the change: `python3 ${CLAUDE_PLUGIN_ROOT}/tools/impact.py <IDs>` (or `--since <ref>`) lists every spec file, task and test that depends on the changed IDs, upstream first. Re-work that set and nothing else. A changed behaviour that is already built becomes a task, so the code follows the spec.
+
+## Parallel sessions
+One area per session. Each area owns its output folder and each ADR is its own file, so sessions on different areas do not collide; re-read an artifact before writing it. In `pr` delivery use a branch per session, and tasks may run in parallel, one branch or worktree each. In `trunk` delivery build tasks run one after another. After a merge the conductor recomputes the state from the repository.
+
+## Who checks what
+| Check | What it covers | When |
+|---|---|---|
+| the project's gate | format, lint, types, tests, coverage and mutation bars, architecture fitness functions | before a push; in `pr` also on the pull request |
+| the edit hook (`gate_exec.py`) | an edit that adds a skipped test or a fake in production code | as the edit is made |
+| the pre-commit hook | spec lint · contract IDs · done-claims · tests with no spec driver | each commit |
+| `conformance-review` | one task's code against its brief, by a reviewer that did not write it | each `critical` task |
+| `audit-spec` | the spec itself: consistency, fit to the profile, leanness, buildability | before a build, or on demand |
+| `audit-build` | the whole build from the tree; in `trunk` it also runs the dispatch-only CI jobs once | before a release |
+| the smoke check | that the deploy shipped | after each deploy |
+| the agent host's own code review | general correctness and security | when wanted; not part of the pipeline |
+
+Code and spec are governed separately even in one repository. The project's conventions and `AGENTS.md` (with `CLAUDE.md` containing exactly `@AGENTS.md`) govern how code is written; the linter and the pre-commit hook govern `spec/`. Project gates start as a small core — boundaries, no fakes, no skipped tests, config drift — and grow when an incident shows a rule was needed.

@@ -650,6 +650,7 @@ for tok in sorted(defined):
     dts = DOWN_TYPE.get(pre)
     if dts and not any(t in present_types for t in dts): continue   # downstream layer empty - premature to warn
     if tok in refset or tok in keyed_parents or tok in loose_credit: continue
+    if pre == "SLO" and PROFILE != "regulated": continue        # decision mode: the objective IS the record; alerting/runbooks are full-mode files
     if pre == "THR" and tok in thr_covered: continue            # mitigated by a non-SEC control / accepted-risk (its own block)
     if pre == "EVT" and tok in evt_sinks: continue              # intentional audit-only / operator-console-internal sink
     if pre == "INV" and tok in inv_covered: continue            # enforced structurally (by construction / a DATA- constraint) — no AC needed

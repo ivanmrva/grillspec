@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Design schema, storage, consistency, partitioning and migration from the data requirements and domain model. Use when the data requirements and domain model exist and you need schema/storage/consistency/migration designed.
+Decide how the system stores data — store technology, consistency, concurrency control, tenancy isolation, retention enforcement, PII treatment — and at the regulated profile also design the schema, read models and migration. Use when the data requirements and domain model exist.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.

@@ -5,7 +5,7 @@ description: >-
   failures concisely. Use it IN PARALLEL while implementing a task, keeping verbose test output
   out of the main session. Read-only apart from running the tests.
 tools: Read, Grep, Glob, Bash
-model: claude-sonnet-5
+model: sonnet
 ---
 You run tests and report the result to the agent that asked. You do not change files; the parent makes
 the fixes, so your job is to give it what it needs to make them.

@@ -1,128 +1,62 @@
-# audit-spec `--loop` — drive the spec to zero findings
+# audit-spec `--loop` — repeat until a pass finds nothing
 
-Loaded only in `--loop` mode. Repeat full-depth audit passes and **fix everything each pass finds** until
-a fresh, independent batch reports **zero findings, including minor** — K=2 consecutive dry batches, not
-one lucky clean pass. The SKILL.md's phases define WHAT a pass judges; this file is the convergence
-harness around them: the fan-out, the dedup, the fix discipline, and the propagation that keeps every
-derived layer — `10-delivery` included — following from the corrected upstream.
+Loaded only in `--loop` mode. The loop repeats full-depth audit passes and fixes everything each pass finds, until fresh, independent auditors report nothing new twice in a row. The phases in `SKILL.md` define what a pass judges. This file is the harness around them: who audits, how findings are merged, how fixes are applied, and how each fix is carried through everything that depends on it.
 
-## One pass = one parallel audit + full remediation
+A loop spends several parallel agents per round. It pays for itself on a `standard` or `regulated` spec before a build. For a `lite` spec one `--fix` pass is usually enough; when asked to loop a small spec, say so, and if the loop is still wanted run each round with one auditor per track.
 
-1. **Baseline.** Run the mechanical tools (Phase 0 set + `spec_status.py`); record the counts. They must
-   stay green throughout — the floor, not the goal.
-2. **Audit — two tracks, fanned out in parallel.** The loop conflates two kinds of work with *opposite*
-   economics; run them on separate axes. Pass the cumulative **seen-set** + the **do-not-re-flag** list
-   into every agent prompt. **Spawn every auditor read-only** (the `Explore` agent type — no Edit/Write):
-   auditors **return findings tables only; they never edit the spec**. All fixing happens in the main
-   loop (step 3) *after* verification. A write-capable auditor edits the spec mid-audit, contaminates the
-   working tree and every verify-before-fix read, and forces a revert-and-re-apply — never use one.
+## One round
+The steps depend on each other, so keep the order.
 
-   **Track A — domain & usage completeness (stochastic · whole-spec · EVERY round · never scoped down).**
-   Phase 3 is a *blind re-derivation*, not a fixpoint check: each independent run samples a different
-   region of the blind-spot space, so a later run finds gaps an earlier one missed — that is how a model
-   finds what's MISSING, and it stays true after a clean round. Buy coverage by sampling **wide**, not by
-   looping deep: spawn **N=3 independent full-depth re-derivations of the WHOLE spec** (never
-   scope-partitioned), each seeded with a different lens so the samples don't collapse onto the same
-   findings:
-   - **entity-lifecycle** — every entity's states, especially the abnormal terminations products forget
-     (cancel · refund · dispute · expire · suspend · merge · delete/erasure · archive · fraud-hold);
-   - **rule-collision + universal edge-generators** — two business rules colliding, plus
-     money/time/identity/quantity/concurrency/dependents applied to the model;
-   - **persona × JTBD journeys** — each real journey through its unglamorous parts (empty-state ·
-     abandon-return · permission-changed-mid-action · at-scale · hit-a-limit · blocked-by-another-actor).
-   **Track B — consistency & structural (near-deterministic · scoped on rounds 2+).** The Phase 0–2 work:
-   contradictions · scope adherence · decision coherence · derivation completeness · contract-vs-schema
-   enums/fields/ranges · typed-field agreement · reference direction · house style. **Round 1:** full
-   `--scope all`, split across ~3 non-overlapping scope bundles (domain + cross-area consistency ·
-   requirements + the derived solution areas · functional + UX + design-system + commercial + discovery).
-   **Rounds 2+:** scope to the **previous round's change set + its reference-graph downstream** (the files
-   a fix touched and everything that cites them — `impact.py` computes it) — a deterministic re-check
-   never re-reads files no fix went near; round 1 certified them and they haven't moved.
+1. **Baseline.** Run the Phase 0 tools and record the counts. The baseline stays green for the whole loop; it is the floor, not the goal.
 
-   Each agent returns a grounded findings table (severity · file:line/ID · rule · concrete gap ·
-   recommended fix) **or** an explicit `ZERO FINDINGS`.
-3. **Dedup, then fix.** Union the findings; dedup against the cumulative **seen-set** (key:
-   `file:line`/stable-ID + rule) so a finding already resolved — or judged-and-rejected — never
-   re-enters. The **fresh unique** findings are this round's work. Fix every one, nits and suggestions
-   included. **Verify before fixing:** read the artifact, ground the finding in its `file:line`/ID; drop
-   what you can't ground — a false fix corrupts the spec.
-4. **Route each fix + drain the tail NOW, not next round.** Fix-zone routing per the SKILL.md: an
-   authored-zone defect is fixed in place; a derived-zone defect (`05-functional-spec/`, `09-solution/*`,
-   `10-delivery/{conventions,tasks,impl-design}/`, root canonical `AGENTS.md` + import-only `CLAUDE.md`) is fixed by editing its **upstream**
-   and re-deriving — never hand-patched. Then run the **fix-mode exit contract** (SKILL.md): `impact.py`
-   over the changed IDs → re-run the owning derive step for **every** derived artifact in the set — the
-   enumerated tail below is the checklist, `impact.py` is the authority — and register every new stable
-   ID in its registries. Draining the known tail in-round is what collapses the round count; leaving it
-   for the next audit to rediscover is the avoidable serial cost Track B's scoping assumes you already paid.
-5. **Re-verify + re-record.** Mechanical tools back to green; then `guard_derived.py --record` (the
-   re-derived paths) + `check_freshness.py --record` (all touched paths) so the baselines reflect the
-   reconciled state.
-6. **Log + clean up.** Append this pass's fixes to `audit-fixes-log.md` (project root), increment the run
-   count, **delete `spec-audit-report.md`**.
-7. **Accumulate + count dry batches.** Add the fresh unique findings to the seen-set. If the whole batch
-   — all N Track-A samples **and** Track B — yielded **zero fresh unique findings**, increment the **dry
-   counter**; else reset it to 0.
-8. **Convergence gate — stop only on K=2 consecutive dry batches** AND a fully green mechanical baseline
-   AND a final independent full `--scope all` sweep of the recurring classes (stale `X-001..NNN` range
-   claims vs the current max · schema enums vs aggregate state-sets · reference direction) coming back
-   clean. One dry batch is NOT enough — a stochastic finder can miss on one sample and hit on the next;
-   K-consecutive across independent samples is the bar.
+2. **Audit, on two tracks, in parallel.** The two kinds of audit work behave differently, so they run separately. Give every auditor the list of findings already seen and the list of settled non-defects (below). Spawn every auditor read-only (the `Explore` agent type, with no Edit or Write): it returns a table of findings and edits nothing. An auditor that edits changes the tree other auditors are reading and the files you are about to ground findings against.
 
-## The propagation tail (the checklist behind step 4 — `impact.py` is the authority)
+   - **Track A — domain and usage completeness. Whole spec, every round.** Phase 3 is a blind re-derivation, and each independent run notices different gaps, so a later run finds what an earlier one missed even after a clean round. Buy coverage with independent samples rather than more rounds: three auditors, each reading the whole spec through a different lens so they do not converge on the same findings.
 
-One authored fix cascades. A new/changed domain command, state, or rule typically propagates to: the
-functional `UC-`/`AC-` · the schema/data model + its enums · the API contract (endpoint + error responses)
-and the event contract (channel + payload enum) · the IA screen/nav + the journey · the actor roster + the
-authorization rule · the strategic event-flow — **and then the terminal derived layer**: the affected
-`T-` task manifests, the conventions (when the change moves an architectural/stack/testing fact), the
-impl-design of touched modules, and root canonical `AGENTS.md` + import-only `CLAUDE.md`. The terminal layer is the one a partial propagation
-most often strands — it is IN scope of every drain, never "next round's problem". Expect a feature's tail
-to take a round or two to drain fully; that is normal convergence, not thrashing.
+     | Lens | Looks for |
+     |---|---|
+     | entity lifecycle | every entity's states, above all the abnormal endings (cancel, refund, dispute, expire, suspend, merge, erase, archive, fraud hold) |
+     | rule collisions and edge generators | two rules meeting; money, time, identity, quantity, concurrency and dependents applied to the model |
+     | persona journeys | each real journey through its unglamorous steps (empty state, abandon and return, permission changed mid-action, at scale, hitting a limit, blocked by another actor) |
 
-## Hard-won discipline (what makes the loop converge instead of thrash)
+   - **Track B — consistency and fit. Scoped after round 1.** The Phase 0–2 work: contradictions, scope, decisions, typed facts that disagree, reference direction, profile fit, leanness, drift. In round 1 it covers the whole spec, split across about three non-overlapping bundles (the domain and cross-area consistency · the requirements and the solution layer · the functional spec, UX, design system, discovery and any optional areas present). From round 2 it covers only the files the previous round changed and everything that references them, which `impact.py` computes. Files no fix went near were checked in round 1 and have not moved.
 
-- **Read-only auditors; only the orchestrating loop edits** — after grounding each finding itself.
-- **One loop per repo — never concurrent.** Two instances (or a loop racing another spec-mutating
-  session) clobber each other's working tree. Before starting, confirm nothing else is mutating the spec;
-  a converged-but-uncommitted tree from another run is reconciled against, not fought.
-- **Verify, don't trust — in both directions.** Ground every finding before editing; and when an agent
-  *rejects* a candidate, spot-check the high-risk classes yourself — a real defect can hide behind a
-  "doc-lag, defensible" dismissal (a genuinely stale ID-range claim is the classic).
-- **Reference direction (the #1 self-inflicted lint break).** A fix in an upstream/authored file must not
-  cite a downstream ID (`UC-`, `AC-`, `NFR-`, `OBL-`, `SEC-`, `ENTL-`, `ML-`) — use domain language there;
-  the linter flags every mention, not just marked refs.
-- **Dense-prose WARN.** When an edit tips a line past the linter's prose thresholds, split or convert to
-  structure — don't ship the WARN and don't waive it.
-- **Carry the do-not-re-flag list** across rounds (documented deferrals, deliberate numbering schemes,
-  intentional gaps, framing conventions) and pass it into every agent prompt, so settled non-defects never
-  resurface.
-- **Deferred ≠ defect.** `deferred`/`post-MVP`/`accepted-risk`/`needs-counsel`/`needs-domain-validation`
-  markers are deliberate decisions — never "fix" them.
-- **New stable IDs need their registries.** A new `CMD-`/`EVT-` needs an authorization rule (or an
-  explicit system/unguarded mark), a reachable + terminal-clean state machine, and — if published — a
-  contract channel or a documented exclusion. A new `THR-` needs a linked `SEC-`.
+   Each auditor returns a grounded table (severity · `file:line` or ID · what is wrong · the recommended fix) or the words `ZERO FINDINGS`.
 
-## Human decisions — park, don't block
+3. **Merge, ground, then fix.** Union the tables and drop anything already in the seen list (key: location plus rule), so a finding that was fixed, or judged and rejected, does not return. What remains is this round's work. Read the artifact for each finding and confirm it at its `file:line` or ID before editing; drop what you cannot confirm. Then fix every confirmed finding, nits and suggestions included.
 
-A finding that genuinely needs a fact only the user/org/counsel holds (a GTM/phasing call, a
-legal/tax/finance specific, a visual/UX choice): apply a defensible default so the spec stays consistent,
-record it in `human-decisions-needed.md` (the finding · the default applied · what to ratify or flip), and
-keep fixing everything else. Default hard toward deciding what engineering/domain merit settles (the
-engine's decision classes); escalate only genuine one-way-door facts.
+4. **Carry each fix through now, not next round.** Fix each defect in the area that owns the fact, as `SKILL.md` describes. Then run `impact.py` over the IDs you changed and work through everything it lists, to the end of the order: the task briefs, the conventions and the design notes of touched modules. Re-read the root `AGENTS.md` whenever the conventions change; it sits outside `spec/`, so the tool does not list it. Leaving that tail for the next round's auditors to rediscover costs a whole round, and Track B's narrow scope assumes it has been done.
+
+5. **Verify.** Run the mechanical baseline again and return it to green.
+
+6. **Log and clean up.** Append the round's fixes to `audit-fixes-log.md` at the project root, increase the round count, and delete `spec-audit-report.md`.
+
+7. **Count.** Add the round's new findings to the seen list. If every Track A auditor and Track B reported nothing new, increase the dry-round counter; otherwise reset it to zero.
+
+8. **Stop when all three hold:** two consecutive dry rounds; a green mechanical baseline; and a final independent whole-spec sweep of the classes that recur (a stated ID range against the highest ID in use, enumerations in a contract or schema against the aggregate's states, reference direction) that comes back clean. One dry round is not enough, because a sampling auditor can miss on one run and hit on the next.
+
+## What one fix usually touches
+`impact.py` is the authority; this is what to expect from it. A changed command, state or rule in the domain model typically reaches the use-cases and criteria, the data and API decisions, the screens and journeys, the actor list and the authorization rule, and then the task briefs (which quote criteria text), the conventions when the change moves an architectural or testing fact (with `AGENTS.md` after them), and the design notes of touched modules. At `lite`, where most solution areas are not written, the tail is shorter. A feature's tail often takes a round or two to settle; that is normal convergence.
+
+## What keeps the loop converging
+- Auditors read; only the orchestrating session edits, and only after confirming each finding itself.
+- One loop per repository at a time. Two loops, or a loop beside another session that edits the spec, overwrite each other. Confirm nothing else is editing the spec before you start.
+- Check rejections as well as findings. When an auditor dismisses a candidate, spot-check the classes where a real defect hides behind a plausible excuse; a stale ID-range claim is the usual one.
+- A fix in an upstream file may not cite a downstream ID (for example a use-case or acceptance-criterion ID inside the domain model). The linter flags every such mention as a downward reference, so use domain language there.
+- When an edit pushes a passage past the linter's dense-prose threshold, give the item its own short section or a table row. Do not leave the WARN.
+- Keep the list of settled non-defects across rounds (documented deferrals, deliberate numbering schemes, intentional gaps) and hand it to every auditor.
+- A marker such as `deferred`, `accepted-risk`, `needs-counsel` or `needs-domain-validation` records a decision. It is not a defect to fix.
+- A new ID brings obligations with it. A new command needs an authorization rule (or an explicit system mark) and a reachable, terminating state machine; a published event needs a seam entry or a recorded exclusion; a new threat needs a linked control.
+- A fix removes as readily as it adds. A leanness finding is closed by deleting the duplicate or the excess file, and the round's log says what was removed.
+
+## Decisions only the user can make
+When a finding turns on a fact only the user, the organisation or counsel holds (a phasing or go-to-market call, a legal, tax or finance specific, a visual choice): apply a defensible default so the spec stays consistent, record it in `human-decisions-needed.md` (the finding · the default applied · what to confirm or change), and continue with everything else. Decide whatever engineering or domain merit settles, per the engine's decision classes; park only what is a real user-owned fact or one-way door.
 
 ## Tools
+All under `python3 ${CLAUDE_PLUGIN_ROOT}/tools/`: the baseline (`lint_spec.py`, `spec_status.py`, `check_contracts.py`, `project_config.py`) and the propagation set (`impact.py`). In a project that vendors the tools, use the project's own copy.
 
-All paths `python3 ${CLAUDE_PLUGIN_ROOT}/tools/…` — the Phase-0 baseline (`lint_spec.py` ·
-`spec_status.py` · `guard_derived.py` · `check_freshness.py` · `check_contracts.py`), the propagation set
-(`impact.py`, `guard_derived.py --record`, `check_freshness.py --record`). When running standalone in a
-project that vendors the tools, resolve them from the project's own tools folder instead.
-
-## Guardrails
-
-- **No commit/push unless the user explicitly asks.** On the default branch, branch first.
-- Edit only `spec/` (+ the lock files under `.grillspec/` and the root meta files this mode owns); never edit
-  code; never hand-edit a derived artifact — root canonical `AGENTS.md` and its import-only `CLAUDE.md` adapter included.
-- The three root meta files (`spec-audit-report.md` · `audit-fixes-log.md` · `human-decisions-needed.md`)
-  are transient and git-ignored — meta-commentary, never committed spec content.
-- Interrupted mid-loop: resume from the current working tree (the locks + the fixes log are the record) —
-  never reconstruct from git history.
+## Limits
+- Commit only when the user asks, and then the way the project's delivery mode says work lands.
+- Edit `spec/`, the root `AGENTS.md` when a fix changes what it states, and the three report files. Code is out of scope for this mode.
+- The three root files (`spec-audit-report.md`, `audit-fixes-log.md`, `human-decisions-needed.md`) are transient and git-ignored.
+- If interrupted, resume from the working tree and the fixes log, not from git history.

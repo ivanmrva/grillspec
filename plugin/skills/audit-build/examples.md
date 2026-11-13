@@ -1,73 +1,58 @@
 # audit-build — worked example
 
-A task-management product with 34 merged tasks, preparing its first production release. The user runs
-`audit-build` (default `--depth attest --scope release`). A clean whole-spec audit is the precondition — it
-passed, so the build is attestable.
+Illustrative: it shows the shape of a pass and of a finding, not required content.
 
-## The ground truth it reads — the tier contract in `test/levels.md`
-The strategy's machine-readable tier contract is what the mechanical gates check against. This is the exact
-shape `derive-test-strategy` emits and the verifiers parse (header must carry `tier` + `mock-ceiling`):
+A task-management product at the `standard` profile with `trunk` delivery, 34 tasks done, preparing its first production release. The user runs `audit-build` with the defaults (`--depth attest --scope release`). `lint_spec.py` reports no ERROR, so the spec is fit to audit against.
 
+## Phase 0 — mechanical baseline
 ```
-## Tier contract
-| tier        | real-deps          | may-mock              | mock-ceiling  | target-env | coverage-bar | mutation-bar |
-|-------------|--------------------|-----------------------|---------------|------------|--------------|--------------|
-| unit        | none               | —                     | none          | local      | 80%          | 70%          |
-| integration | db, broker         | third-party-network   | boundary-only | local      | 70%          | —            |
-| contract    | provider, consumer | —                     | none          | local      | —            | —            |
-| e2e         | all                | —                     | none          | preview    | —            | —            |
+check_task.py spec           → 34 task(s): done 34 · ERROR T-021 claims done but: no `@covers` test for AC-140c
+check_no_fakes.py --strict   → clean
+check_no_skips.py --strict   → clean
+check_orphan_tests.py        → clean
+check_config_drift.py        → ERROR: code reads MAIL_FROM, not declared in environments.md
+check_mock_budget.py         → ERROR: tests/integration/billing.int.test.ts mocks the database
+check_test_tiers.py --require --require-all-tiers → clean · unit=212 integration=41 contract=9 e2e=6
+project gate (pnpm verify)   → green
+```
+Three errors, decided by the tools: all `blocking`. The rest of the audit is the reading the tools cannot do.
+
+## Dispatched jobs (`trunk` delivery)
+```
+integration suite   → green
+security scan       → green
+accessibility       → 1 serious finding on the task-detail screen
+visual baseline     → not run — needs the operator: gh workflow run visual-baseline.yml
+mutation            → 61% on changed domain logic (bar 70%)
 ```
 
-## Phase 0 — mechanical aggregate baseline (across all 34 tasks)
+## Phase 1 — a done-claim the tag does not prove
+Sample: the 3 `critical` tasks, plus `T-019`, whose tests are the thinnest. The trace lists `tests/unit/reschedule.test.ts` for `AC-118` ("an overdue task is moved to the next working day"). The test calls the scheduler and asserts only that `save` was called.
+
+→ `blocking · T-019 · AC-118 · tests/unit/reschedule.test.ts:14 · the test does not assert the new due date, so the criterion is unproven · owner: the task (status back to in-progress).`
+
+`T-027` added a `tenant_id` column and a backfill migration, and its brief says `tier | feature`.
+
+→ `important · T-027 · a data migration built as a feature: no design note, no independent review · owner: raise the tier to critical and run the review.`
+
+## Phase 2 — what only the whole tree shows
+`vitest.config.ts` excludes `src/billing/**`. Four test files there carry `@covers` tags for `AC-203a`–`AC-203d`; none of them runs.
+
+→ `blocking · AC-203a–d · vitest.config.ts:22 · tagged tests are excluded from the run, so four criteria count as covered and are not tested · owner: remove the exclusion, then fix what fails.`
+
+`.grillspec/no-fakes-allow.txt` has one entry, `src/dev/seed.ts — local seed data`, and the file is not reachable from a production entrypoint. Reason still true; no finding.
+
+## Verdict (in `build-audit-report.md` at the project root)
 ```
-check_task_record  → 33/34 green · T-021 record cites a VERDICT file that isn't on disk
-check_test_tiers --require → ERROR: no `unit` suite exists though the contract declares it
-check_mock_budget  → ERROR: tests/integration/billing.int.test.ts mocks the db (boundary-only tier)
-check_e2e_target   → clean
-check_operate_records → ERROR: deploy-prod-1.0.0.md references T-402 (resolves nowhere)
+BUILD ATTESTATION: NOT-ATTESTED  (5 blocking, 3 important)
+scope: release 1 (34 tasks) · profile: standard · delivery: trunk
+depth: attest (read 4 of 34 tasks) · commit: 9f3c1a2 · spec: lint clean
+Top fixes:
+  1. AC-140c has no test (T-021) · AC-118 test asserts nothing (T-019)      → the tasks
+  2. billing tests excluded from the run (AC-203a–d)                        → remove the exclusion
+  3. MAIL_FROM undeclared · integration test mocks the database            → environments.md · the test
+  4. mutation 61% < 70% · one serious accessibility finding                 → the tasks concerned
+  5. T-027 under-tiered                                                     → raise the tier, run the review
+Not run: visual baseline (operator dispatch).
 ```
-The mechanical layer already decided these — they become `blocking`. The audit now spends its effort on
-what the tools can't see: whether the *set* of green verdicts actually holds.
-
-## Phase 1 — ledger integrity (a rubber-stamp the per-task review couldn't catch about itself)
-`T-021`'s record reads `conformance | review | verdict | review-report.md | PASS`, but no independent
-`VERDICT: PASS` for `T-021` exists under `spec/10-delivery/verification/`. The per-task review *produced*
-that row, so it can't audit it.
-
-→ `blocking · ledger · T-021 · conformance row claims PASS but no independent verdict is on disk — a
-rubber-stamped done-claim · route: re-run the conformance review for T-021 in a fresh context.`
-
-## Phase 2 — cross-task emergent (a defect that lives BETWEEN tasks)
-`AC-118` was recorded covered-and-passing by `T-019`. `T-030`, merged nine days later, refactored the
-scheduler and left `it.skip('reschedules overdue', …)`. Every per-task gate was green at its own merge; only
-the aggregate re-run sees the coverage *died*.
-
-→ `blocking · emergent · AC-118 · covering test skipped by a later task (T-030) — coverage recorded at
-T-019 no longer holds · route: a focused-change T- to restore the test.`
-
-Suite-shape check: the contract declares a `pyramid`, but the actual tree is unit=0 · integration=41 ·
-e2e=52 — top-heavy and unit-less.
-
-→ `blocking · emergent · the suite contradicts the declared pyramid (unit=0, e2e=52) — the distribution the
-strategy ratified was never built.`
-
-## Phase 4 — operate reconciliation
-`deploy-prod-1.0.0.md` names `T-402`, which exists in no task file, and an env `prod` that *is* on the
-promotion path (ok). The dangling `T-` is the finding.
-
-→ `important · operate · deploy-prod-1.0.0.md references T-402 which resolves nowhere — a broken operational
-trail · route: correct the record (append-only — fix forward, don't rewrite history).`
-
-## Verdict (written to `build-audit-report.md` at project root)
-```
-BUILD ATTESTATION: NOT-ATTESTED  (4 blocking, 1 important)  ·  scope: release r1 (34 tasks)  ·  depth: attest (sampled 6 of 34)  ·  commit: 9f3c1a2
-Ledger:    T-021 conformance verdict missing on disk (rubber-stamp)
-Emergent:  AC-118 coverage skipped by T-030 · suite contradicts declared pyramid (unit=0)
-Operate:   deploy-prod-1.0.0.md → dangling T-402
-Top fixes: 1. re-run conformance review for T-021   2. restore AC-118 test (new T-)
-           3. build the unit tier / rebalance to the pyramid   4. fix the deploy record
-```
-The opt-in release gate `check_release_attestation.py` reads this verdict — with `NOT-ATTESTED` it exits
-non-zero, so a team that wired it as a required check cannot ship r1 until the four blockers clear. A clean
-run would instead write `BUILD ATTESTATION: ATTESTED` and the gate would pass. `--depth deep` would replace
-the sampled Phase 3 with an independent code-vs-spec re-judgment of all 34 tasks.
+After the fixes land, a new run covers the whole tree again in Phases 0 and 2 and re-reads only the changed tasks in Phase 1.

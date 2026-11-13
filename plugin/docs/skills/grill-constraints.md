@@ -5,7 +5,7 @@
 *Interview skill — it asks you questions and writes a spec artifact.*
 
 ## What it does
-Pin the fixed bounds the solution must live within — technical and organizational mandates, imposed standards, applicable regulatory regimes, the existing environment to reuse, stakeholders and sign-off authorities, and the assumptions the plan rests on.
+Pin the fixed bounds the solution must live within: stack mandates and preferences, budget, timeline and team, residency and regulatory bounds, and the systems already in place. Use before the domain is modelled or the architecture is derived.
 
 ## What it needs (input)
 A live, plain-language **interview** — it asks one question at a time; **no prior documents are required**. If you already have material, hand it over and it harvests from it before asking. It never refuses for lack of input.

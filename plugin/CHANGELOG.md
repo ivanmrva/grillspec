@@ -4,6 +4,84 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 5.0.0
+
+### Changed — lean by default: spec, constraints and gates only where something reads them
+
+4.x made every project carry the full apparatus. On a real build that produced roughly a million words
+of spec for about a hundred thousand lines of code, two thirds of it process records, and the records
+needed their own reconciliation. This release keeps the parts that change what gets built — the
+decide-vs-ask test, the interviews that capture facts only the user holds, acceptance criteria, scoped
+build context, the no-fakes rule, the code-facing checkers, an independent review — and removes the
+ledger around them. It also brings every skill's instructions in line with how current models read
+prompts: reasons beside rules, calm register, less prohibition and emphasis, output written for a
+reader who has not seen the conversation.
+
+**Breaking for existing projects.** See "Migrating a 4.x project" below.
+
+- **Project settings (`.grillspec/project.json`, `project_config.py`).** `profile` — `lite` ·
+  `standard` · `regulated` — sets how much spec a project carries; `delivery` — `trunk` · `pr` — sets
+  how work lands. The conductor asks both once and recommends the smallest profile that fits. With no
+  file, tools assume `regulated` and `pr`. Market, customer discovery, monetization, go-to-market and
+  growth are optional in every profile.
+- **Decisions in the spec, descriptions in code.** Below `regulated`, the seven solution areas beyond
+  the architecture write a decision record only (the tier contract, the environments matrix, the seam
+  index and its policies, the objectives, storage and identity decisions, the eval gate); schema DDL,
+  hand-authored OpenAPI, control registers, runbooks and the rest are full-mode output. At `lite` those
+  areas are not written at all.
+- **No derived lock.** `guard_derived.py`, `check_freshness.py` and both lock files are removed. Every
+  file under `spec/` is an authored document its owning skill edits in place; change propagation is
+  `impact.py` over the changed IDs, touching only what depends on them.
+- **Task briefs with a risk tier.** A task is a short, self-contained brief — acceptance criteria with
+  their text inline, the binding rules in a line each, non-goals — instead of a sixteen-dimension
+  manifest. `routine` work needs no brief; `feature` work needs the brief and the gate; `critical`
+  work (a new aggregate, a migration, auth, erasure, billing, a model seam, a one-way door) also gets a
+  design note and one fresh-context review, at most two rounds.
+- **Done is checked against the tree.** `check_task.py` replaces `check_task_record.py`: a done-claim
+  holds when every acceptance criterion has a `@covers` test, every named UI state a `@state:` test, no
+  gap is unresolved, dependencies are done, and a `critical` task carries its review. Status and the
+  criterion-to-test trace are generated on demand (`--json`, `--trace`). There is no Verification
+  Record, no stored traceability matrix, no review report under `spec/`.
+- **The edit hook keeps one job.** `gate_exec.py --hook` denies a newly introduced skipped test or
+  production fake. The red-before-green state machine (`--red`, `--start`, `--done`) and the done-claim
+  gate are gone; test-first is a rule of the exec engine, visible in its trace.
+- **Delivery modes.** `trunk`: work lands on the default branch, verification is local and runs once,
+  CI deploys and smokes, other jobs are dispatch-only. `pr`: a branch and pull request per task, the
+  full gate before merge. The engines, `derive-conventions`, `derive-infra-ops` and `autorun` follow
+  the setting.
+- **The timeless rule is mechanical.** `lint_spec.py` check 40 errors on an edit-trace stamp (a
+  status word beside a date) and warns on other dated statements and edit-history phrasing, outside
+  `12-operate/` and `_provisioning.md`; `<!-- timeless: allow <why> -->` marks a genuine domain date.
+- **More linter checks.** 41: the profile is honoured (content outside it, full-mode files below
+  `regulated`). 42: every brief carries a tier; a `critical` brief carries a `review` row. 43: a brief
+  quotes its acceptance criteria. 44: `CLAUDE.md` is exactly `@AGENTS.md`. The readiness gate counts
+  only in-profile areas.
+- **Removed checkers.** `check_release_attestation.py` and `check_operate_records.py`; release
+  readiness and operations records remain skill guidance.
+- **Skill instructions rewritten** against Anthropic's prompt-audit guidance: prohibitions kept only
+  where the failure is real and stated with its reason, emphasis reserved for terms and IDs, long
+  accreted bullets split into a rule and its reason, each skill's depth stated per profile, and output
+  rules that favour short table cells and prose where reasoning matters.
+- **Conventions start small.** `derive-conventions` defines one gate, a core set of checks, and adds a
+  gate only with the defect that motivated it; the generated `AGENTS.md` is a short agent guide.
+- **The installer vendors the spec hook's tools.** `install_exec_gates.py` now also copies
+  `lint_spec.py`, `check_contracts.py`, `project_config.py` and `spec_governance_hook.sh` into
+  `.grillspec/tools/`, so a project stays governed in a session or CI job without the plugin installed.
+- The two bundled subagents use the `sonnet` model alias instead of a pinned model id.
+- The plugin's own CI now also runs the no-skips and orphan-tests suites.
+
+### Migrating a 4.x project
+
+1. Set the project settings: `python3 tools/project_config.py --set profile=<p> --set delivery=<d>`.
+2. Delete `spec/10-delivery/verification/` and `.grillspec/{derived,freshness}.lock` (the linter now
+   reports files under `verification/` as outside the structure).
+3. Re-run `install_exec_gates.py` to vendor `check_task.py` in place of `check_task_record.py`, and
+   reinstall `spec_governance_hook.sh`.
+4. Add a `tier` and a `status` row to each task brief still to be built; finished briefs need only
+   `status | done`.
+5. Run `lint_spec.py` and work through check 40 (edit-trace stamps) and check 41 (content outside the
+   profile, full-mode files): remove what has no reader rather than completing it.
+
 ## 4.21.0
 
 ### Changed — every stated contract is now an enforced one

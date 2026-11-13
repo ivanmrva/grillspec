@@ -5,7 +5,7 @@
 *Derivation skill — it generates an artifact from recorded input (no interview).*
 
 ## What it does
-Design topology, IaC, CI/CD, deploy/release strategy, environments, scaling/HA, DR/BCP, backup/restore, capacity and cost from the NFRs and constraints. Use when the NFRs and constraints exist and you need the deploy & operations architecture designed.
+Decide how the system is deployed and operated — environments and promotion path, DR tier, the config matrix, external prerequisites, the CI/CD pipeline; at the regulated profile also IaC, delivery metrics, scaling/DR and cost. Use when the NFRs and constraints exist.
 
 ## What it needs (input)
 The **recorded source artifacts** — it derives from them and does **not** interview you for facts. Standalone, place those artifacts in the working-root folders (or hand them in); a missing fact is recorded as a gap, never invented.
