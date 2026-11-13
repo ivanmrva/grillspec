@@ -4,6 +4,24 @@ All notable changes to the `grillspec` plugin. Versions follow
 [semantic versioning](https://semver.org). Bump `version` in
 `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together to release.
 
+## 5.0.1
+
+### Changed
+
+- `implement-task`, `derive-tasks`, `derive-impl-design`, `conformance-review` and `generate-ui-prototype`
+  can be loaded by the model, like the conductor and the two audits. In a project that is already being
+  built, asking for a feature or a fix is enough: the agent picks the step from the request and the
+  project's agent guide. The area interviews and the solution derivations stay user-invoked.
+- `lint_spec.py --errors` prints only the errors and the summary. The pre-commit hook uses it, so a blocked
+  commit shows what blocks it.
+
+### Fixed
+
+- `check_task.py` read the prose after a `ux` cell's `states:` list (a prototype note, a navigation
+  sentence) as state names and reported them as uncovered. The list is the run of short plain names after
+  `states:`; a gloss in brackets is dropped and the list ends at the next clause.
+- `install_exec_gates.py --help` prints its usage instead of running the installer.
+
 ## 5.0.0
 
 ### Changed — lean by default: spec, constraints and gates only where something reads them

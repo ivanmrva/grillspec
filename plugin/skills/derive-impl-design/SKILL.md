@@ -1,8 +1,7 @@
 ---
 name: derive-impl-design
 description: >-
-  Write the short design note for a critical or genuinely complex slice, just before it is coded — the mechanism, concurrency, failure handling and the risk it contains, behind the seams the architecture already fixed. Design, not code. Loads the shared derive engine.
-disable-model-invocation: true
+  Write the short design note for a critical or genuinely complex slice, just before it is coded — the mechanism, concurrency, failure handling and the risk it contains. Use before coding a critical task: a new aggregate, a migration, auth, billing, a model seam, a one-way door.
 argument-hint: the slice (and the modules it touches) to design
 ---
 

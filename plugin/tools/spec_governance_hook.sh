@@ -22,7 +22,7 @@ T="${GRILLSPEC_TOOLS:-$root/.grillspec/tools}"
 [ -f "$T/lint_spec.py" ] || exit 0                  # tools not present here -> no-op, never error
 
 # 1) spec consistency — blocks on ERROR (WARN/INFO are advisory and don't block)
-if ! python3 "$T/lint_spec.py" "$root/spec"; then
+if ! python3 "$T/lint_spec.py" "$root/spec" --errors; then
   echo "spec-governance: spec-lint reported ERRORs — fix them, or commit with --no-verify." >&2
   exit 1
 fi

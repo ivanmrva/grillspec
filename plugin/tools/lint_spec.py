@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # spec-lint - deterministic consistency checks over spec/. Stdlib only.
 # ERROR = hard violation (exit 1). WARN = heuristic candidate. INFO = delegated to the conductor.
-# Run from the project root:  python3 tools/lint_spec.py [spec_dir]
+# Run from the project root:  python3 tools/lint_spec.py [spec_dir] [--errors]
+#   --errors   print only the ERROR lines and the summary (what a commit hook or an agent needs to act on)
 import os, re, sys, pathlib
 
-SPEC = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "spec")
+_ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
+ERRORS_ONLY = "--errors" in sys.argv[1:]
+SPEC = pathlib.Path(_ARGS[0] if _ARGS else "spec")
 if not SPEC.exists():
     print("no spec/ dir at", SPEC); sys.exit(2)
 
@@ -1486,6 +1489,8 @@ F.sort(key=lambda x: (order[x[0]], x[1], x[2]))
 e = sum(1 for x in F if x[0] == "ERROR"); wn = sum(1 for x in F if x[0] == "WARN")
 for sev, path, line, msg in F:
     loc = (path + ":" + str(line)) if line else path
+    if ERRORS_ONLY and sev != "ERROR":
+        continue
     print("%-5s %-44s %s" % (sev, loc, msg))
 print("\n%d error(s), %d warning(s)." % (e, wn))
 sys.exit(1 if e else 0)
