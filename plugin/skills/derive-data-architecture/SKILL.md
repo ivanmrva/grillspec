@@ -1,42 +1,57 @@
 ---
 name: derive-data-architecture
 description: >-
-  Design schema, storage, consistency, partitioning and migration from the data requirements and domain model. Use when the data requirements and domain model exist and you need schema/storage/consistency/migration designed. Loads the shared derive engine.
+  Decide how the system stores data — store technology, consistency, concurrency control, tenancy isolation, retention enforcement, PII treatment — and at the regulated profile also design the schema, read models and migration. Use when the data requirements and domain model exist.
 disable-model-invocation: true
 argument-hint: a recorded spec or design docs
 ---
 
 # derive-data-architecture
 
-**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md` first and follow it.** This skill applies that method to **Data architecture** — schema, storage, consistency, partitioning and migration.
+**Load `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md` first and follow it.** This skill applies that method to the **data architecture**: how the system stores, isolates, retains and migrates its data.
+
+## Depth by profile
+How much is written follows the project's profile:
+
+| Profile | Mode | Written |
+|---|---|---|
+| `lite` | N/A | nothing here — the store and tenancy decisions are rows in `arch/solution-strategy.md`, the rest is in the conventions |
+| `standard` | decision mode | `storage.md` |
+| `regulated` | full mode | `storage.md` plus `schema.md`, `read-models.md`, `migration.md` |
+
+Decisions live in the spec; the description lives in the artifact that enforces it — here the schema and its migrations — and once code exists that artifact is the source of truth for the description. Decision mode therefore records only what the code cannot explain and is costly to reverse (which store, how consistent, how isolated, how data is retained and protected); full mode also writes the table-by-table design, because at `regulated` the document is itself a deliverable that auditors and other teams read.
 
 ## Method
-1. **access patterns first** (reads/writes from UCs + read-models), then per aggregate: storage + logical→physical schema + indexes designed to serve them
-2. where CQRS is used: **read-model/projection** design (projection source-events · rebuild strategy · staleness/consistency window)
-3. consistency (storage-level + per-aggregate concurrency control)
-4. partitioning/sharding
-5. migration/cutover
+Start from the access patterns: the reads and writes the use-cases and read models need. They decide the store, its consistency level and, in full mode, the indexes. A design that starts from the tables serves queries nobody runs.
+
+## Decision record
+`storage.md` is written in both modes and carries:
+- per store: technology · consistency level · concurrency control · tenancy isolation;
+- where the product has them: partitioning/sharding · an event store · cache coherence (strategy · invalidation trigger · staleness bound);
+- per `DATA-` class: the retention-enforcement mechanism and the field-level PII treatment (encryption/tokenisation);
+- the migration approach, in one line.
 
 ## Rules
-- each store declares its **consistency level** (strong / bounded-staleness / eventual) + the latency-vs-consistency trade-off as an ADR; multi-store designs record a **polyglot-persistence** ADR (access pattern → engine fit)
-- everything else the output rows enumerate (integrity, retention mechanism, tenancy, PII, expand-contract) is designed there, once
+- Each store declares its consistency level (strong · bounded-staleness · eventual). The latency-versus-consistency trade-off is an ADR, because it is the choice a reader cannot recover from the code.
+- A design with more than one store engine records a polyglot-persistence ADR that maps each access pattern to the engine that fits it.
+- Retention is a mechanism (TTL, partition drop, archival job) that realises a `DATA-` retention trigger. The period itself comes from the data requirements; one that is missing there is a gap to record, not a value to choose here.
+- The tenancy isolation model (row · schema · database) is a ratify-point when the data requirements leave it open.
 
 ## Output
-Written under `solution/data/`:
+Written under `solution/data/`. The rows marked `full` are written only at `regulated`; in decision mode their content is not raised.
 
-| File | Captures | Format |
-|---|---|---|
-| `schema.md` | logical→physical schema (tables / DDL-sketch, not code) per aggregate/data-class + indexes designed for the access patterns + referential integrity (FKs within an aggregate, none across) | tables / DDL-sketch · not code |
-| `read-models.md` | where CQRS is used: each projection — source-events · rebuild strategy · staleness/consistency window. May merge into `schema.md` ONLY under a literal `## Read models` heading (a findable section, so downstream consumers and the audit have one place to look); absent CQRS, the file is omitted | per-projection: source-events · rebuild · staleness |
-| `storage.md` | per store: technology · **consistency level** (strong/bounded-staleness/eventual) · concurrency control · partitioning/sharding · multi-tenancy isolation (row/schema/db) · event store (if event-sourced) · **caching coherence** (strategy · invalidation trigger · staleness bound) | per-store typed: tech · consistency · partitioning · cache coherence |
-| `migration.md` | zero-downtime migration — expand→contract **plus backfill + dual-write/shadow-read + verification** + retention enforcement (TTL/partition-drop/archival realising the DATA- triggers) + field-level PII (encryption/tokenisation) | migration steps · retention mechanism · PII fields |
+| File | Mode | Captures | Format |
+|---|---|---|---|
+| `storage.md` | decision | the decision record above | table, one row per store · table keyed on the `DATA-` class for retention and PII · one line for migration |
+| `schema.md` | full | logical → physical schema per aggregate or data class · indexes designed for the access patterns · referential integrity (foreign keys within an aggregate, none across; a cross-aggregate link is by id) | tables / DDL sketch, not code |
+| `read-models.md` | full | where CQRS is used, each projection: source events · rebuild strategy · staleness window. It may instead be a literal `## Read models` section of `schema.md`, so consumers still have one place to look; without CQRS it is omitted | per projection: source events · rebuild · staleness |
+| `migration.md` | full | the zero-downtime procedure (expand → backfill → dual-write/shadow-read → verify → contract) and the per-field detail of the retention and PII mechanisms `storage.md` decides | migration steps · retention jobs · PII fields |
 
 ADRs → `adr/ADR-DATA-NNN.md`
-*(DERIVED & regenerate-only — never hand-edited)*
-Consumes: the data requirements (incl. `DATA-` retention triggers, residency, tenancy) + the domain model's aggregates/invariants + the use-cases' read/write access patterns.
+Consumes: the data requirements (including the `DATA-` retention triggers, residency and tenancy) · the domain model's aggregates and invariants · the use-cases' read/write access patterns.
 
 ## Excludes
-application code
+application code · in decision mode, the table and index design (the schema and migrations in code state it)
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/grill-shared/derive-engine.md`

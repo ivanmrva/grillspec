@@ -1,21 +1,23 @@
 # grill-entitlements — worked example
 
-> **User:** Three plans — Free, Pro, Enterprise. Pro is the paid default.
+Illustrative: it shows the shape of the output, not a list to fill.
 
-> **Agent:** I derived the gatable capabilities from the functional spec (`UC-`) and built the tier×capability grid — **tiers by capability, not price** (the price lives in the commercial monetization area and references these tiers). I gated the premium capabilities, set limits with an explicit over-limit behaviour, named the enforcement boundary for each, and specified how access degrades when billing lapses. Two calls I ratified with you (default in brackets); the rest derived.
+> **User:** Three plans: Free, Pro, Enterprise. Pro is the paid default.
+> **Agent:** I built the grid from the use-cases. Two calls are yours: I'd cap Free at 3 projects and block with an upsell, and I'd soft-cap Pro at 25 members with a notice. Agree?
+> **User:** Yes to both.
+> **Agent:** When a Pro account stops paying, I'd give 14 days of full access, then read-only with export, then drop to Free.
+> **User:** Fine. Keep their data for 90 days after that.
 
-**`entitlements.md`** (excerpt):
-
+## Output — `entitlements.md`
 | ENTL- | Capability (UC-) | Granting tier(s) | Limit / quota | Over-limit | Enforced at | On lapse |
 |---|---|---|---|---|---|---|
 | ENTL-001 | Create project (UC-012) | Free+ | 3 (Free) · ∞ (Pro+) | block + upsell | application service | retain (read-only) |
 | ENTL-002 | Invite member (UC-031) | Pro+ | 25 (Pro) · ∞ (Ent) | soft-cap + notify | application service | revoke new invites |
-| ENTL-003 | SSO / SCIM (UC-044) | Enterprise | — | — | gateway (auth) | retain (security) |
+| ENTL-003 | SSO / SCIM (UC-044) | Enterprise | — | — | gateway (auth) | retain |
 | ENTL-004 | API access (UC-050) | Pro+ | 10k req/day (Pro) | grace-then-block | gateway (rate) | revoke after grace |
 
-**Billing-state degradation** (specified, not improvised): `active → grace (14d, full access) → dunning (read-only + export) → lapsed (Free entitlements only; data retained 90d) → cancelled (export-only 30d)`.
+Always-on for every tier: data export (UC-061), a data-rights obligation, and every use-case not listed above.
 
-Notes:
-- `ENTL-003` plugs into the **security** authz model (SSO is an auth mechanism); entitlements grant it, security defines it.
-- The **monetization** area reads this grid to attach prices to `Free/Pro/Enterprise` — it never feeds back, so entitlements stay upstream of pricing and of the architecture gate.
-- `UC-061` (export data) was un-gated on review → recorded as **always-on** (a legal data-rights obligation), not left as a silent default.
+Billing states: `active → grace (14 d, full access) → dunning (read-only + export) → lapsed (Free entitlements; data retained 90 d) → cancelled (export only, 30 d)`.
+
+ENTL-003 grants SSO; the security area defines it. The tiers carry no prices: the monetization area attaches them.

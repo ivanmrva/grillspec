@@ -69,9 +69,9 @@ AREA_PROFILE = {"01-discovery":"lite","02-product/vision":"lite","03-constraints
     "09-solution/ml":"standard",
     "02-product/customers":"optional","02-product/market":"optional","11-commercial/monetization":"optional",
     "11-commercial/go-to-market":"optional","11-commercial/growth":"optional"}
-# Areas that apply only to some products (an AI capability, a UI): never REQUIRED by the gate below a
-# `regulated` profile, where the full path is the point.
-CONDITIONAL_AREAS = {"06-requirements/ml", "07-design-system", "08-ux"}
+# Areas that apply only to some products (an AI capability, a UI, paid tiers): never REQUIRED by the gate
+# below a `regulated` profile, where the full path is the point.
+CONDITIONAL_AREAS = {"06-requirements/ml", "06-requirements/entitlements", "07-design-system", "08-ux"}
 # The solution areas beyond the architecture run in DECISION mode below `regulated`: they record the
 # decisions code cannot state, and leave the description to the artifact that enforces it. These are the
 # full-mode (descriptive) files - present under a smaller profile, the spec is restating what code says.
