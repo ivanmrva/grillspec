@@ -12,6 +12,9 @@ All notable changes to the `grillspec` plugin. Versions follow
   can be loaded by the model, like the conductor and the two audits. In a project that is already being
   built, asking for a feature or a fix is enough: the agent picks the step from the request and the
   project's agent guide. The area interviews and the solution derivations stay user-invoked.
+- The agent guide `derive-conventions` writes carries the change lifecycle: size the change, align with the
+  spec, brief it, build it test-first, prove it and land it. A request typed into chat follows the project's
+  method without the user naming a skill.
 - `lint_spec.py --errors` prints only the errors and the summary. The pre-commit hook uses it, so a blocked
   commit shows what blocks it.
 
